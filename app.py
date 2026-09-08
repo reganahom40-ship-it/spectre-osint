@@ -7,6 +7,8 @@ from modules.email_lookup import lookup_email
 from modules.domain_lookup import lookup_domain
 from modules.phone_lookup import lookup_phone
 from modules.headers import analyze_headers
+from modules.discord_lookup import lookup_discord
+from modules.hash_lookup import analyze_hash
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -36,120 +38,128 @@ def api_username():
     if request.method == 'OPTIONS':
         return '', 204
     data = request.get_json(silent=True) or {}
-    username = data.get('username')
+    username = str(data.get('username', '')).strip()
     if not username:
         return make_response_json(False, 'username', '', error='Missing username'), 400
-    username = str(username).strip()
-    if not username:
-        return make_response_json(False, 'username', '', error='Empty username'), 400
-    
     try:
         result = check_username(username)
         return make_response_json(True, 'username', username, data=result), 200
     except ValueError as e:
         return make_response_json(False, 'username', username, error=str(e)), 400
-    except Exception as e:
+    except Exception:
         return make_response_json(False, 'username', username, error='Internal server error'), 500
+
+@app.route('/api/discord', methods=['POST', 'OPTIONS'])
+def api_discord():
+    if request.method == 'OPTIONS':
+        return '', 204
+    data = request.get_json(silent=True) or {}
+    discord_id = str(data.get('id', '')).strip()
+    if not discord_id:
+        return make_response_json(False, 'discord', '', error='Missing Discord ID'), 400
+    try:
+        result = lookup_discord(discord_id)
+        return make_response_json(True, 'discord', discord_id, data=result), 200
+    except ValueError as e:
+        return make_response_json(False, 'discord', discord_id, error=str(e)), 400
+    except Exception:
+        return make_response_json(False, 'discord', discord_id, error='Failed to query Discord ID'), 500
 
 @app.route('/api/ip', methods=['POST', 'OPTIONS'])
 def api_ip():
     if request.method == 'OPTIONS':
         return '', 204
     data = request.get_json(silent=True) or {}
-    ip = data.get('ip')
+    ip = str(data.get('ip', '')).strip()
     if not ip:
-        return make_response_json(False, 'ip', '', error='Missing ip'), 400
-    ip = str(ip).strip()
-    if not ip:
-        return make_response_json(False, 'ip', '', error='Empty ip'), 400
-    
+        return make_response_json(False, 'ip', '', error='Missing IP address'), 400
     try:
         result = lookup_ip(ip)
         return make_response_json(True, 'ip', ip, data=result), 200
     except ValueError as e:
         return make_response_json(False, 'ip', ip, error=str(e)), 400
-    except Exception as e:
-        return make_response_json(False, 'ip', ip, error='Internal server error'), 500
+    except Exception:
+        return make_response_json(False, 'ip', ip, error='Failed to resolve IP intelligence'), 500
 
 @app.route('/api/email', methods=['POST', 'OPTIONS'])
 def api_email():
     if request.method == 'OPTIONS':
         return '', 204
     data = request.get_json(silent=True) or {}
-    email = data.get('email')
+    email = str(data.get('email', '')).strip()
     if not email:
         return make_response_json(False, 'email', '', error='Missing email'), 400
-    email = str(email).strip()
-    if not email:
-        return make_response_json(False, 'email', '', error='Empty email'), 400
-    
     try:
         result = lookup_email(email)
         return make_response_json(True, 'email', email, data=result), 200
     except ValueError as e:
         return make_response_json(False, 'email', email, error=str(e)), 400
-    except Exception as e:
-        return make_response_json(False, 'email', email, error='Internal server error'), 500
+    except Exception:
+        return make_response_json(False, 'email', email, error='Failed to process email intelligence'), 500
 
 @app.route('/api/domain', methods=['POST', 'OPTIONS'])
 def api_domain():
     if request.method == 'OPTIONS':
         return '', 204
     data = request.get_json(silent=True) or {}
-    domain = data.get('domain')
+    domain = str(data.get('domain', '')).strip()
     if not domain:
         return make_response_json(False, 'domain', '', error='Missing domain'), 400
-    domain = str(domain).strip()
-    if not domain:
-        return make_response_json(False, 'domain', '', error='Empty domain'), 400
-    
     try:
         result = lookup_domain(domain)
         return make_response_json(True, 'domain', domain, data=result), 200
     except ValueError as e:
         return make_response_json(False, 'domain', domain, error=str(e)), 400
-    except Exception as e:
-        return make_response_json(False, 'domain', domain, error='Internal server error'), 500
+    except Exception:
+        return make_response_json(False, 'domain', domain, error='Failed to execute domain recon'), 500
 
 @app.route('/api/phone', methods=['POST', 'OPTIONS'])
 def api_phone():
     if request.method == 'OPTIONS':
         return '', 204
     data = request.get_json(silent=True) or {}
-    phone = data.get('phone')
+    phone = str(data.get('phone', '')).strip()
     if not phone:
-        return make_response_json(False, 'phone', '', error='Missing phone'), 400
-    phone = str(phone).strip()
-    if not phone:
-        return make_response_json(False, 'phone', '', error='Empty phone'), 400
-    
+        return make_response_json(False, 'phone', '', error='Missing phone number'), 400
     try:
         result = lookup_phone(phone)
         return make_response_json(True, 'phone', phone, data=result), 200
     except ValueError as e:
         return make_response_json(False, 'phone', phone, error=str(e)), 400
-    except Exception as e:
-        return make_response_json(False, 'phone', phone, error='Internal server error'), 500
+    except Exception:
+        return make_response_json(False, 'phone', phone, error='Failed to analyze phone number'), 500
 
 @app.route('/api/headers', methods=['POST', 'OPTIONS'])
 def api_headers():
     if request.method == 'OPTIONS':
         return '', 204
     data = request.get_json(silent=True) or {}
-    url = data.get('url')
+    url = str(data.get('url', '')).strip()
     if not url:
-        return make_response_json(False, 'headers', '', error='Missing url'), 400
-    url = str(url).strip()
-    if not url:
-        return make_response_json(False, 'headers', '', error='Empty url'), 400
-    
+        return make_response_json(False, 'headers', '', error='Missing URL'), 400
     try:
         result = analyze_headers(url)
         return make_response_json(True, 'headers', url, data=result), 200
     except ValueError as e:
         return make_response_json(False, 'headers', url, error=str(e)), 400
-    except Exception as e:
-        return make_response_json(False, 'headers', url, error='Internal server error'), 500
+    except Exception:
+        return make_response_json(False, 'headers', url, error='Failed to fetch HTTP headers'), 500
+
+@app.route('/api/hash', methods=['POST', 'OPTIONS'])
+def api_hash():
+    if request.method == 'OPTIONS':
+        return '', 204
+    data = request.get_json(silent=True) or {}
+    hash_val = str(data.get('hash', '')).strip()
+    if not hash_val:
+        return make_response_json(False, 'hash', '', error='Missing hash string'), 400
+    try:
+        result = analyze_hash(hash_val)
+        return make_response_json(True, 'hash', hash_val, data=result), 200
+    except ValueError as e:
+        return make_response_json(False, 'hash', hash_val, error=str(e)), 400
+    except Exception:
+        return make_response_json(False, 'hash', hash_val, error='Failed to analyze hash'), 500
 
 @app.errorhandler(404)
 def not_found(error):

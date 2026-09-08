@@ -1,40 +1,58 @@
 /* =========================================================
-   SPECTRE INTELLIGENCE PLATFORM — BUBBLY DYNAMIC JS (V3.0)
+   SPECTRE INTELLIGENCE PLATFORM — APP.JS (V3.5)
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ---- Initialize Interactive Floating Bubbles Canvas ----
+    // ---- Initialize Canvas & Clock ----
     initBubbleCanvas();
+    initClock();
 
     // ---- DOM Elements ----
-    const navTabs = document.querySelectorAll('.b-tab');
+    const navItems = document.querySelectorAll('.nav-item');
     const panels = document.querySelectorAll('.recon-panel');
-    const scanButtons = document.querySelectorAll('.bubble-btn');
+    const scanButtons = document.querySelectorAll('.super-btn');
+    const vectorLabel = document.getElementById('current-vector-label');
     const toastContainer = document.getElementById('toast-container');
+
+    const VECTOR_TITLES = {
+        username: 'Username Reconnaissance',
+        discord:  'Discord Snowflake Intelligence',
+        ip:       'IP Geolocation & Routing',
+        email:    'Email Intelligence & Security',
+        domain:   'Domain WHOIS & Subdomains',
+        phone:    'Phone Carrier & Validation',
+        headers:  'HTTP Security Compliance',
+        hash:     'Cryptographic Hash Identifier'
+    };
 
     // ---- API Routes Map ----
     const API_ROUTES = {
         username: { endpoint: '/api/username', key: 'username' },
+        discord:  { endpoint: '/api/discord',  key: 'id' },
         ip:       { endpoint: '/api/ip',       key: 'ip' },
         email:    { endpoint: '/api/email',    key: 'email' },
         domain:   { endpoint: '/api/domain',   key: 'domain' },
         phone:    { endpoint: '/api/phone',    key: 'phone' },
-        headers:  { endpoint: '/api/headers',  key: 'url' }
+        headers:  { endpoint: '/api/headers',  key: 'url' },
+        hash:     { endpoint: '/api/hash',     key: 'hash' }
     };
 
-    // ---- Tab Switching with Spring Feedback ----
-    navTabs.forEach(tab => {
+    // ---- Sidebar Navigation ----
+    navItems.forEach(tab => {
         tab.addEventListener('click', () => {
             const targetMod = tab.getAttribute('data-tab');
             
-            navTabs.forEach(t => t.classList.remove('active'));
+            navItems.forEach(t => t.classList.remove('active'));
             panels.forEach(p => p.classList.remove('active'));
 
             tab.classList.add('active');
             const targetPanel = document.getElementById(`panel-${targetMod}`);
             if (targetPanel) {
                 targetPanel.classList.add('active');
-                const searchInput = targetPanel.querySelector('.search-bubble-input');
+                if (vectorLabel && VECTOR_TITLES[targetMod]) {
+                    vectorLabel.textContent = VECTOR_TITLES[targetMod];
+                }
+                const searchInput = targetPanel.querySelector('.super-input');
                 if (searchInput) searchInput.focus();
             }
         });
@@ -48,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const queryVal = input ? input.value.trim() : '';
 
             if (!queryVal) {
-                showToast('Please provide a target input!', 'error');
+                showToast('Please provide a target query!', 'error');
                 if (input) input.focus();
                 return;
             }
@@ -58,11 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ---- Enter Key Listener ----
-    document.querySelectorAll('.search-bubble-input').forEach(input => {
+    document.querySelectorAll('.super-input').forEach(input => {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const mod = input.id.replace('input-', '');
-                const btn = document.querySelector(`.bubble-btn[data-module="${mod}"]`);
+                const btn = document.querySelector(`.super-btn[data-module="${mod}"]`);
                 if (btn && !btn.disabled) {
                     btn.click();
                 }
@@ -108,18 +126,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ---- Render Router ----
+    // ---- Result Render Router ----
     function renderModuleResults(module, data, query) {
         const container = document.getElementById(`results-${module}`);
         let html = '';
 
         switch (module) {
             case 'username': html = buildUsernameView(data, query); break;
+            case 'discord':  html = buildDiscordView(data, query); break;
             case 'ip':       html = buildIPView(data, query); break;
             case 'email':    html = buildEmailView(data, query); break;
             case 'domain':   html = buildDomainView(data, query); break;
             case 'phone':    html = buildPhoneView(data, query); break;
             case 'headers':  html = buildHeadersView(data, query); break;
+            case 'hash':     html = buildHashView(data, query); break;
         }
 
         container.innerHTML = html;
@@ -132,19 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Attach Quick Copy listeners
-        container.querySelectorAll('.copy-trigger').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const copyVal = btn.getAttribute('data-copy');
-                if (copyVal) {
-                    navigator.clipboard.writeText(copyVal).then(() => {
-                        showToast('Copied to clipboard!', 'success');
-                    });
-                }
-            });
-        });
-
         // Attach Username Filters
         if (module === 'username') {
             attachUsernameFilterLogic(container, data.results || []);
@@ -152,7 +159,99 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE 1: USERNAME (112+ PLATFORMS + FILTERS)
+    //  MODULE: DISCORD SNOWFLAKE (NEW)
+    // =========================================================
+    function buildDiscordView(data, query) {
+        const badgesHtml = (data.badges && data.badges.length > 0)
+            ? data.badges.map(b => `<span class="badge badge-found">${esc(b)}</span>`).join('')
+            : '<span class="badge badge-found">Standard User</span>';
+
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fa-brands fa-discord"></i> Discord Snowflake: <strong>${esc(data.id || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+            </div>
+
+            <div class="discord-profile-banner">
+                <img src="${esc(data.avatar_url)}" alt="Avatar" class="discord-avatar-large" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                <div class="discord-user-info">
+                    <h3>${esc(data.global_name)}</h3>
+                    <div class="tag">@${esc(data.username)}</div>
+                    <div class="badge-tag-wrap">${badgesHtml}</div>
+                </div>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val purple">${data.account_age_years} yrs</div>
+                    <div class="metric-lbl">Account Age</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.account_age_days} days</div>
+                    <div class="metric-lbl">Days Registered</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val green">${data.bot ? 'BOT / APP' : 'HUMAN'}</div>
+                    <div class="metric-lbl">Entity Type</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">${data.snowflake_metadata.worker_id} / ${data.snowflake_metadata.process_id}</div>
+                    <div class="metric-lbl">Worker / Process</div>
+                </div>
+            </div>
+
+            <div class="data-grid-two">
+                ${infoBox('Exact Registration Time', data.created_at, true, true)}
+                ${infoBox('Discord Snowflake ID', data.id)}
+                ${infoBox('Unix Epoch Timestamp (ms)', data.created_timestamp)}
+                ${infoBox('Internal Sequence Inc', data.snowflake_metadata.increment)}
+                ${infoBox('Avatar Asset URL', data.avatar_url, true, false, true)}
+            </div>
+        `;
+    }
+
+    // =========================================================
+    //  MODULE: HASH IDENTIFIER (NEW)
+    // =========================================================
+    function buildHashView(data, query) {
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fas fa-key"></i> Hash Analysis: <strong>${esc(data.hash || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val green">${data.length} chars</div>
+                    <div class="metric-lbl">Hash Length</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.is_hex ? 'HEXADECIMAL' : 'BASE64/ASCII'}</div>
+                    <div class="metric-lbl">Encoding Format</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">${data.entropy}</div>
+                    <div class="metric-lbl">Shannon Entropy</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val purple">${data.possible_algorithms.length} matches</div>
+                    <div class="metric-lbl">Algorithms</div>
+                </div>
+            </div>
+
+            <div class="sub-header"><i class="fas fa-fingerprint"></i> Primary Algorithm Match</div>
+            <div class="info-item full-span" style="background:rgba(0,232,123,0.1);border-color:var(--neon-green);padding:18px;border-radius:18px;">
+                <div style="font-size:0.75rem;color:var(--neon-green);font-family:var(--font-mono);text-transform:uppercase;">CONFIRMED HIGH PROBABILITY</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-top:4px;">${esc(data.primary_match)}</div>
+            </div>
+
+            <div class="sub-header"><i class="fas fa-list"></i> All Potential Algorithm Matches</div>
+            <div class="intel-code-box">${data.possible_algorithms.map(a => `• ${esc(a)}`).join('\n')}</div>
+        `;
+    }
+
+    // =========================================================
+    //  MODULE: USERNAME (112+ PLATFORMS)
     // =========================================================
     function buildUsernameView(data, query) {
         const list = data.results || [];
@@ -163,11 +262,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="results-meta-bar">
                 <div class="results-title">
-                    <i class="fas fa-radar fa-spin"></i>
+                    <i class="fas fa-bullseye"></i>
                     <span>Target: <strong>${esc(query)}</strong></span>
                 </div>
                 <button class="export-json-btn">
-                    <i class="fas fa-arrow-down-to-bracket"></i> Export JSON
+                    <i class="fas fa-file-export"></i> Export JSON
                 </button>
             </div>
 
@@ -182,11 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="metric-card">
                     <div class="metric-val yellow">${errors.length}</div>
-                    <div class="metric-lbl">Errors / 429</div>
+                    <div class="metric-lbl">Rate / Err</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-val cyan">${data.total_platforms || list.length}</div>
-                    <div class="metric-lbl">Total Scanned</div>
+                    <div class="metric-lbl">Scanned</div>
                 </div>
             </div>
 
@@ -194,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="filter-btn active" data-filter="all">All (${list.length})</button>
                 <button class="filter-btn" data-filter="found">Found (${found.length})</button>
                 <button class="filter-btn" data-filter="not_found">Not Found (${notFound.length})</button>
-                <input type="text" class="filter-search" placeholder="Search 112+ networks...">
+                <input type="text" class="filter-search" placeholder="Filter 112+ networks...">
             </div>
 
             <div class="platform-grid" id="username-platform-grid">
@@ -208,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return '<div class="info-item full-span" style="text-align:center;color:var(--text-muted);padding:24px;">No matching networks found.</div>';
         }
 
-        return items.map((item, idx) => {
+        return items.map(item => {
             const isFound = item.status === 'found';
             const isErr = item.status === 'error';
             const badgeClass = isFound ? 'badge-found' : (isErr ? 'badge-error' : 'badge-not-found');
@@ -219,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : `<span class="platform-link" style="color:var(--text-dim);">${esc(item.platform)}</span>`;
 
             return `
-                <div class="platform-row" style="animation-delay: ${Math.min(idx * 0.015, 0.4)}s;">
+                <div class="platform-row">
                     <div class="platform-left">
                         <div class="platform-title-line">
                             <span class="platform-name">${esc(item.platform)}</span>
@@ -270,14 +369,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE 2: IP INTELLIGENCE
+    //  MODULE: IP INTELLIGENCE
     // =========================================================
     function buildIPView(data, query) {
         const flag = data.countryCode ? getFlagEmoji(data.countryCode) : '🌐';
         return `
             <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-location-dot"></i> IP Location & ASN: <strong>${esc(data.query || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-arrow-down-to-bracket"></i> Export JSON</button>
+                <div class="results-title"><i class="fas fa-network-wired"></i> IP Location & ASN: <strong>${esc(data.query || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
             </div>
             <div class="data-grid-two">
                 ${infoBox('IP Address', data.query || query, true, true)}
@@ -295,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE 3: EMAIL INTELLIGENCE
+    //  MODULE: EMAIL INTELLIGENCE
     // =========================================================
     function buildEmailView(data, query) {
         let mxRows = '';
@@ -312,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const gravatarSection = (data.gravatar && data.gravatar.exists)
             ? `<div class="info-item full-span" style="display:flex;align-items:center;gap:14px;">
-                 <img src="${esc(data.gravatar.url)}" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--neon-green);box-shadow:0 0 14px var(--neon-green);">
+                 <img src="${esc(data.gravatar.url)}" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--neon-green);">
                  <div>
                     <div style="font-family:var(--font-sans);font-size:0.9rem;font-weight:700;color:var(--neon-green);">Gravatar Account Verified</div>
                     <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted);">${esc(data.email)}</div>
@@ -323,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="results-meta-bar">
                 <div class="results-title"><i class="fas fa-at"></i> Target: <strong>${esc(data.email || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-arrow-down-to-bracket"></i> Export JSON</button>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
             </div>
             ${gravatarSection}
             <div class="data-grid-two">
@@ -348,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE 4: DOMAIN RECON
+    //  MODULE: DOMAIN RECON
     // =========================================================
     function buildDomainView(data, query) {
         const w = data.whois || {};
@@ -357,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="results-meta-bar">
                 <div class="results-title"><i class="fas fa-globe"></i> Domain Recon: <strong>${esc(data.domain || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-arrow-down-to-bracket"></i> Export JSON</button>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
             </div>
 
             <div class="sub-header"><i class="fas fa-id-card"></i> Domain WHOIS Summary</div>
@@ -380,14 +479,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE 5: PHONE INTELLIGENCE
+    //  MODULE: PHONE INTELLIGENCE
     // =========================================================
     function buildPhoneView(data, query) {
         const fmt = data.formatted || {};
         return `
             <div class="results-meta-bar">
                 <div class="results-title"><i class="fas fa-phone-volume"></i> Phone Intel: <strong>${esc(data.input || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-arrow-down-to-bracket"></i> Export JSON</button>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
             </div>
             <div class="data-grid-two">
                 ${infoBox('Valid Phone', data.valid ? 'YES (VALID NUMBER)' : 'NO', false, data.valid)}
@@ -407,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE 6: HTTP HEADERS & SECURITY
+    //  MODULE: HTTP HEADERS & SECURITY
     // =========================================================
     function buildHeadersView(data, query) {
         const auditList = (data.security_audit || []).map(a => `
@@ -432,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="results-meta-bar">
                 <div class="results-title"><i class="fas fa-shield-virus"></i> Response Headers: <strong>${esc(data.url || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-arrow-down-to-bracket"></i> Export JSON</button>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
             </div>
             <div class="data-grid-two">
                 ${infoBox('HTTP Status', `${data.status_code || 'N/A'} OK`, false, true)}
@@ -499,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="loading-box">
                 <div class="loading-pulse-text">
                     <i class="fas fa-crosshairs fa-spin"></i>
-                    <span>EXECUTING PROBES ON: ${esc(target)}</span>
+                    <span>EXECUTING VECTOR PROBE ON: ${esc(target)}</span>
                 </div>
                 <div class="loading-track">
                     <div class="loading-bar-fill"></div>
@@ -548,9 +647,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2800);
     }
 
-    // =========================================================
-    //  INTERACTIVE BUBBLE CANVAS SIMULATOR
-    // =========================================================
+    function initClock() {
+        const clock = document.getElementById('live-clock');
+        if (!clock) return;
+        function update() {
+            const now = new Date();
+            clock.textContent = now.toUTCString().split(' ')[4] + ' UTC';
+        }
+        setInterval(update, 1000);
+        update();
+    }
+
     function initBubbleCanvas() {
         const canvas = document.getElementById('bubble-canvas');
         if (!canvas) return;
@@ -565,28 +672,26 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', resize);
         resize();
 
-        // Generate colorful floating bubbles
         const colors = [
-            'rgba(0, 232, 123, 0.25)',
-            'rgba(0, 210, 255, 0.25)',
-            'rgba(176, 92, 255, 0.2)',
-            'rgba(255, 59, 136, 0.18)'
+            'rgba(0, 232, 123, 0.22)',
+            'rgba(0, 210, 255, 0.22)',
+            'rgba(155, 92, 255, 0.2)',
+            'rgba(88, 101, 242, 0.2)'
         ];
 
-        for (let i = 0; i < 35; i++) {
+        for (let i = 0; i < 30; i++) {
             bubbles.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                radius: Math.random() * 18 + 6,
-                vx: (Math.random() - 0.5) * 0.6,
-                vy: -Math.random() * 0.8 - 0.2,
+                radius: Math.random() * 16 + 6,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: -Math.random() * 0.7 - 0.2,
                 color: colors[Math.floor(Math.random() * colors.length)],
                 pulse: Math.random() * Math.PI,
                 pulseSpeed: 0.02 + Math.random() * 0.02
             });
         }
 
-        // Mouse reaction
         let mouseX = -1000, mouseY = -1000;
         window.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
@@ -601,7 +706,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 b.y += b.vy;
                 b.pulse += b.pulseSpeed;
 
-                // Wrap around top
                 if (b.y < -b.radius) {
                     b.y = height + b.radius;
                     b.x = Math.random() * width;
@@ -609,27 +713,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (b.x < -b.radius) b.x = width + b.radius;
                 if (b.x > width + b.radius) b.x = -b.radius;
 
-                // Mouse push
                 const dx = b.x - mouseX;
                 const dy = b.y - mouseY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 120) {
-                    const force = (120 - dist) / 120;
-                    b.x += (dx / dist) * force * 3;
-                    b.y += (dy / dist) * force * 3;
+                if (dist < 100) {
+                    const force = (100 - dist) / 100;
+                    b.x += (dx / dist) * force * 2.5;
+                    b.y += (dy / dist) * force * 2.5;
                 }
 
-                // Render glowing bubble
                 const currentRadius = b.radius + Math.sin(b.pulse) * 2;
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, Math.max(1, currentRadius), 0, Math.PI * 2);
                 ctx.fillStyle = b.color;
                 ctx.fill();
 
-                // Inner highlight
                 ctx.beginPath();
                 ctx.arc(b.x - currentRadius * 0.3, b.y - currentRadius * 0.3, currentRadius * 0.3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
                 ctx.fill();
             });
 
