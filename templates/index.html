@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SPECTRE - Open Source Intelligence Platform">
+    <title>SPECTRE // OSINT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Ambient Background Effects -->
+    <div class="bg-effects">
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="scan-line"></div>
+            <h1 class="logo" data-text="SPECTRE">SPECTRE</h1>
+            <p class="subtitle">Open Source Intelligence Platform</p>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <button class="tab active" data-tab="username">
+            <i class="fas fa-user-secret"></i>
+            <span>Username</span>
+        </button>
+        <button class="tab" data-tab="ip">
+            <i class="fas fa-network-wired"></i>
+            <span>IP Intel</span>
+        </button>
+        <button class="tab" data-tab="email">
+            <i class="fas fa-at"></i>
+            <span>Email</span>
+        </button>
+        <button class="tab" data-tab="domain">
+            <i class="fas fa-globe"></i>
+            <span>Domain</span>
+        </button>
+        <button class="tab" data-tab="phone">
+            <i class="fas fa-mobile-screen-button"></i>
+            <span>Phone</span>
+        </button>
+        <button class="tab" data-tab="headers">
+            <i class="fas fa-shield-halved"></i>
+            <span>Headers</span>
+        </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Username Panel -->
+        <section class="panel active" id="panel-username">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-user-secret"></i> Username Reconnaissance</h2>
+                <p class="panel-desc">Hunt a username across 39 platforms. Parallel scanning identifies digital footprints in seconds.</p>
+            </div>
+            <div class="input-group">
+                <input type="text" id="input-username" class="scan-input" placeholder="target username" autocomplete="off" spellcheck="false">
+                <button class="scan-btn" data-module="username">
+                    <i class="fas fa-crosshairs"></i> SCAN
+                </button>
+            </div>
+            <div class="results-container" id="results-username"></div>
+        </section>
+
+        <!-- IP Panel -->
+        <section class="panel" id="panel-ip">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-network-wired"></i> IP Intelligence</h2>
+                <p class="panel-desc">Geolocation, ISP, ASN, reverse DNS, and proxy detection for any IPv4 or IPv6 address.</p>
+            </div>
+            <div class="input-group">
+                <input type="text" id="input-ip" class="scan-input" placeholder="8.8.8.8" autocomplete="off" spellcheck="false">
+                <button class="scan-btn" data-module="ip">
+                    <i class="fas fa-crosshairs"></i> SCAN
+                </button>
+            </div>
+            <div class="results-container" id="results-ip"></div>
+        </section>
+
+        <!-- Email Panel -->
+        <section class="panel" id="panel-email">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-at"></i> Email Intelligence</h2>
+                <p class="panel-desc">MX records, mail provider, SPF/DMARC analysis, Gravatar check, and domain WHOIS.</p>
+            </div>
+            <div class="input-group">
+                <input type="text" id="input-email" class="scan-input" placeholder="target@example.com" autocomplete="off" spellcheck="false">
+                <button class="scan-btn" data-module="email">
+                    <i class="fas fa-crosshairs"></i> SCAN
+                </button>
+            </div>
+            <div class="results-container" id="results-email"></div>
+        </section>
+
+        <!-- Domain Panel -->
+        <section class="panel" id="panel-domain">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-globe"></i> Domain Reconnaissance</h2>
+                <p class="panel-desc">WHOIS, DNS records, SSL certificates, subdomain enumeration, and technology detection.</p>
+            </div>
+            <div class="input-group">
+                <input type="text" id="input-domain" class="scan-input" placeholder="example.com" autocomplete="off" spellcheck="false">
+                <button class="scan-btn" data-module="domain">
+                    <i class="fas fa-crosshairs"></i> SCAN
+                </button>
+            </div>
+            <div class="results-container" id="results-domain"></div>
+        </section>
+
+        <!-- Phone Panel -->
+        <section class="panel" id="panel-phone">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-mobile-screen-button"></i> Phone Analysis</h2>
+                <p class="panel-desc">Carrier detection, line type, country and timezone identification, number validation.</p>
+            </div>
+            <div class="input-group">
+                <input type="text" id="input-phone" class="scan-input" placeholder="+14155552671" autocomplete="off" spellcheck="false">
+                <button class="scan-btn" data-module="phone">
+                    <i class="fas fa-crosshairs"></i> SCAN
+                </button>
+            </div>
+            <div class="results-container" id="results-phone"></div>
+        </section>
+
+        <!-- Headers Panel -->
+        <section class="panel" id="panel-headers">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-shield-halved"></i> HTTP Headers & Security</h2>
+                <p class="panel-desc">Security header audit, server fingerprinting, cookie analysis, SSL inspection, redirect tracing.</p>
+            </div>
+            <div class="input-group">
+                <input type="text" id="input-headers" class="scan-input" placeholder="https://example.com" autocomplete="off" spellcheck="false">
+                <button class="scan-btn" data-module="headers">
+                    <i class="fas fa-crosshairs"></i> SCAN
+                </button>
+            </div>
+            <div class="results-container" id="results-headers"></div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>SPECTRE <span class="accent">//</span> Intelligence Platform</p>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
