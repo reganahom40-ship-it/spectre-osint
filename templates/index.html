@@ -3,70 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SPECTRE // OSINT Platform</title>
+    <title>SPECTRE // OSINT Recon</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css?v=3">
+    <link rel="stylesheet" href="/static/css/style.css?v=4">
 </head>
 <body>
-    <div class="ambient-glow glow-1"></div>
-    <div class="ambient-glow glow-2"></div>
+    <!-- Interactive Floating Bubble Canvas -->
+    <canvas id="bubble-canvas"></canvas>
+
+    <!-- Glowing Background Aura Orbs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
 
     <div class="app-container">
-        <!-- Header -->
+        <!-- Floating Header -->
         <header class="app-header">
-            <div class="header-badge">
-                <span class="status-dot"></span> V2.5 // LIVE RECON
+            <div class="header-pill-badge">
+                <span class="live-dot"></span>
+                <span class="badge-text">SPECTRE ENGINE v3.0</span>
+                <span class="pill-divider">/</span>
+                <span class="pill-highlight">112+ PLATFORMS</span>
             </div>
-            <h1 class="logo">SPECTRE</h1>
-            <p class="tagline">MULTI-VECTOR INTELLIGENCE RECONNAISSANCE PLATFORM</p>
+            <h1 class="logo-title">
+                <span class="bubble-letter">S</span>
+                <span class="bubble-letter">P</span>
+                <span class="bubble-letter">E</span>
+                <span class="bubble-letter">C</span>
+                <span class="bubble-letter">T</span>
+                <span class="bubble-letter">R</span>
+                <span class="bubble-letter">E</span>
+            </h1>
+            <p class="tagline">Next-Gen Open Source Intelligence & Network Reconnaissance</p>
         </header>
 
-        <!-- Navigation Tabs -->
-        <nav class="tabs-nav">
-            <button class="nav-tab active" data-tab="username">
-                <i class="fas fa-user-ninja"></i>
-                <span>Username (105+)</span>
+        <!-- Bubbly Floating Tabs Navigation -->
+        <nav class="bubble-nav">
+            <button class="b-tab active" data-tab="username">
+                <div class="b-tab-icon"><i class="fas fa-fingerprint"></i></div>
+                <span>Username</span>
+                <span class="tab-chip">112</span>
             </button>
-            <button class="nav-tab" data-tab="ip">
-                <i class="fas fa-network-wired"></i>
+            <button class="b-tab" data-tab="ip">
+                <div class="b-tab-icon"><i class="fas fa-network-wired"></i></div>
                 <span>IP Intel</span>
             </button>
-            <button class="nav-tab" data-tab="email">
-                <i class="fas fa-at"></i>
-                <span>Email Intel</span>
+            <button class="b-tab" data-tab="email">
+                <div class="b-tab-icon"><i class="fas fa-envelope-open-text"></i></div>
+                <span>Email</span>
             </button>
-            <button class="nav-tab" data-tab="domain">
-                <i class="fas fa-globe"></i>
-                <span>Domain Recon</span>
+            <button class="b-tab" data-tab="domain">
+                <div class="b-tab-icon"><i class="fas fa-globe-americas"></i></div>
+                <span>Domain</span>
             </button>
-            <button class="nav-tab" data-tab="phone">
-                <i class="fas fa-phone-alt"></i>
-                <span>Phone Lookup</span>
+            <button class="b-tab" data-tab="phone">
+                <div class="b-tab-icon"><i class="fas fa-mobile-screen-button"></i></div>
+                <span>Phone</span>
             </button>
-            <button class="nav-tab" data-tab="headers">
-                <i class="fas fa-shield-alt"></i>
-                <span>HTTP Security</span>
+            <button class="b-tab" data-tab="headers">
+                <div class="b-tab-icon"><i class="fas fa-shield-halved"></i></div>
+                <span>Headers</span>
             </button>
         </nav>
 
-        <!-- Main Content Panels -->
+        <!-- Dynamic Main Content Wrapper -->
         <main class="panels-wrapper">
 
             <!-- Panel 1: Username -->
             <section class="recon-panel active" id="panel-username">
-                <div class="panel-hero">
-                    <h2><i class="fas fa-user-ninja"></i> Global Username Recon</h2>
-                    <p>Scans 105+ platforms across social, dev, gaming, crypto, and creator networks in ~2 seconds.</p>
+                <div class="bubble-card hero-bubble">
+                    <div class="hero-left">
+                        <div class="hero-avatar-icon"><i class="fas fa-user-secret"></i></div>
+                        <div>
+                            <h2>Multi-Platform Identity Recon</h2>
+                            <p>Probes 112+ social, code, creator, and gaming networks in parallel (~2s).</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="search-bar-box">
-                    <div class="input-icon"><i class="fas fa-magnifying-glass"></i></div>
-                    <input type="text" id="input-username" class="search-input" placeholder="Enter target handle / username..." autocomplete="off" spellcheck="false">
-                    <button class="action-scan-btn" data-module="username">
-                        <span>SCAN NOW</span>
-                        <i class="fas fa-arrow-right"></i>
+
+                <div class="bubble-search-box">
+                    <div class="search-bubble-icon"><i class="fas fa-at"></i></div>
+                    <input type="text" id="input-username" class="search-bubble-input" placeholder="Enter target username..." autocomplete="off" spellcheck="false">
+                    <button class="bubble-btn" data-module="username">
+                        <span>Launch Scan</span>
+                        <div class="btn-ripple-icon"><i class="fas fa-bolt"></i></div>
                     </button>
                 </div>
                 <div class="panel-results" id="results-username"></div>
@@ -74,16 +97,22 @@
 
             <!-- Panel 2: IP -->
             <section class="recon-panel" id="panel-ip">
-                <div class="panel-hero">
-                    <h2><i class="fas fa-network-wired"></i> IP Geolocation & ASN</h2>
-                    <p>Extract coordinates, ISP, ASN org, reverse DNS, and proxy / VPN flags for IPv4 & IPv6.</p>
+                <div class="bubble-card hero-bubble">
+                    <div class="hero-left">
+                        <div class="hero-avatar-icon"><i class="fas fa-satellite"></i></div>
+                        <div>
+                            <h2>IP Intelligence & Proxy Detection</h2>
+                            <p>Pinpoints physical coordinates, ASN routing, reverse DNS hostnames, and VPN/datacenter status.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="search-bar-box">
-                    <div class="input-icon"><i class="fas fa-globe"></i></div>
-                    <input type="text" id="input-ip" class="search-input" placeholder="e.g. 1.1.1.1 or 8.8.8.8" autocomplete="off" spellcheck="false">
-                    <button class="action-scan-btn" data-module="ip">
-                        <span>SCAN NOW</span>
-                        <i class="fas fa-arrow-right"></i>
+
+                <div class="bubble-search-box">
+                    <div class="search-bubble-icon"><i class="fas fa-globe"></i></div>
+                    <input type="text" id="input-ip" class="search-bubble-input" placeholder="e.g. 1.1.1.1 or 8.8.8.8" autocomplete="off" spellcheck="false">
+                    <button class="bubble-btn" data-module="ip">
+                        <span>Trace IP</span>
+                        <div class="btn-ripple-icon"><i class="fas fa-bolt"></i></div>
                     </button>
                 </div>
                 <div class="panel-results" id="results-ip"></div>
@@ -91,16 +120,22 @@
 
             <!-- Panel 3: Email -->
             <section class="recon-panel" id="panel-email">
-                <div class="panel-hero">
-                    <h2><i class="fas fa-at"></i> Email Intelligence</h2>
-                    <p>Pulls MX servers, mail provider fingerprinting, SPF/DMARC policies, Gravatar, and WHOIS.</p>
+                <div class="bubble-card hero-bubble">
+                    <div class="hero-left">
+                        <div class="hero-avatar-icon"><i class="fas fa-inbox"></i></div>
+                        <div>
+                            <h2>Email Footprint & DNS Security</h2>
+                            <p>Discovers mail exchange nodes, provider fingerprinting, SPF/DMARC policies, and Gravatar presence.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="search-bar-box">
-                    <div class="input-icon"><i class="fas fa-envelope"></i></div>
-                    <input type="text" id="input-email" class="search-input" placeholder="target@example.com" autocomplete="off" spellcheck="false">
-                    <button class="action-scan-btn" data-module="email">
-                        <span>SCAN NOW</span>
-                        <i class="fas fa-arrow-right"></i>
+
+                <div class="bubble-search-box">
+                    <div class="search-bubble-icon"><i class="fas fa-envelope"></i></div>
+                    <input type="text" id="input-email" class="search-bubble-input" placeholder="target@example.com" autocomplete="off" spellcheck="false">
+                    <button class="bubble-btn" data-module="email">
+                        <span>Scan Email</span>
+                        <div class="btn-ripple-icon"><i class="fas fa-bolt"></i></div>
                     </button>
                 </div>
                 <div class="panel-results" id="results-email"></div>
@@ -108,16 +143,22 @@
 
             <!-- Panel 4: Domain -->
             <section class="recon-panel" id="panel-domain">
-                <div class="panel-hero">
-                    <h2><i class="fas fa-globe"></i> Domain Reconnaissance</h2>
-                    <p>Full WHOIS, complete DNS records (A, AAAA, MX, TXT, SOA), SSL certificate chain, and crt.sh subdomains.</p>
+                <div class="bubble-card hero-bubble">
+                    <div class="hero-left">
+                        <div class="hero-avatar-icon"><i class="fas fa-diagram-project"></i></div>
+                        <div>
+                            <h2>Domain & Subdomain Enumeration</h2>
+                            <p>Pulls full WHOIS registry, complete DNS mapping, SSL hierarchy, and certificate transparency subdomains.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="search-bar-box">
-                    <div class="input-icon"><i class="fas fa-link"></i></div>
-                    <input type="text" id="input-domain" class="search-input" placeholder="e.g. targetdomain.com" autocomplete="off" spellcheck="false">
-                    <button class="action-scan-btn" data-module="domain">
-                        <span>SCAN NOW</span>
-                        <i class="fas fa-arrow-right"></i>
+
+                <div class="bubble-search-box">
+                    <div class="search-bubble-icon"><i class="fas fa-link"></i></div>
+                    <input type="text" id="input-domain" class="search-bubble-input" placeholder="e.g. target.com" autocomplete="off" spellcheck="false">
+                    <button class="bubble-btn" data-module="domain">
+                        <span>Inspect Domain</span>
+                        <div class="btn-ripple-icon"><i class="fas fa-bolt"></i></div>
                     </button>
                 </div>
                 <div class="panel-results" id="results-domain"></div>
@@ -125,16 +166,22 @@
 
             <!-- Panel 5: Phone -->
             <section class="recon-panel" id="panel-phone">
-                <div class="panel-hero">
-                    <h2><i class="fas fa-phone-alt"></i> Phone Intelligence</h2>
-                    <p>Carrier analysis, line type (Mobile/VOIP/Landline), timezones, country code validation & E.164 formats.</p>
+                <div class="bubble-card hero-bubble">
+                    <div class="hero-left">
+                        <div class="hero-avatar-icon"><i class="fas fa-phone-volume"></i></div>
+                        <div>
+                            <h2>Phone & Telco Intelligence</h2>
+                            <p>Identifies carrier networks, line classification (Mobile / VOIP / Landline), timezones, and valid dial formats.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="search-bar-box">
-                    <div class="input-icon"><i class="fas fa-hashtag"></i></div>
-                    <input type="text" id="input-phone" class="search-input" placeholder="+14155552671" autocomplete="off" spellcheck="false">
-                    <button class="action-scan-btn" data-module="phone">
-                        <span>SCAN NOW</span>
-                        <i class="fas fa-arrow-right"></i>
+
+                <div class="bubble-search-box">
+                    <div class="search-bubble-icon"><i class="fas fa-hashtag"></i></div>
+                    <input type="text" id="input-phone" class="search-bubble-input" placeholder="+14155552671" autocomplete="off" spellcheck="false">
+                    <button class="bubble-btn" data-module="phone">
+                        <span>Lookup Phone</span>
+                        <div class="btn-ripple-icon"><i class="fas fa-bolt"></i></div>
                     </button>
                 </div>
                 <div class="panel-results" id="results-phone"></div>
@@ -142,16 +189,22 @@
 
             <!-- Panel 6: Headers -->
             <section class="recon-panel" id="panel-headers">
-                <div class="panel-hero">
-                    <h2><i class="fas fa-shield-alt"></i> HTTP Headers & Security Audit</h2>
-                    <p>Audit HSTS, CSP, X-Frame-Options, server headers, cookie flags (HttpOnly/Secure/SameSite), and redirects.</p>
+                <div class="bubble-card hero-bubble">
+                    <div class="hero-left">
+                        <div class="hero-avatar-icon"><i class="fas fa-shield-virus"></i></div>
+                        <div>
+                            <h2>HTTP Security Compliance Audit</h2>
+                            <p>Evaluates HSTS, CSP, X-Frame headers, web server signatures, cookie protection flags, and redirects.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="search-bar-box">
-                    <div class="input-icon"><i class="fas fa-server"></i></div>
-                    <input type="text" id="input-headers" class="search-input" placeholder="https://example.com" autocomplete="off" spellcheck="false">
-                    <button class="action-scan-btn" data-module="headers">
-                        <span>SCAN NOW</span>
-                        <i class="fas fa-arrow-right"></i>
+
+                <div class="bubble-search-box">
+                    <div class="search-bubble-icon"><i class="fas fa-server"></i></div>
+                    <input type="text" id="input-headers" class="search-bubble-input" placeholder="https://example.com" autocomplete="off" spellcheck="false">
+                    <button class="bubble-btn" data-module="headers">
+                        <span>Analyze URL</span>
+                        <div class="btn-ripple-icon"><i class="fas fa-bolt"></i></div>
                     </button>
                 </div>
                 <div class="panel-results" id="results-headers"></div>
@@ -159,14 +212,14 @@
 
         </main>
 
-        <!-- Footer -->
-        <footer class="app-footer">
-            <div class="footer-inner">
-                <span>SPECTRE INTELLIGENCE SYSTEM</span>
-                <span class="sep">•</span>
-                <span>ZERO-API KEY ENGINE</span>
-                <span class="sep">•</span>
-                <span>HIGH CONCURRENCY PROBING</span>
+        <!-- Bubbly Floating Footer -->
+        <footer class="bubble-footer">
+            <div class="footer-bubble-inner">
+                <span class="live-pill"><i class="fas fa-circle-nodes"></i> ACTIVE RECON ENGINE</span>
+                <span>•</span>
+                <span>PARALLEL FAST ENGINE</span>
+                <span>•</span>
+                <span>ZERO CONFIG REQUIRED</span>
             </div>
         </footer>
     </div>
@@ -174,6 +227,6 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <script src="/static/js/app.js?v=3"></script>
+    <script src="/static/js/app.js?v=4"></script>
 </body>
 </html>
