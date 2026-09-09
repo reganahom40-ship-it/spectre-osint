@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css?v=5">
+    <link rel="stylesheet" href="/static/css/style.css?v=6">
 </head>
 <body class="sidebar-layout">
     <!-- Interactive Canvas Background -->
@@ -31,12 +31,12 @@
                     </div>
                     <div>
                         <h1 class="sidebar-logo-text">SPECTRE</h1>
-                        <span class="sidebar-version">v3.5 // OVERPOWERED</span>
+                        <span class="sidebar-version">v4.0 // ELITE EDITION</span>
                     </div>
                 </div>
                 <div class="sidebar-status-pill">
                     <span class="live-dot"></span>
-                    <span>ALL SYSTEMS ONLINE</span>
+                    <span>10 RECON VECTORS LIVE</span>
                 </div>
             </div>
 
@@ -52,13 +52,22 @@
                     <span class="nav-chip green">112</span>
                 </button>
 
+                <button class="nav-item" data-tab="dorks">
+                    <div class="nav-item-icon dorks-icon"><i class="fas fa-fire-flame-curved"></i></div>
+                    <div class="nav-item-text">
+                        <span class="item-title">Google Dork Engine</span>
+                        <span class="item-sub">Exposed Files, Buckets & Portals</span>
+                    </div>
+                    <span class="nav-chip pink">PRO</span>
+                </button>
+
                 <button class="nav-item" data-tab="discord">
                     <div class="nav-item-icon discord-icon"><i class="fa-brands fa-discord"></i></div>
                     <div class="nav-item-text">
                         <span class="item-title">Discord Snowflake</span>
                         <span class="item-sub">Exact Reg Time & Profile</span>
                     </div>
-                    <span class="nav-chip purple">NEW</span>
+                    <span class="nav-chip purple">ID</span>
                 </button>
 
                 <button class="nav-item" data-tab="ip">
@@ -67,6 +76,15 @@
                         <span class="item-title">IP Intelligence</span>
                         <span class="item-sub">Geo, ASN, VPN Flag</span>
                     </div>
+                </button>
+
+                <button class="nav-item" data-tab="bgp">
+                    <div class="nav-item-icon bgp-icon"><i class="fas fa-diagram-project"></i></div>
+                    <div class="nav-item-text">
+                        <span class="item-title">BGP Routing & ASN</span>
+                        <span class="item-sub">Prefixes, RIPE Stat & Peers</span>
+                    </div>
+                    <span class="nav-chip cyan">BGP</span>
                 </button>
 
                 <button class="nav-item" data-tab="email">
@@ -107,22 +125,21 @@
                         <span class="item-title">Hash Identifier</span>
                         <span class="item-sub">MD5, SHA, bcrypt, NTLM</span>
                     </div>
-                    <span class="nav-chip cyan">NEW</span>
                 </button>
             </nav>
 
             <div class="sidebar-footer">
                 <div class="sidebar-stats-card">
                     <div class="stat-line">
+                        <span>TOTAL VECTORS</span>
+                        <span class="green-text">10 MODULES</span>
+                    </div>
+                    <div class="stat-line">
                         <span>ENGINE SPEED</span>
-                        <span class="green-text">~2.2s PROBE</span>
+                        <span class="cyan-text">~2.2s PROBE</span>
                     </div>
                     <div class="stat-line">
-                        <span>CONCURRENCY</span>
-                        <span class="cyan-text">50 WORKERS</span>
-                    </div>
-                    <div class="stat-line">
-                        <span>CLOUD HOST</span>
+                        <span>CLOUD STATUS</span>
                         <span class="yellow-text">RENDER 24/7</span>
                     </div>
                 </div>
@@ -165,7 +182,27 @@
                 <div class="panel-results" id="results-username"></div>
             </section>
 
-            <!-- Panel 2: Discord Snowflake (NEW) -->
+            <!-- Panel 2: Google Dorks (NEW) -->
+            <section class="recon-panel" id="panel-dorks">
+                <div class="stage-hero-card">
+                    <div class="hero-icon-box dorks-bg"><i class="fas fa-fire-flame-curved"></i></div>
+                    <div class="hero-details">
+                        <h2>Google Dork & Passive Recon Engine</h2>
+                        <p>Generates targeted search queries for exposed environment configs, database dumps, cloud buckets, admin gateways, and public documents.</p>
+                    </div>
+                </div>
+                <div class="super-search-box">
+                    <div class="search-lead-icon"><i class="fas fa-magnifying-glass"></i></div>
+                    <input type="text" id="input-dorks" class="super-input" placeholder="Enter domain or organization name (e.g. example.com)..." autocomplete="off" spellcheck="false">
+                    <button class="super-btn" data-module="dorks">
+                        <span>GENERATE DORKS</span>
+                        <i class="fas fa-bolt"></i>
+                    </button>
+                </div>
+                <div class="panel-results" id="results-dorks"></div>
+            </section>
+
+            <!-- Panel 3: Discord Snowflake -->
             <section class="recon-panel" id="panel-discord">
                 <div class="stage-hero-card">
                     <div class="hero-icon-box discord-bg"><i class="fa-brands fa-discord"></i></div>
@@ -185,7 +222,7 @@
                 <div class="panel-results" id="results-discord"></div>
             </section>
 
-            <!-- Panel 3: IP -->
+            <!-- Panel 4: IP -->
             <section class="recon-panel" id="panel-ip">
                 <div class="stage-hero-card">
                     <div class="hero-icon-box"><i class="fas fa-network-wired"></i></div>
@@ -205,7 +242,27 @@
                 <div class="panel-results" id="results-ip"></div>
             </section>
 
-            <!-- Panel 4: Email -->
+            <!-- Panel 5: BGP Routing (NEW) -->
+            <section class="recon-panel" id="panel-bgp">
+                <div class="stage-hero-card">
+                    <div class="hero-icon-box bgp-bg"><i class="fas fa-diagram-project"></i></div>
+                    <div class="hero-details">
+                        <h2>Autonomous System (BGP) Routing Intel</h2>
+                        <p>Inspects Autonomous System Numbers (ASNs), announced IPv4/IPv6 CIDR prefixes, and upstream network routing from RIPE Stat.</p>
+                    </div>
+                </div>
+                <div class="super-search-box">
+                    <div class="search-lead-icon"><i class="fas fa-route"></i></div>
+                    <input type="text" id="input-bgp" class="super-input" placeholder="Enter ASN (e.g. AS15169 for Google, AS13335 for Cloudflare)..." autocomplete="off" spellcheck="false">
+                    <button class="super-btn" data-module="bgp">
+                        <span>ANALYZE BGP</span>
+                        <i class="fas fa-bolt"></i>
+                    </button>
+                </div>
+                <div class="panel-results" id="results-bgp"></div>
+            </section>
+
+            <!-- Panel 6: Email -->
             <section class="recon-panel" id="panel-email">
                 <div class="stage-hero-card">
                     <div class="hero-icon-box"><i class="fas fa-envelope-open-text"></i></div>
@@ -225,7 +282,7 @@
                 <div class="panel-results" id="results-email"></div>
             </section>
 
-            <!-- Panel 5: Domain -->
+            <!-- Panel 7: Domain -->
             <section class="recon-panel" id="panel-domain">
                 <div class="stage-hero-card">
                     <div class="hero-icon-box"><i class="fas fa-globe-americas"></i></div>
@@ -245,7 +302,7 @@
                 <div class="panel-results" id="results-domain"></div>
             </section>
 
-            <!-- Panel 6: Phone -->
+            <!-- Panel 8: Phone -->
             <section class="recon-panel" id="panel-phone">
                 <div class="stage-hero-card">
                     <div class="hero-icon-box"><i class="fas fa-mobile-screen-button"></i></div>
@@ -265,7 +322,7 @@
                 <div class="panel-results" id="results-phone"></div>
             </section>
 
-            <!-- Panel 7: Headers -->
+            <!-- Panel 9: Headers -->
             <section class="recon-panel" id="panel-headers">
                 <div class="stage-hero-card">
                     <div class="hero-icon-box"><i class="fas fa-shield-halved"></i></div>
@@ -285,7 +342,7 @@
                 <div class="panel-results" id="results-headers"></div>
             </section>
 
-            <!-- Panel 8: Hash (NEW) -->
+            <!-- Panel 10: Hash -->
             <section class="recon-panel" id="panel-hash">
                 <div class="stage-hero-card">
                     <div class="hero-icon-box"><i class="fas fa-key"></i></div>
@@ -311,6 +368,6 @@
     <!-- Toast Notification Container -->
     <div id="toast-container"></div>
 
-    <script src="/static/js/app.js?v=5"></script>
+    <script src="/static/js/app.js?v=6"></script>
 </body>
 </html>

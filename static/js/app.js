@@ -1,5 +1,5 @@
 /* =========================================================
-   SPECTRE INTELLIGENCE PLATFORM — APP.JS (V3.5)
+   SPECTRE INTELLIGENCE PLATFORM — APP.JS (V4.0)
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,8 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const VECTOR_TITLES = {
         username: 'Username Reconnaissance',
+        dorks:    'Google Dork & Passive Recon Engine',
         discord:  'Discord Snowflake Intelligence',
         ip:       'IP Geolocation & Routing',
+        bgp:      'Autonomous System (BGP) Routing',
         email:    'Email Intelligence & Security',
         domain:   'Domain WHOIS & Subdomains',
         phone:    'Phone Carrier & Validation',
@@ -28,8 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- API Routes Map ----
     const API_ROUTES = {
         username: { endpoint: '/api/username', key: 'username' },
+        dorks:    { endpoint: '/api/dorks',    key: 'target' },
         discord:  { endpoint: '/api/discord',  key: 'id' },
         ip:       { endpoint: '/api/ip',       key: 'ip' },
+        bgp:      { endpoint: '/api/bgp',      key: 'asn' },
         email:    { endpoint: '/api/email',    key: 'email' },
         domain:   { endpoint: '/api/domain',   key: 'domain' },
         phone:    { endpoint: '/api/phone',    key: 'phone' },
@@ -133,8 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switch (module) {
             case 'username': html = buildUsernameView(data, query); break;
+            case 'dorks':    html = buildDorksView(data, query); break;
             case 'discord':  html = buildDiscordView(data, query); break;
             case 'ip':       html = buildIPView(data, query); break;
+            case 'bgp':      html = buildBGPView(data, query); break;
             case 'email':    html = buildEmailView(data, query); break;
             case 'domain':   html = buildDomainView(data, query); break;
             case 'phone':    html = buildPhoneView(data, query); break;
@@ -159,7 +165,113 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE: DISCORD SNOWFLAKE (NEW)
+    //  MODULE: GOOGLE DORKS GENERATOR (NEW)
+    // =========================================================
+    function buildDorksView(data, query) {
+        const categories = data.categories || [];
+        const catCards = categories.map(cat => {
+            const dorkItems = (cat.dorks || []).map(d => `
+                <div class="dork-item-box">
+                    <div class="dork-item-top">
+                        <span class="dork-title">${esc(d.title)}</span>
+                        <div class="dork-links">
+                            <a href="${esc(d.google_url)}" target="_blank" rel="noopener" class="dork-btn google">
+                                <i class="fa-brands fa-google"></i> Google
+                            </a>
+                            <a href="${esc(d.duckduckgo_url)}" target="_blank" rel="noopener" class="dork-btn ddg">
+                                <i class="fa-solid fa-duck"></i> DuckDuckGo
+                            </a>
+                        </div>
+                    </div>
+                    <div class="dork-query-text">${esc(d.query)}</div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="dork-category-card">
+                    <div class="dork-category-header">
+                        <i class="fas ${esc(cat.icon || 'fa-folder')}"></i>
+                        <span>${esc(cat.category)}</span>
+                    </div>
+                    <div class="dork-category-body">
+                        ${dorkItems}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fas fa-fire-flame-curved"></i> Passive Dorks for Target: <strong>${esc(data.target || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val pink">${data.total_dorks}</div>
+                    <div class="metric-lbl">Target Dorks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.total_categories}</div>
+                    <div class="metric-lbl">Vectors</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val green">100%</div>
+                    <div class="metric-lbl">Passive Recon</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">DIRECT</div>
+                    <div class="metric-lbl">1-Click Launch</div>
+                </div>
+            </div>
+
+            ${catCards}
+        `;
+    }
+
+    // =========================================================
+    //  MODULE: BGP ROUTING INTEL (NEW)
+    // =========================================================
+    function buildBGPView(data, query) {
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fas fa-diagram-project"></i> BGP Routing & ASN: <strong>${esc(data.asn || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val green">${data.total_announced_prefixes}</div>
+                    <div class="metric-lbl">Total Prefixes</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.prefixes_v4_count}</div>
+                    <div class="metric-lbl">IPv4 Blocks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val purple">${data.prefixes_v6_count}</div>
+                    <div class="metric-lbl">IPv6 Blocks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">RIPE</div>
+                    <div class="metric-lbl">Data Source</div>
+                </div>
+            </div>
+
+            <div class="data-grid-two">
+                ${infoBox('Autonomous System Number', data.asn, false, true)}
+                ${infoBox('Resource Name', data.resource || 'N/A')}
+                ${infoBox('Network Owner / Holder', data.holder || 'N/A', true, false, true)}
+                ${infoBox('Hurricane Electric Looking Glass', `<a href="${esc(data.looking_glass_url)}" target="_blank" rel="noopener" style="color:var(--neon-cyan);">${esc(data.looking_glass_url)}</a>`, true)}
+            </div>
+
+            <div class="sub-header"><i class="fas fa-network-wired"></i> Announced CIDR Prefixes (Sample)</div>
+            <div class="intel-code-box">${(data.sample_prefixes && data.sample_prefixes.length > 0) ? data.sample_prefixes.map(p => `• ${esc(p)}`).join('\n') : 'No active CIDR prefixes announced'}</div>
+        `;
+    }
+
+    // =========================================================
+    //  MODULE: DISCORD SNOWFLAKE
     // =========================================================
     function buildDiscordView(data, query) {
         const badgesHtml = (data.badges && data.badges.length > 0)
@@ -211,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE: HASH IDENTIFIER (NEW)
+    //  MODULE: HASH IDENTIFIER
     // =========================================================
     function buildHashView(data, query) {
         return `
@@ -676,7 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'rgba(0, 232, 123, 0.22)',
             'rgba(0, 210, 255, 0.22)',
             'rgba(155, 92, 255, 0.2)',
-            'rgba(88, 101, 242, 0.2)'
+            'rgba(255, 59, 136, 0.2)'
         ];
 
         for (let i = 0; i < 30; i++) {

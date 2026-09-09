@@ -9,6 +9,8 @@ from modules.phone_lookup import lookup_phone
 from modules.headers import analyze_headers
 from modules.discord_lookup import lookup_discord
 from modules.hash_lookup import analyze_hash
+from modules.dork_generator import generate_dorks
+from modules.bgp_lookup import lookup_bgp
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -160,6 +162,38 @@ def api_hash():
         return make_response_json(False, 'hash', hash_val, error=str(e)), 400
     except Exception:
         return make_response_json(False, 'hash', hash_val, error='Failed to analyze hash'), 500
+
+@app.route('/api/dorks', methods=['POST', 'OPTIONS'])
+def api_dorks():
+    if request.method == 'OPTIONS':
+        return '', 204
+    data = request.get_json(silent=True) or {}
+    target = str(data.get('target', '')).strip()
+    if not target:
+        return make_response_json(False, 'dorks', '', error='Missing target domain / keyword'), 400
+    try:
+        result = generate_dorks(target)
+        return make_response_json(True, 'dorks', target, data=result), 200
+    except ValueError as e:
+        return make_response_json(False, 'dorks', target, error=str(e)), 400
+    except Exception:
+        return make_response_json(False, 'dorks', target, error='Failed to generate dorks'), 500
+
+@app.route('/api/bgp', methods=['POST', 'OPTIONS'])
+def api_bgp():
+    if request.method == 'OPTIONS':
+        return '', 204
+    data = request.get_json(silent=True) or {}
+    asn_query = str(data.get('asn', '')).strip()
+    if not asn_query:
+        return make_response_json(False, 'bgp', '', error='Missing ASN number'), 400
+    try:
+        result = lookup_bgp(asn_query)
+        return make_response_json(True, 'bgp', asn_query, data=result), 200
+    except ValueError as e:
+        return make_response_json(False, 'bgp', asn_query, error=str(e)), 400
+    except Exception:
+        return make_response_json(False, 'bgp', asn_query, error='Failed to query BGP routing data'), 500
 
 @app.errorhandler(404)
 def not_found(error):
