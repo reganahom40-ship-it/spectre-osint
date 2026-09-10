@@ -1,877 +1,643 @@
 /* ==========================================================================
-   SPECTRE OSINT ENGINE — INTERACTIVE RECON JAVASCRIPT (V5.8)
+   SPECTRE OSINT CONSOLE — MULTI-MODE TACTICAL JAVASCRIPT (V6.0)
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
     // ---- Global State ----
-    let currentTab = 'username';
+    let currentMode = 'omni';
+    let currentTheme = localStorage.getItem('spectre-theme') || 'onyx';
     let visNetwork = null;
     let visNodes = null;
     let visEdges = null;
-    let currentMap = null;
 
-    // ---- DOM Elements ----
-    const navItems = document.querySelectorAll('.nav-item');
-    const tabPanels = document.querySelectorAll('.tab-panel');
-    const vectorTitle = document.getElementById('current-vector-title');
-    const clockEl = document.getElementById('utc-clock');
+    // ---- Elements ----
+    const modeTabs = document.querySelectorAll('.mode-tab');
+    const viewPanels = document.querySelectorAll('.view-panel');
+    const themeBtns = document.querySelectorAll('.theme-btn');
+    const systemClock = document.getElementById('system-clock');
     const toastContainer = document.getElementById('toast-container');
-    const terminalDrawer = document.getElementById('terminal-drawer');
-    const terminalLogs = document.getElementById('terminal-logs');
-    const btnToggleTerm = document.getElementById('btn-toggle-terminal');
-    const btnClearTerm = document.getElementById('btn-clear-terminal');
-    const btnCloseTerm = document.getElementById('btn-close-terminal');
-    
-    // View Toggles
-    const btnViewData = document.getElementById('btn-view-data');
-    const btnViewGraph = document.getElementById('btn-view-graph');
-    const graphContainer = document.getElementById('graph-visualizer-container');
-    const panelsContainer = document.getElementById('panels-container');
-    const btnGraphFit = document.getElementById('btn-graph-fit');
-    const btnGraphReset = document.getElementById('btn-graph-reset');
 
-    // Command Palette
-    const cmdPaletteTrigger = document.getElementById('cmd-palette-trigger');
-    const cmdPaletteModal = document.getElementById('cmd-palette-modal');
-    const cmdPaletteInput = document.getElementById('cmd-palette-input');
-    const cmdResultsList = document.getElementById('cmd-results-list');
+    // Omni Mode Elements
+    const omniInput = document.getElementById('omni-input');
+    const btnRunOmni = document.getElementById('btn-run-omni');
+    const omniResultsStage = document.getElementById('omni-results-stage');
+    const samplePills = document.querySelectorAll('.qt-pill');
 
-    const VECTOR_META = {
-        username: { title: 'Username Matrix', icon: 'fa-user-astronaut', color: '#06b6d4', endpoint: '/api/username', param: 'username' },
-        dorks:    { title: 'Google Dork Engine', icon: 'fa-brain', color: '#3b82f6', endpoint: '/api/dorks', param: 'target' },
-        discord:  { title: 'Discord Snowflake', icon: 'fa-discord', color: '#8b5cf6', endpoint: '/api/discord', param: 'id' },
-        ip:       { title: 'IP Telemetry & Geo', icon: 'fa-satellite-dish', color: '#10b981', endpoint: '/api/ip', param: 'ip' },
-        bgp:      { title: 'BGP Routing & ASN', icon: 'fa-diagram-project', color: '#f59e0b', endpoint: '/api/bgp', param: 'asn' },
-        email:    { title: 'Email & DNS Intel', icon: 'fa-envelope-shield', color: '#ec4899', endpoint: '/api/email', param: 'email' },
-        domain:   { title: 'Domain & CT Map', icon: 'fa-globe', color: '#06b6d4', endpoint: '/api/domain', param: 'domain' },
-        phone:    { title: 'Phone & Carrier', icon: 'fa-phone-nodes', color: '#14b8a6', endpoint: '/api/phone', param: 'phone' },
-        headers:  { title: 'HTTP Security Audit', icon: 'fa-shield-halved', color: '#f43f5e', endpoint: '/api/headers', param: 'url' },
-        hash:     { title: 'Hash Classifier', icon: 'fa-fingerprint', color: '#a855f7', endpoint: '/api/hash', param: 'hash' }
-    };
+    // Vectors Mode Elements
+    const vectorBtns = document.querySelectorAll('.vector-btn');
+    const vpanels = document.querySelectorAll('.vpanel');
 
-    // Initialize Clock
-    function initClock() {
-        const update = () => {
-            if (clockEl) {
-                const now = new Date();
-                clockEl.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-            }
-        };
-        setInterval(update, 1000);
-        update();
+    // CLI Shell Elements
+    const cliScreen = document.getElementById('cli-screen');
+    const cliInput = document.getElementById('cli-cmd-input');
+    const btnCliClear = document.getElementById('btn-cli-clear');
+
+    // Topology Elements
+    const btnTopoFit = document.getElementById('btn-topo-fit');
+    const btnTopoClear = document.getElementById('btn-topo-clear');
+
+    // Apply Saved Theme
+    applyTheme(currentTheme);
+
+    // Initialize System Clock
+    function updateClock() {
+        if (!systemClock) return;
+        const now = new Date();
+        systemClock.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     }
-    initClock();
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    // ---- Logging Utility ----
-    function appendLog(text, level = 'info') {
-        if (!terminalLogs) return;
-        const now = new Date().toISOString().slice(11, 19);
-        const div = document.createElement('div');
-        div.className = 'log-line';
-        div.innerHTML = `<span class="log-ts">[${now}]</span> <span class="log-${level}">${escapeHtml(text)}</span>`;
-        terminalLogs.appendChild(div);
-        terminalLogs.scrollTop = terminalLogs.scrollHeight;
-    }
-
-    // Terminal Toggles
-    if (btnToggleTerm) {
-        btnToggleTerm.addEventListener('click', () => {
-            terminalDrawer.classList.toggle('collapsed');
-        });
-    }
-    if (btnCloseTerm) {
-        btnCloseTerm.addEventListener('click', () => {
-            terminalDrawer.classList.add('collapsed');
-        });
-    }
-    if (btnClearTerm) {
-        btnClearTerm.addEventListener('click', () => {
-            terminalLogs.innerHTML = '';
-            appendLog('Log buffer cleared.', 'info');
-        });
-    }
-
-    // ---- Tab Switching ----
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const tab = item.getAttribute('data-tab');
-            switchTab(tab);
+    // ==========================================================================
+    // THEME SWITCHING
+    // ==========================================================================
+    themeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.getAttribute('data-theme');
+            applyTheme(theme);
         });
     });
 
-    function switchTab(tabId) {
-        currentTab = tabId;
-        navItems.forEach(item => {
-            item.classList.toggle('active', item.getAttribute('data-tab') === tabId);
+    function applyTheme(theme) {
+        currentTheme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('spectre-theme', theme);
+        themeBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
         });
-        tabPanels.forEach(panel => {
-            panel.classList.toggle('active', panel.id === `panel-${tabId}`);
-        });
-        if (vectorTitle && VECTOR_META[tabId]) {
-            vectorTitle.textContent = VECTOR_META[tabId].title;
-        }
-        
-        // Return to data view if in graph view
-        setDataViewActive(true);
-
-        const activeInput = document.getElementById(`input-${tabId}`);
-        if (activeInput) activeInput.focus();
-        appendLog(`Switched active vector to: [${tabId.toUpperCase()}]`, 'info');
+        if (visNetwork) buildTopologyFromDossier('SPECTRE', {});
     }
 
-    // ---- View Mode Toggle (Data vs Interactive Graph) ----
-    function setDataViewActive(isData) {
-        if (isData) {
-            btnViewData.classList.add('active');
-            btnViewGraph.classList.remove('active');
-            graphContainer.style.display = 'none';
-            panelsContainer.style.display = 'block';
-        } else {
-            btnViewGraph.classList.add('active');
-            btnViewData.classList.remove('active');
-            panelsContainer.style.display = 'none';
-            graphContainer.style.display = 'block';
-            if (visNetwork) {
-                setTimeout(() => visNetwork.fit(), 50);
+    // ==========================================================================
+    // MODE SWITCHING
+    // ==========================================================================
+    modeTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const mode = tab.getAttribute('data-mode');
+            switchMode(mode);
+        });
+    });
+
+    function switchMode(mode) {
+        currentMode = mode;
+        modeTabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-mode') === mode));
+        viewPanels.forEach(p => p.classList.toggle('active', p.id === `view-${mode}`));
+
+        if (mode === 'terminal' && cliInput) {
+            cliInput.focus();
+        } else if (mode === 'topology' && visNetwork) {
+            setTimeout(() => visNetwork.fit(), 100);
+        }
+    }
+
+    // ==========================================================================
+    // MODE 1: OMNI DOSSIER ENGINE
+    // ==========================================================================
+    if (btnRunOmni) {
+        btnRunOmni.addEventListener('click', () => {
+            const target = omniInput.value.trim();
+            if (!target) {
+                showToast('Enter a target entity to scan', 'error');
+                omniInput.focus();
+                return;
             }
-        }
+            executeOmniRecon(target);
+        });
     }
 
-    if (btnViewData) btnViewData.addEventListener('click', () => setDataViewActive(true));
-    if (btnViewGraph) btnViewGraph.addEventListener('click', () => setDataViewActive(false));
-
-    // ---- Input & Scan Triggers ----
-    document.querySelectorAll('.target-input').forEach(input => {
-        input.addEventListener('keydown', (e) => {
+    if (omniInput) {
+        omniInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                const panel = input.closest('.tab-panel');
-                const btn = panel.querySelector('.btn-launch-scan');
-                if (btn) btn.click();
+                btnRunOmni.click();
+            }
+        });
+    }
+
+    samplePills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const val = pill.getAttribute('data-val');
+            if (omniInput) {
+                omniInput.value = val;
+                executeOmniRecon(val);
             }
         });
     });
 
-    document.querySelectorAll('.btn-launch-scan').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const mod = btn.getAttribute('data-module');
-            executeRecon(mod, btn);
-        });
-    });
-
-    // ---- Execution Engine ----
-    async function executeRecon(moduleName, triggerBtn) {
-        const inputEl = document.getElementById(`input-${moduleName}`);
-        const resultsEl = document.getElementById(`results-${moduleName}`);
-        if (!inputEl || !resultsEl) return;
-
-        const rawValue = inputEl.value.trim();
-        if (!rawValue) {
-            showToast('Enter a target value to begin scanning', 'error');
-            inputEl.focus();
-            return;
-        }
-
-        const meta = VECTOR_META[moduleName];
-        if (!meta) return;
-
-        setBtnLoading(triggerBtn, true);
-        appendLog(`Initiating passive query on [${moduleName.toUpperCase()}]: ${rawValue}`, 'info');
-
-        resultsEl.innerHTML = `
-            <div class="loading-stage-box">
-                <div class="quantum-spinner"></div>
-                <div class="loading-label">Executing Reconnaissance Pipeline...</div>
-                <div class="loading-sub">Connecting to live endpoints and aggregating security intelligence.</div>
+    async function executeOmniRecon(target) {
+        setBtnLoading(btnRunOmni, true);
+        omniResultsStage.innerHTML = `
+            <div class="placeholder-dossier" style="border-style: solid; border-color: var(--accent-primary);">
+                <div style="font-family: var(--font-mono); font-size: 1rem; color: var(--accent-primary); font-weight: 700; margin-bottom: 8px;">
+                    <i class="fas fa-spinner fa-spin"></i> CASCADING OMNI RECONNAISSANCE PIPELINE...
+                </div>
+                <div class="placeholder-text">Executing auto-classifier -> Probing live socket pools -> Aggregating security dossier.</div>
             </div>
         `;
 
         const startTime = performance.now();
-        const url = `${meta.endpoint}?${encodeURIComponent(meta.param)}=${encodeURIComponent(rawValue)}`;
-
         try {
-            const res = await fetch(url);
-            const data = await res.json();
+            const res = await fetch(`/api/omni?target=${encodeURIComponent(target)}`);
+            const json = await res.json();
             const elapsed = Math.round(performance.now() - startTime);
 
-            if (!res.ok || data.error) {
-                const errText = data.error || 'Endpoint responded with an error.';
-                renderError(resultsEl, errText, elapsed);
-                appendLog(`[ERROR] ${moduleName}: ${errText}`, 'error');
-                showToast(`Scan Failed: ${errText}`, 'error');
+            if (!res.ok || json.error) {
+                renderOmniError(json.error || 'Failed to generate dossier.', elapsed);
             } else {
-                const payload = (data && data.data !== undefined) ? data.data : data;
-                renderModuleResult(moduleName, payload, resultsEl, elapsed, rawValue);
-                buildTopologyGraph(moduleName, rawValue, payload);
-                appendLog(`[SUCCESS] ${moduleName} completed in ${elapsed}ms for target: ${rawValue}`, 'success');
-                showToast(`Scan Completed in ${elapsed}ms`, 'success');
+                const data = json.data || {};
+                renderOmniDossier(target, data.detected_type || 'Entity', data.dossier || {}, elapsed);
+                buildTopologyFromDossier(target, data.dossier || {});
+                showToast(`Dossier Compiled (${elapsed}ms)`, 'success');
             }
         } catch (err) {
             const elapsed = Math.round(performance.now() - startTime);
-            renderError(resultsEl, `Network timeout or connection error: ${err.message}`, elapsed);
-            appendLog(`[EXCEPTION] ${err.message}`, 'error');
-            showToast('Network request timed out', 'error');
+            renderOmniError(`Pipeline connection failure: ${err.message}`, elapsed);
+        } finally {
+            setBtnLoading(btnRunOmni, false);
+        }
+    }
+
+    function renderOmniError(msg, elapsed) {
+        omniResultsStage.innerHTML = `
+            <div class="placeholder-dossier" style="border-color: var(--accent-rose);">
+                <div style="font-family: var(--font-mono); font-size: 1rem; color: var(--accent-rose); font-weight: 700; margin-bottom: 8px;">
+                    <i class="fas fa-triangle-exclamation"></i> DOSSIER GENERATION FAILED [${elapsed}ms]
+                </div>
+                <div class="placeholder-text" style="color: var(--accent-rose);">${escapeHtml(msg)}</div>
+            </div>
+        `;
+    }
+
+    function renderOmniDossier(target, detectedType, dossier, elapsed) {
+        let sectionsHtml = '';
+
+        // 1. IP / BGP Intel
+        if (dossier.ip) {
+            const ip = dossier.ip;
+            sectionsHtml += `
+                <div class="intel-section">
+                    <div class="intel-section-header">
+                        <span class="intel-section-title"><i class="fas fa-satellite-dish"></i> IP & NETWORK TELEMETRY</span>
+                        <span class="dossier-badge">${escapeHtml(ip.query || target)}</span>
+                    </div>
+                    <div class="intel-section-body">
+                        <div class="dossier-stat-grid">
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Geolocation</div>
+                                <div class="stat-item-val">${escapeHtml(ip.city || '')}, ${escapeHtml(ip.country || '')}</div>
+                            </div>
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">ISP Network</div>
+                                <div class="stat-item-val" style="font-size:0.9rem;">${escapeHtml(ip.isp || 'N/A')}</div>
+                            </div>
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Classification</div>
+                                <div class="stat-item-val" style="color:${ip.hosting ? 'var(--accent-primary)' : 'var(--accent-emerald)'};">
+                                    ${ip.hosting ? 'DATACENTER' : (ip.proxy ? 'PROXY' : 'RESIDENTIAL')}
+                                </div>
+                            </div>
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Autonomous System</div>
+                                <div class="stat-item-val" style="font-size:0.85rem; color:var(--accent-cyan);">${escapeHtml(ip.as || ip.asn || 'N/A')}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. Domain / WHOIS / CT
+        if (dossier.domain) {
+            const dom = dossier.domain;
+            const subs = dom.subdomains || [];
+            sectionsHtml += `
+                <div class="intel-section">
+                    <div class="intel-section-header">
+                        <span class="intel-section-title"><i class="fas fa-globe"></i> DOMAIN & CT LOG SUBDOMAINS</span>
+                        <span class="dossier-badge">${subs.length} SUBDOMAINS</span>
+                    </div>
+                    <div class="intel-section-body">
+                        <div class="dossier-stat-grid">
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Registrar</div>
+                                <div class="stat-item-val" style="font-size:0.9rem;">${escapeHtml(dom.registrar || dom.whois?.registrar || 'N/A')}</div>
+                            </div>
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Discovered Endpoints</div>
+                                <div class="stat-item-val" style="color:var(--accent-cyan);">${subs.length}</div>
+                            </div>
+                        </div>
+                        ${subs.length > 0 ? `
+                            <div class="tactical-table-scroll">
+                                <table class="tactical-table">
+                                    <thead><tr><th>Endpoint</th><th>Discovery Engine</th></tr></thead>
+                                    <tbody>
+                                        ${subs.slice(0, 15).map(s => `<tr><td><code>${escapeHtml(s)}</code></td><td><span style="color:var(--accent-emerald);">CERTIFICATE TRANSPARENCY</span></td></tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Google Dorks
+        if (dossier.dorks) {
+            const cats = dossier.dorks.categories || {};
+            let dorkItems = '';
+            for (const [k, v] of Object.entries(cats)) {
+                (v.queries || []).slice(0, 3).forEach(q => {
+                    const url = `https://www.google.com/search?q=${encodeURIComponent(q.dork)}`;
+                    dorkItems += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-glass);">
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-dim); display:block;">${escapeHtml(q.purpose || k)}</span>
+                                <code style="font-size:0.8rem; color:var(--text-main);">${escapeHtml(q.dork)}</code>
+                            </div>
+                            <a href="${url}" target="_blank" rel="noopener noreferrer" class="link-recon" style="font-size:0.75rem; white-space:nowrap;">
+                                Launch <i class="fas fa-external-link"></i>
+                            </a>
+                        </div>
+                    `;
+                });
+            }
+            sectionsHtml += `
+                <div class="intel-section">
+                    <div class="intel-section-header">
+                        <span class="intel-section-title"><i class="fas fa-brain"></i> PASSIVE GOOGLE DORKS</span>
+                    </div>
+                    <div class="intel-section-body">${dorkItems}</div>
+                </div>
+            `;
+        }
+
+        // 4. Username Scan
+        if (dossier.username) {
+            const u = dossier.username;
+            const found = u.found || [];
+            sectionsHtml += `
+                <div class="intel-section">
+                    <div class="intel-section-header">
+                        <span class="intel-section-title"><i class="fas fa-user-astronaut"></i> USERNAME DISCOVERY (112+ PLATFORMS)</span>
+                        <span class="dossier-badge" style="color:var(--accent-emerald);">${found.length} PROFILES FOUND</span>
+                    </div>
+                    <div class="intel-section-body">
+                        <div class="tactical-table-scroll">
+                            <table class="tactical-table">
+                                <thead><tr><th>Platform</th><th>Profile Endpoint</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    ${found.map(f => `
+                                        <tr>
+                                            <td><strong>${escapeHtml(f.platform)}</strong></td>
+                                            <td><a href="${escapeHtml(f.url)}" target="_blank" class="link-recon">${escapeHtml(f.url)}</a></td>
+                                            <td><span style="color:var(--accent-emerald); font-weight:700;">CONFIRMED</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 5. Discord Snowflake
+        if (dossier.discord) {
+            const dc = dossier.discord;
+            sectionsHtml += `
+                <div class="intel-section">
+                    <div class="intel-section-header">
+                        <span class="intel-section-title"><i class="fa-brands fa-discord"></i> DISCORD SNOWFLAKE DECODER</span>
+                    </div>
+                    <div class="intel-section-body">
+                        <div class="dossier-stat-grid">
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Created Epoch</div>
+                                <div class="stat-item-val" style="font-size:0.95rem; color:var(--accent-primary);">${escapeHtml(dc.created_at || 'N/A')}</div>
+                            </div>
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Account Age</div>
+                                <div class="stat-item-val" style="color:var(--accent-emerald);">${escapeHtml(String(dc.account_age_days ? dc.account_age_days + ' days' : 'N/A'))}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 6. Cryptographic Hash
+        if (dossier.hash) {
+            const h = dossier.hash;
+            const matches = h.possible_types || h.matches || [];
+            sectionsHtml += `
+                <div class="intel-section">
+                    <div class="intel-section-header">
+                        <span class="intel-section-title"><i class="fas fa-fingerprint"></i> CRYPTOGRAPHIC HASH IDENTIFICATION</span>
+                    </div>
+                    <div class="intel-section-body">
+                        <div class="dossier-stat-grid">
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Primary Candidate</div>
+                                <div class="stat-item-val" style="color:var(--accent-emerald);">${escapeHtml(matches[0] || 'Unknown')}</div>
+                            </div>
+                            <div class="stat-item-box">
+                                <div class="stat-item-label">Entropy</div>
+                                <div class="stat-item-val" style="color:var(--accent-cyan);">${escapeHtml(String(h.entropy || 'N/A'))}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        omniResultsStage.innerHTML = `
+            <div class="dossier-wrapper">
+                <div class="dossier-meta-card">
+                    <div>
+                        <div class="dossier-target-title">
+                            <span>${escapeHtml(target)}</span>
+                            <span class="dossier-badge">${escapeHtml(detectedType.toUpperCase())}</span>
+                        </div>
+                        <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim); margin-top:4px;">
+                            Compiled in ${elapsed}ms // SPECTRE Multi-Vector Core
+                        </div>
+                    </div>
+                    <div class="dossier-actions">
+                        <button class="btn-dossier-action" id="btn-export-dossier"><i class="fas fa-download"></i> Export JSON</button>
+                        <button class="btn-dossier-action" id="btn-pivot-graph"><i class="fas fa-network-wired"></i> View Topology</button>
+                    </div>
+                </div>
+                ${sectionsHtml}
+            </div>
+        `;
+
+        const exportBtn = document.getElementById('btn-export-dossier');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(dossier, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `spectre-dossier-${target}-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('Dossier Exported', 'success');
+            });
+        }
+
+        const pivotGraphBtn = document.getElementById('btn-pivot-graph');
+        if (pivotGraphBtn) {
+            pivotGraphBtn.addEventListener('click', () => {
+                switchMode('topology');
+            });
+        }
+    }
+
+    // ==========================================================================
+    // MODE 2: DEDICATED INDIVIDUAL VECTORS
+    // ==========================================================================
+    vectorBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const vtab = btn.getAttribute('data-vtab');
+            vectorBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-vtab') === vtab));
+            vpanels.forEach(p => p.classList.toggle('active', p.id === `vpanel-${vtab}`));
+            const input = document.getElementById(`v-input-${vtab}`);
+            if (input) input.focus();
+        });
+    });
+
+    document.querySelectorAll('.btn-v-scan').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mod = btn.getAttribute('data-vmod');
+            const input = document.getElementById(`v-input-${mod}`);
+            const out = document.getElementById(`v-output-${mod}`);
+            if (!input || !out) return;
+            const val = input.value.trim();
+            if (!val) {
+                showToast('Enter input query', 'error');
+                return;
+            }
+            executeSingleVector(mod, val, out, btn);
+        });
+    });
+
+    async function executeSingleVector(moduleName, val, container, triggerBtn) {
+        setBtnLoading(triggerBtn, true);
+        container.innerHTML = `<div style="font-family:var(--font-mono); color:var(--accent-primary); padding:20px 0;"><i class="fas fa-spinner fa-spin"></i> Querying vector [${moduleName.toUpperCase()}]...</div>`;
+
+        const routes = {
+            username: `/api/username?username=${encodeURIComponent(val)}`,
+            dorks: `/api/dorks?target=${encodeURIComponent(val)}`,
+            discord: `/api/discord?id=${encodeURIComponent(val)}`,
+            ip: `/api/ip?ip=${encodeURIComponent(val)}`,
+            bgp: `/api/bgp?asn=${encodeURIComponent(val)}`,
+            email: `/api/email?email=${encodeURIComponent(val)}`,
+            domain: `/api/domain?domain=${encodeURIComponent(val)}`,
+            phone: `/api/phone?phone=${encodeURIComponent(val)}`,
+            headers: `/api/headers?url=${encodeURIComponent(val)}`,
+            hash: `/api/hash?hash=${encodeURIComponent(val)}`
+        };
+
+        try {
+            const res = await fetch(routes[moduleName]);
+            const json = await res.json();
+            if (!res.ok || json.error) {
+                container.innerHTML = `<div style="font-family:var(--font-mono); color:var(--accent-rose);">${escapeHtml(json.error || 'Vector query failed')}</div>`;
+            } else {
+                const data = json.data || json;
+                container.innerHTML = `<pre style="background:var(--bg-surface); padding:16px; border-radius:6px; border:1px solid var(--border-glass); font-family:var(--font-mono); font-size:0.8rem; overflow:auto; max-height:450px;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+                showToast(`Vector [${moduleName}] Scanned`, 'success');
+            }
+        } catch (err) {
+            container.innerHTML = `<div style="font-family:var(--font-mono); color:var(--accent-rose);">${escapeHtml(err.message)}</div>`;
         } finally {
             setBtnLoading(triggerBtn, false);
         }
     }
 
-    function setBtnLoading(btn, isLoading) {
-        if (!btn) return;
-        if (isLoading) {
-            btn.disabled = true;
-            btn.dataset.origHtml = btn.innerHTML;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Scanning...</span>`;
+    // ==========================================================================
+    // MODE 3: INTERACTIVE CLI COMMAND SHELL
+    // ==========================================================================
+    if (cliInput) {
+        cliInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const cmd = cliInput.value.trim();
+                cliInput.value = '';
+                if (!cmd) return;
+                handleCliCommand(cmd);
+            }
+        });
+    }
+
+    if (btnCliClear) {
+        btnCliClear.addEventListener('click', () => {
+            cliScreen.innerHTML = '';
+        });
+    }
+
+    function printCli(text, type = 'normal') {
+        const div = document.createElement('div');
+        div.style.marginBottom = '4px';
+        if (type === 'prompt') {
+            div.style.color = 'var(--accent-primary)';
+            div.style.fontWeight = '700';
+        } else if (type === 'error') {
+            div.style.color = 'var(--accent-rose)';
+        } else if (type === 'success') {
+            div.style.color = 'var(--accent-emerald)';
+        } else if (type === 'cyan') {
+            div.style.color = 'var(--accent-cyan)';
         } else {
-            btn.disabled = false;
-            if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
+            div.style.color = 'var(--text-main)';
+        }
+        div.innerHTML = text;
+        cliScreen.appendChild(div);
+        cliScreen.scrollTop = cliScreen.scrollHeight;
+    }
+
+    async function handleCliCommand(rawCmd) {
+        printCli(`spectre@root $ ${escapeHtml(rawCmd)}`, 'prompt');
+        const parts = rawCmd.split(' ').filter(Boolean);
+        const action = parts[0].toLowerCase();
+        const arg = parts.slice(1).join(' ');
+
+        switch (action) {
+            case 'help':
+                printCli(`
+<b>AVAILABLE SPECTRE OSINT COMMANDS:</b>
+  recon &lt;target&gt;      Run autonomous multi-vector intelligence pipeline
+  user &lt;username&gt;     Probe 112+ social networks for username existence
+  ip &lt;address&gt;        Resolve IP geolocation, ISP, and ASN routing
+  domain &lt;domain&gt;     Inspect domain WHOIS and CT log subdomains
+  dork &lt;keyword&gt;      Generate passive Google search recon queries
+  discord &lt;id&gt;        Decode 64-bit Discord Snowflake creation timestamp
+  hash &lt;hash&gt;         Identify cryptographic hash algorithm and entropy
+  email &lt;email&gt;       Check MX hosts and SPF/DMARC mail compliance
+  phone &lt;number&gt;      Lookup phone carrier and E.164 validity
+  theme &lt;name&gt;        Switch UI theme: 'onyx', 'matrix', 'cyan', 'mono'
+  clear               Clear terminal window buffer
+  matrix              Run phosphor stream simulation
+                `, 'cyan');
+                break;
+
+            case 'clear':
+                cliScreen.innerHTML = '';
+                break;
+
+            case 'theme':
+                if (['onyx', 'matrix', 'cyan', 'monolith', 'mono'].includes(arg.toLowerCase())) {
+                    const t = arg.toLowerCase() === 'mono' ? 'monolith' : arg.toLowerCase();
+                    applyTheme(t);
+                    printCli(`Theme switched to: ${t.toUpperCase()}`, 'success');
+                } else {
+                    printCli(`Unknown theme. Choose from: onyx, matrix, cyan, mono`, 'error');
+                }
+                break;
+
+            case 'matrix':
+                printCli('Streaming quantum entropy packets...', 'success');
+                for (let i = 0; i < 5; i++) {
+                    const hex = Array.from({length: 8}, () => Math.floor(Math.random()*16).toString(16)).join('');
+                    printCli(`[0x${hex}] RECON_SOCKET_ACK -> 0x${hex.toUpperCase()}`, 'cyan');
+                }
+                break;
+
+            case 'recon':
+            case 'scan':
+                if (!arg) {
+                    printCli('Usage: recon <target>', 'error');
+                    return;
+                }
+                printCli(`Initiating Omni Recon on: ${escapeHtml(arg)}...`, 'cyan');
+                try {
+                    const res = await fetch(`/api/omni?target=${encodeURIComponent(arg)}`);
+                    const json = await res.json();
+                    if (json.data) {
+                        printCli(`[SUCCESS] Classified as: ${json.data.detected_type.toUpperCase()}`, 'success');
+                        printCli(`<pre style="color:var(--text-muted); font-size:0.75rem;">${escapeHtml(JSON.stringify(json.data.dossier, null, 2))}</pre>`);
+                    } else {
+                        printCli(`[ERROR] ${json.error || 'Query failed'}`, 'error');
+                    }
+                } catch (e) {
+                    printCli(`Network error: ${e.message}`, 'error');
+                }
+                break;
+
+            case 'user':
+            case 'ip':
+            case 'domain':
+            case 'dork':
+            case 'discord':
+            case 'hash':
+            case 'email':
+            case 'phone':
+                if (!arg) {
+                    printCli(`Usage: ${action} <target>`, 'error');
+                    return;
+                }
+                const routeMap = {
+                    user: `/api/username?username=${encodeURIComponent(arg)}`,
+                    ip: `/api/ip?ip=${encodeURIComponent(arg)}`,
+                    domain: `/api/domain?domain=${encodeURIComponent(arg)}`,
+                    dork: `/api/dorks?target=${encodeURIComponent(arg)}`,
+                    discord: `/api/discord?id=${encodeURIComponent(arg)}`,
+                    hash: `/api/hash?hash=${encodeURIComponent(arg)}`,
+                    email: `/api/email?email=${encodeURIComponent(arg)}`,
+                    phone: `/api/phone?phone=${encodeURIComponent(arg)}`
+                };
+                printCli(`Probing ${action}...`, 'cyan');
+                try {
+                    const res = await fetch(routeMap[action]);
+                    const json = await res.json();
+                    printCli(`<pre style="color:var(--text-muted); font-size:0.75rem;">${escapeHtml(JSON.stringify(json.data || json, null, 2))}</pre>`);
+                } catch (e) {
+                    printCli(`Network error: ${e.message}`, 'error');
+                }
+                break;
+
+            default:
+                printCli(`Command not found: ${escapeHtml(action)}. Type 'help' for valid commands.`, 'error');
         }
     }
 
-    function renderError(container, message, elapsed) {
-        container.innerHTML = `
-            <div class="intel-card" style="border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.03);">
-                <div class="intel-card-header">
-                    <div class="intel-card-title" style="color: var(--accent-rose);">
-                        <i class="fas fa-triangle-exclamation"></i>
-                        <span>Scan Execution Failed</span>
-                    </div>
-                    <span class="tag-latency">${elapsed}ms</span>
-                </div>
-                <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-rose);">
-                    ${escapeHtml(message)}
-                </div>
-            </div>
-        `;
-    }
-
     // ==========================================================================
-    // RESULT RENDERERS
+    // MODE 4: FULLSCREEN TOPOLOGY GRAPH (VIS.JS)
     // ==========================================================================
-    function renderModuleResult(moduleName, payload, container, elapsed, target) {
-        let html = '';
-        switch (moduleName) {
-            case 'username': html = renderUsername(payload, elapsed, target); break;
-            case 'dorks':    html = renderDorks(payload, elapsed, target); break;
-            case 'discord':  html = renderDiscord(payload, elapsed, target); break;
-            case 'ip':       html = renderIp(payload, elapsed, target); break;
-            case 'bgp':      html = renderBgp(payload, elapsed, target); break;
-            case 'email':    html = renderEmail(payload, elapsed, target); break;
-            case 'domain':   html = renderDomain(payload, elapsed, target); break;
-            case 'phone':    html = renderPhone(payload, elapsed, target); break;
-            case 'headers':  html = renderHeaders(payload, elapsed, target); break;
-            case 'hash':     html = renderHash(payload, elapsed, target); break;
-            default:         html = `<pre style="font-family:var(--font-mono); font-size:0.8rem;">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`;
-        }
-        container.innerHTML = html;
-        bindInteractions(container, payload, target, moduleName);
-
-        // If IP module, mount interactive Leaflet map
-        if (moduleName === 'ip' && payload.lat && payload.lon) {
-            setTimeout(() => mountLeafletMap(payload.lat, payload.lon, payload.city, payload.country, payload.ip || target), 50);
-        }
-    }
-
-    // 1. Username
-    function renderUsername(data, elapsed, target) {
-        const found = data.found || [];
-        const notFound = data.not_found || [];
-        const total = data.total_checked || (found.length + notFound.length);
-        const rate = total > 0 ? Math.round((found.length / total) * 100) : 0;
-
-        let rows = '';
-        found.forEach(item => {
-            rows += `
-                <tr class="user-row" data-name="${escapeHtml(item.platform.toLowerCase())}">
-                    <td><span class="platform-name-tag">${escapeHtml(item.platform)}</span></td>
-                    <td>
-                        <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="target-url-link">
-                            ${escapeHtml(item.url)} <i class="fas fa-arrow-up-right-from-square"></i>
-                        </a>
-                    </td>
-                    <td><span class="badge-tag-status badge-found">CONFIRMED</span></td>
-                    <td class="text-right">
-                        <button class="btn-card-action copy-action" data-copy="${escapeHtml(item.url)}"><i class="fas fa-copy"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-user-astronaut"></i>
-                        <span>Username Intelligence // @${escapeHtml(target)}</span>
-                    </div>
-                    <div class="intel-card-actions">
-                        <span class="tag-latency">${elapsed}ms</span>
-                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Probed Platforms</span>
-                        <span class="stat-pill-value">${total}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Detected Profiles</span>
-                        <span class="stat-pill-value" style="color: var(--accent-emerald);">${found.length}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Hit Rate</span>
-                        <span class="stat-pill-value" style="color: var(--accent-cyan);">${rate}%</span>
-                    </div>
-                </div>
-
-                <div class="table-scroll">
-                    <table class="table-modern">
-                        <thead>
-                            <tr>
-                                <th>Platform</th>
-                                <th>Profile URL</th>
-                                <th>Detection Status</th>
-                                <th class="text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${found.length > 0 ? rows : `<tr><td colspan="4" style="text-align:center; padding:24px; color:var(--text-dim);">No public profiles discovered.</td></tr>`}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-
-    // 2. Google Dorks
-    function renderDorks(data, elapsed, target) {
-        const cats = data.categories || {};
-        let sections = '';
-        for (const [key, val] of Object.entries(cats)) {
-            const queries = val.queries || [];
-            let qRows = '';
-            queries.forEach(q => {
-                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(q.dork)}`;
-                qRows += `
-                    <div class="dork-item-row">
-                        <div style="flex:1; min-width:0;">
-                            <div style="font-size:0.8rem; font-weight:600; color:#fff; margin-bottom:4px;">${escapeHtml(q.purpose || q.name || 'Dork')}</div>
-                            <div class="dork-query-box">${escapeHtml(q.dork)}</div>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn-card-action copy-action" data-copy="${escapeHtml(q.dork)}"><i class="fas fa-copy"></i></button>
-                            <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="btn-card-action" style="color:var(--accent-cyan);">
-                                <i class="fas fa-external-link"></i> Launch
-                            </a>
-                        </div>
-                    </div>
-                `;
-            });
-
-            sections += `
-                <div class="dork-section">
-                    <div class="dork-section-header">
-                        <span>${escapeHtml(val.title || key.toUpperCase())}</span>
-                        <span style="color:var(--accent-cyan); font-family:var(--font-mono); font-size:0.7rem;">${queries.length} QUERIES</span>
-                    </div>
-                    <div>${qRows}</div>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-brain"></i>
-                        <span>Passive Google Dork Matrix // ${escapeHtml(target)}</span>
-                    </div>
-                    <div class="intel-card-actions">
-                        <span class="tag-latency">${elapsed}ms</span>
-                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-                ${sections}
-            </div>
-        `;
-    }
-
-    // 3. Discord Snowflake
-    function renderDiscord(data, elapsed, target) {
-        const user = data.user || data;
-        const avatarUrl = data.avatar_url || (user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256` : 'https://cdn.discordapp.com/embed/avatars/0.png');
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fa-brands fa-discord"></i>
-                        <span>Discord Snowflake Telemetry // ${escapeHtml(target)}</span>
-                    </div>
-                    <span class="tag-latency">${elapsed}ms</span>
-                </div>
-
-                <div class="discord-card-flex">
-                    <div class="discord-avatar-panel">
-                        <img src="${escapeHtml(avatarUrl)}" alt="Avatar" class="discord-avatar-img">
-                        <div class="discord-name-tag">${escapeHtml(data.username || user.username || 'Snowflake Target')}</div>
-                        <div style="font-family:var(--font-mono); font-size:0.7rem; color:var(--text-dim);">${escapeHtml(target)}</div>
-                    </div>
-
-                    <div style="flex:1;">
-                        <div class="prop-grid-container">
-                            <div class="prop-box">
-                                <span class="prop-box-key">Created Timestamp</span>
-                                <span class="prop-box-val" style="color:var(--accent-cyan);">${escapeHtml(data.created_at || data.created_at_utc || 'N/A')}</span>
-                            </div>
-                            <div class="prop-box">
-                                <span class="prop-box-key">Account Age</span>
-                                <span class="prop-box-val" style="color:var(--accent-emerald);">${escapeHtml(String(data.account_age_days ? data.account_age_days + ' days' : (data.account_age || 'N/A')))}</span>
-                            </div>
-                            <div class="prop-box">
-                                <span class="prop-box-key">Worker Thread ID</span>
-                                <span class="prop-box-val"><code>${escapeHtml(String(data.snowflake_metadata?.worker_id ?? data.worker_id ?? '0'))}</code></span>
-                            </div>
-                            <div class="prop-box">
-                                <span class="prop-box-key">Process Thread ID</span>
-                                <span class="prop-box-val"><code>${escapeHtml(String(data.snowflake_metadata?.process_id ?? data.process_id ?? '0'))}</code></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // 4. IP Intelligence & Live Dark Map
-    function renderIp(data, elapsed, target) {
-        const asn = data.asn || data.as || '';
-        const asnClean = asn.split(' ')[0];
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-satellite-dish"></i>
-                        <span>IP Intelligence & Dark Telemetry // ${escapeHtml(data.query || data.ip || target)}</span>
-                    </div>
-                    <div class="intel-card-actions">
-                        <span class="tag-latency">${elapsed}ms</span>
-                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                <!-- Multi-Vector Pivot Option -->
-                ${asnClean ? `
-                    <div class="pivot-box">
-                        <span class="pivot-title"><i class="fas fa-bolt"></i> Quick Pivot:</span>
-                        <button class="pivot-link-btn" data-pivot-mod="bgp" data-pivot-val="${escapeHtml(asnClean)}">
-                            Inspect BGP Routing for ${escapeHtml(asnClean)} <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                ` : ''}
-
-                <!-- Leaflet Interactive Map -->
-                ${data.lat && data.lon ? `
-                    <div class="map-embed-wrapper">
-                        <div id="leaflet-ip-map"></div>
-                    </div>
-                ` : ''}
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Country / Region</span>
-                        <span class="stat-pill-value">${escapeHtml(data.country || 'N/A')} (${escapeHtml(data.countryCode || '--')})</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">City</span>
-                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${escapeHtml(data.city || 'N/A')}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Classification</span>
-                        <span class="stat-pill-value" style="color:${data.hosting || data.proxy ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
-                            ${data.hosting ? 'DATACENTER' : (data.proxy ? 'PROXY / VPN' : 'RESIDENTIAL')}
-                        </span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Autonomous System</span>
-                        <span class="stat-pill-value" style="font-size:0.95rem; color:var(--accent-purple);">${escapeHtml(asn || 'N/A')}</span>
-                    </div>
-                </div>
-
-                <div class="prop-grid-container">
-                    <div class="prop-box">
-                        <span class="prop-box-key">ISP / Provider</span>
-                        <span class="prop-box-val">${escapeHtml(data.isp || 'N/A')}</span>
-                    </div>
-                    <div class="prop-box">
-                        <span class="prop-box-key">Organization</span>
-                        <span class="prop-box-val">${escapeHtml(data.org || 'N/A')}</span>
-                    </div>
-                    <div class="prop-box">
-                        <span class="prop-box-key">Reverse PTR DNS</span>
-                        <span class="prop-box-val"><code>${escapeHtml(data.reverse || data.reverse_dns || 'None')}</code></span>
-                    </div>
-                    <div class="prop-box">
-                        <span class="prop-box-key">Timezone</span>
-                        <span class="prop-box-val">${escapeHtml(data.timezone || 'N/A')}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // 5. BGP Routing
-    function renderBgp(data, elapsed, target) {
-        const prefixes = data.announced_prefixes || data.prefixes || [];
-        let rows = '';
-        prefixes.slice(0, 100).forEach(p => {
-            const cidr = typeof p === 'string' ? p : (p.prefix || JSON.stringify(p));
-            rows += `
-                <tr>
-                    <td><code style="color:var(--accent-cyan);">${escapeHtml(cidr)}</code></td>
-                    <td><span class="badge-tag-status badge-found">ANNOUNCED</span></td>
-                    <td class="text-right">
-                        <button class="btn-card-action copy-action" data-copy="${escapeHtml(cidr)}"><i class="fas fa-copy"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-diagram-project"></i>
-                        <span>BGP Routing & Peering // ${escapeHtml(data.asn || target)}</span>
-                    </div>
-                    <div class="intel-card-actions">
-                        <span class="tag-latency">${elapsed}ms</span>
-                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Holder Entity</span>
-                        <span class="stat-pill-value" style="font-size:1rem;">${escapeHtml(data.holder || data.name || 'N/A')}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Announced CIDRs</span>
-                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${prefixes.length}</span>
-                    </div>
-                </div>
-
-                <div class="table-scroll">
-                    <table class="table-modern">
-                        <thead>
-                            <tr>
-                                <th>Prefix Block</th>
-                                <th>Status</th>
-                                <th class="text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows || `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-dim);">No announced prefixes.</td></tr>`}</tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-
-    // 6. Email Intel
-    function renderEmail(data, elapsed, target) {
-        const mx = data.mx_records || [];
-        const domain = target.includes('@') ? target.split('@')[1] : target;
-        let mxRows = '';
-        mx.forEach(m => {
-            mxRows += `
-                <tr>
-                    <td><span style="color:var(--accent-cyan); font-family:var(--font-mono); font-weight:700;">${escapeHtml(String(m.priority || 0))}</span></td>
-                    <td><code>${escapeHtml(m.host || m.exchange || String(m))}</code></td>
-                </tr>
-            `;
-        });
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-envelope-shield"></i>
-                        <span>Email & DNS Security Intelligence // ${escapeHtml(target)}</span>
-                    </div>
-                    <div class="intel-card-actions">
-                        <span class="tag-latency">${elapsed}ms</span>
-                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                ${domain ? `
-                    <div class="pivot-box">
-                        <span class="pivot-title"><i class="fas fa-bolt"></i> Quick Pivot:</span>
-                        <button class="pivot-link-btn" data-pivot-mod="domain" data-pivot-val="${escapeHtml(domain)}">
-                            Inspect Domain WHOIS & CT for ${escapeHtml(domain)} <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                ` : ''}
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Mail Provider</span>
-                        <span class="stat-pill-value" style="font-size:1rem; color:var(--accent-cyan);">${escapeHtml(data.provider || 'Self-Hosted')}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">SPF Policy</span>
-                        <span class="stat-pill-value" style="color:${data.has_spf ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
-                            ${data.has_spf ? 'CONFIGURED' : 'MISSING'}
-                        </span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">DMARC Policy</span>
-                        <span class="stat-pill-value" style="color:${data.has_dmarc ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
-                            ${data.has_dmarc ? 'CONFIGURED' : 'MISSING'}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="table-scroll">
-                    <table class="table-modern">
-                        <thead><tr><th style="width:90px;">Priority</th><th>MX Server Hostname</th></tr></thead>
-                        <tbody>${mxRows || `<tr><td colspan="2" style="text-align:center; padding:16px;">No MX records resolved.</td></tr>`}</tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-
-    // 7. Domain Intel
-    function renderDomain(data, elapsed, target) {
-        const subs = data.subdomains || [];
-        let subRows = '';
-        subs.slice(0, 100).forEach(s => {
-            subRows += `
-                <tr>
-                    <td><code style="color:var(--accent-cyan);">${escapeHtml(s)}</code></td>
-                    <td><span class="badge-tag-status badge-found">CT LOG</span></td>
-                    <td class="text-right">
-                        <button class="pivot-link-btn" data-pivot-mod="headers" data-pivot-val="https://${escapeHtml(s)}">
-                            Audit Headers <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-globe"></i>
-                        <span>Domain Infrastructure & Subdomain Map // ${escapeHtml(target)}</span>
-                    </div>
-                    <div class="intel-card-actions">
-                        <span class="tag-latency">${elapsed}ms</span>
-                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Registrar</span>
-                        <span class="stat-pill-value" style="font-size:0.95rem;">${escapeHtml(data.registrar || data.whois?.registrar || 'N/A')}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Discovered Subdomains</span>
-                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${subs.length}</span>
-                    </div>
-                </div>
-
-                <div class="table-scroll">
-                    <table class="table-modern">
-                        <thead><tr><th>Subdomain Endpoint</th><th>Source</th><th class="text-right">Action</th></tr></thead>
-                        <tbody>${subRows || `<tr><td colspan="3" style="text-align:center; padding:16px;">No subdomains logged.</td></tr>`}</tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-
-    // 8. Phone Intel
-    function renderPhone(data, elapsed, target) {
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-phone-nodes"></i>
-                        <span>Phone / Telco Identification // ${escapeHtml(target)}</span>
-                    </div>
-                    <span class="tag-latency">${elapsed}ms</span>
-                </div>
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Validation</span>
-                        <span class="stat-pill-value" style="color:${data.is_valid ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
-                            ${data.is_valid ? 'VALID E.164' : 'INVALID'}
-                        </span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Line Classification</span>
-                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${escapeHtml(data.line_type || 'Unknown')}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Carrier Network</span>
-                        <span class="stat-pill-value" style="font-size:0.95rem;">${escapeHtml(data.carrier || 'N/A')}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // 9. HTTP Security Headers
-    function renderHeaders(data, elapsed, target) {
-        const h = data.headers || {};
-        let hRows = '';
-        for (const [k, v] of Object.entries(h)) {
-            hRows += `<tr><td><code>${escapeHtml(k)}</code></td><td style="font-family:var(--font-mono); font-size:0.75rem;">${escapeHtml(String(v))}</td></tr>`;
-        }
-
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-shield-halved"></i>
-                        <span>HTTP Security Headers Audit // ${escapeHtml(target)}</span>
-                    </div>
-                    <span class="tag-latency">${elapsed}ms</span>
-                </div>
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">HSTS</span>
-                        <span class="stat-pill-value" style="color:${data.has_hsts ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${data.has_hsts ? 'PRESENT' : 'MISSING'}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Content-Security-Policy</span>
-                        <span class="stat-pill-value" style="color:${data.has_csp ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${data.has_csp ? 'PRESENT' : 'MISSING'}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">X-Frame-Options</span>
-                        <span class="stat-pill-value" style="color:${data.has_x_frame ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${data.has_x_frame ? 'PROTECTED' : 'MISSING'}</span>
-                    </div>
-                </div>
-
-                <div class="table-scroll">
-                    <table class="table-modern">
-                        <thead><tr><th style="width:240px;">Header</th><th>Value</th></tr></thead>
-                        <tbody>${hRows}</tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-
-    // 10. Hash Classifier
-    function renderHash(data, elapsed, target) {
-        const matches = data.possible_types || data.matches || [];
-        return `
-            <div class="intel-card">
-                <div class="intel-card-header">
-                    <div class="intel-card-title">
-                        <i class="fas fa-fingerprint"></i>
-                        <span>Cryptographic Hash Identification</span>
-                    </div>
-                    <span class="tag-latency">${elapsed}ms</span>
-                </div>
-
-                <div class="stat-pill-grid">
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Length</span>
-                        <span class="stat-pill-value">${escapeHtml(String(data.length || target.length))} chars</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Shannon Entropy</span>
-                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${escapeHtml(String(data.entropy || 'N/A'))}</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-pill-label">Primary Candidate</span>
-                        <span class="stat-pill-value" style="color:var(--accent-emerald); font-size:1.05rem;">${escapeHtml(matches[0] || 'Unknown')}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // ==========================================================================
-    // INTERACTIVE MAP (LEAFLET.JS)
-    // ==========================================================================
-    function mountLeafletMap(lat, lon, city, country, ip) {
-        const mapContainer = document.getElementById('leaflet-ip-map');
-        if (!mapContainer) return;
-
-        if (currentMap) {
-            currentMap.remove();
-            currentMap = null;
-        }
-
-        currentMap = L.map('leaflet-ip-map', {
-            zoomControl: false,
-            attributionControl: false
-        }).setView([lat, lon], 10);
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19
-        }).addTo(currentMap);
-
-        const customIcon = L.divIcon({
-            className: 'custom-map-pin',
-            html: `<div style="width:14px; height:14px; background:#06b6d4; border-radius:50%; box-shadow:0 0 15px #06b6d4, 0 0 30px #06b6d4;"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
-        });
-
-        const marker = L.marker([lat, lon], { icon: customIcon }).addTo(currentMap);
-        marker.bindPopup(`<b>${escapeHtml(ip)}</b><br>${escapeHtml(city || '')}, ${escapeHtml(country || '')}`).openPopup();
-    }
-
-    // ==========================================================================
-    // INTERACTIVE NODE GRAPH TOPOLOGY (VIS.JS)
-    // ==========================================================================
-    function buildTopologyGraph(moduleName, target, data) {
-        const container = document.getElementById('vis-network-canvas');
+    function buildTopologyFromDossier(target, dossier) {
+        const container = document.getElementById('topology-canvas-full');
         if (!container) return;
 
         const nodes = [
-            { id: 'target', label: target, color: '#06b6d4', font: { color: '#ffffff', size: 16, face: 'Plus Jakarta Sans' }, shape: 'box' }
+            { id: 'target', label: target, color: '#f59e0b', font: { color: '#ffffff', size: 16, face: 'Fira Code' }, shape: 'box' }
         ];
         const edges = [];
 
-        if (moduleName === 'username') {
-            const found = (data.found || []).slice(0, 25);
-            found.forEach((item, idx) => {
-                const nodeId = `social_${idx}`;
-                nodes.push({ id: nodeId, label: item.platform, color: '#10b981', font: { color: '#ffffff', size: 12 }, shape: 'dot', size: 12 });
-                edges.push({ from: 'target', to: nodeId, color: { color: '#10b981', opacity: 0.6 } });
+        if (dossier.ip) {
+            nodes.push({ id: 'ip_node', label: `IP: ${dossier.ip.query || target}`, color: '#10b981', font: { color: '#fff', size: 12 }, shape: 'ellipse' });
+            edges.push({ from: 'target', to: 'ip_node', color: { color: '#10b981' } });
+            if (dossier.ip.isp) {
+                nodes.push({ id: 'isp_node', label: `ISP: ${dossier.ip.isp}`, color: '#06b6d4', font: { color: '#fff', size: 10 }, shape: 'dot', size: 8 });
+                edges.push({ from: 'ip_node', to: 'isp_node', color: { color: '#06b6d4' } });
+            }
+        }
+
+        if (dossier.domain && dossier.domain.subdomains) {
+            dossier.domain.subdomains.slice(0, 15).forEach((s, i) => {
+                const subId = `sub_${i}`;
+                nodes.push({ id: subId, label: s, color: '#06b6d4', font: { color: '#fff', size: 10 }, shape: 'dot', size: 8 });
+                edges.push({ from: 'target', to: subId, color: { color: '#06b6d4' } });
             });
-        } else if (moduleName === 'ip') {
-            if (data.country) {
-                nodes.push({ id: 'geo', label: `${data.city || ''}, ${data.country}`, color: '#f59e0b', font: { color: '#ffffff', size: 12 }, shape: 'ellipse' });
-                edges.push({ from: 'target', to: 'geo', color: { color: '#f59e0b', opacity: 0.6 } });
-            }
-            if (data.asn || data.as) {
-                nodes.push({ id: 'asn', label: data.asn || data.as, color: '#8b5cf6', font: { color: '#ffffff', size: 12 }, shape: 'box' });
-                edges.push({ from: 'target', to: 'asn', color: { color: '#8b5cf6', opacity: 0.6 } });
-            }
-            if (data.isp) {
-                nodes.push({ id: 'isp', label: `ISP: ${data.isp}`, color: '#3b82f6', font: { color: '#ffffff', size: 12 }, shape: 'dot', size: 10 });
-                edges.push({ from: 'target', to: 'isp', color: { color: '#3b82f6', opacity: 0.6 } });
-            }
-        } else if (moduleName === 'domain') {
-            const subs = (data.subdomains || []).slice(0, 20);
-            subs.forEach((sub, idx) => {
-                const nodeId = `sub_${idx}`;
-                nodes.push({ id: nodeId, label: sub, color: '#06b6d4', font: { color: '#ffffff', size: 11 }, shape: 'dot', size: 8 });
-                edges.push({ from: 'target', to: nodeId, color: { color: '#06b6d4', opacity: 0.5 } });
+        }
+
+        if (dossier.username && dossier.username.found) {
+            dossier.username.found.slice(0, 20).forEach((f, i) => {
+                const uId = `usr_${i}`;
+                nodes.push({ id: uId, label: f.platform, color: '#10b981', font: { color: '#fff', size: 11 }, shape: 'dot', size: 10 });
+                edges.push({ from: 'target', to: uId, color: { color: '#10b981' } });
             });
         }
 
@@ -879,146 +645,40 @@ document.addEventListener('DOMContentLoaded', () => {
         visEdges = new vis.DataSet(edges);
 
         const options = {
-            nodes: { borderWidth: 1, shadow: true },
+            nodes: { borderWidth: 1 },
             edges: { width: 1.5, smooth: { type: 'continuous' } },
             physics: {
                 solver: 'forceAtlas2Based',
-                forceAtlas2Based: { gravitationalConstant: -35, centralGravity: 0.01, springLength: 90, springConstant: 0.08 }
-            },
-            interaction: { hover: true, tooltipDelay: 100 }
+                forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 100 }
+            }
         };
 
         visNetwork = new vis.Network(container, { nodes: visNodes, edges: visEdges }, options);
     }
 
-    if (btnGraphFit) btnGraphFit.addEventListener('click', () => visNetwork && visNetwork.fit());
-    if (btnGraphReset) btnGraphReset.addEventListener('click', () => visNetwork && visNetwork.setData({ nodes: visNodes, edges: visEdges }));
+    if (btnTopoFit) btnTopoFit.addEventListener('click', () => visNetwork && visNetwork.fit());
+    if (btnTopoClear) btnTopoClear.addEventListener('click', () => buildTopologyFromDossier('SPECTRE', {}));
 
-    // ==========================================================================
-    // ACTION BINDINGS (PIVOTS, COPY, EXPORTS)
-    // ==========================================================================
-    function bindInteractions(container, data, target, moduleName) {
-        // Quick Pivots
-        container.querySelectorAll('.pivot-link-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const pivotMod = btn.getAttribute('data-pivot-mod');
-                const pivotVal = btn.getAttribute('data-pivot-val');
-                if (pivotMod && pivotVal) {
-                    switchTab(pivotMod);
-                    const targetInput = document.getElementById(`input-${pivotMod}`);
-                    if (targetInput) {
-                        targetInput.value = pivotVal;
-                        const panel = document.getElementById(`panel-${pivotMod}`);
-                        const scanBtn = panel?.querySelector('.btn-launch-scan');
-                        if (scanBtn) scanBtn.click();
-                    }
-                }
-            });
-        });
-
-        // Copy buttons
-        container.querySelectorAll('.copy-action').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const val = btn.getAttribute('data-copy');
-                if (val) {
-                    navigator.clipboard.writeText(val).then(() => showToast('Copied to clipboard', 'info'));
-                }
-            });
-        });
-
-        // Export JSON
-        const exportBtn = container.querySelector('#btn-export-json');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `spectre-${moduleName}-${target}-${Date.now()}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast('Intelligence JSON Exported', 'success');
-            });
+    // Helpers
+    function setBtnLoading(btn, isLoading) {
+        if (!btn) return;
+        if (isLoading) {
+            btn.disabled = true;
+            btn.dataset.origText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>SCANNING...</span>`;
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.origText) btn.innerHTML = btn.dataset.origText;
         }
     }
 
-    // ==========================================================================
-    // GLOBAL COMMAND PALETTE (CMD+K / CTRL+K)
-    // ==========================================================================
-    function openCmdPalette() {
-        if (!cmdPaletteModal) return;
-        cmdPaletteModal.style.display = 'flex';
-        cmdPaletteInput.value = '';
-        cmdPaletteInput.focus();
-        filterCmdItems('');
-    }
-
-    function closeCmdPalette() {
-        if (!cmdPaletteModal) return;
-        cmdPaletteModal.style.display = 'none';
-    }
-
-    if (cmdPaletteTrigger) cmdPaletteTrigger.addEventListener('click', openCmdPalette);
-    document.addEventListener('keydown', (e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-            e.preventDefault();
-            if (cmdPaletteModal.style.display === 'none' || !cmdPaletteModal.style.display) {
-                openCmdPalette();
-            } else {
-                closeCmdPalette();
-            }
-        } else if (e.key === 'Escape') {
-            closeCmdPalette();
-        }
-    });
-
-    if (cmdPaletteModal) {
-        cmdPaletteModal.querySelector('.cmd-palette-backdrop').addEventListener('click', closeCmdPalette);
-    }
-
-    if (cmdPaletteInput) {
-        cmdPaletteInput.addEventListener('input', (e) => {
-            filterCmdItems(e.target.value.toLowerCase().trim());
-        });
-    }
-
-    function filterCmdItems(q) {
-        const items = cmdResultsList.querySelectorAll('.cmd-item');
-        items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(q) ? 'flex' : 'none';
-        });
-    }
-
-    if (cmdResultsList) {
-        cmdResultsList.querySelectorAll('.cmd-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const targetMod = item.getAttribute('data-target');
-                if (targetMod) {
-                    switchTab(targetMod);
-                    closeCmdPalette();
-                }
-            });
-        });
-    }
-
-    // ==========================================================================
-    // TOAST NOTIFICATIONS
-    // ==========================================================================
     function showToast(message, type = 'info') {
         if (!toastContainer) return;
         const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        
-        let icon = 'fa-circle-info';
-        if (type === 'success') icon = 'fa-circle-check';
-        if (type === 'error') icon = 'fa-circle-exclamation';
-
-        toast.innerHTML = `<i class="fas ${icon}"></i><span>${escapeHtml(message)}</span>`;
+        toast.className = 'toast';
+        const color = type === 'success' ? 'var(--accent-emerald)' : (type === 'error' ? 'var(--accent-rose)' : 'var(--accent-primary)');
+        toast.style.borderColor = color;
+        toast.innerHTML = `<i class="fas fa-circle-notch fa-spin" style="color:${color};"></i><span>${escapeHtml(message)}</span>`;
         toastContainer.appendChild(toast);
 
         setTimeout(() => {
@@ -1026,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toast.style.transform = 'translateY(6px)';
             toast.style.transition = 'all 0.2s ease';
             setTimeout(() => toast.remove(), 200);
-        }, 3000);
+        }, 2800);
     }
 
     function escapeHtml(str) {
