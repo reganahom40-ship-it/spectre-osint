@@ -773,6 +773,12 @@
                 showToast('Topology Graph Reset', 'fas fa-rotate');
             });
         }
+
+        window.addEventListener('resize', () => {
+            if (networkGraph) {
+                networkGraph.redraw();
+            }
+        });
     }
 
     function updateGraphWithTarget(target, data) {

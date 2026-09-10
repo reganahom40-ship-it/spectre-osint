@@ -102,6 +102,13 @@
 [data-font="display"] { --font-ui: 'Space Grotesk', sans-serif; }
 
 /* Global Reset */
+html {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -115,6 +122,8 @@ body {
     font-size: 14px;
     line-height: 1.55;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
     overflow-x: hidden;
     position: relative;
     -webkit-font-smoothing: antialiased;
@@ -126,9 +135,11 @@ body {
    ========================================================================== */
 #bg-particles-canvas {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    max-width: 100%;
     pointer-events: none;
     z-index: 0;
     opacity: 0.55;
@@ -154,6 +165,7 @@ body {
     pointer-events: none;
     z-index: 0;
     opacity: 0.1;
+    overflow: hidden;
 }
 .orb-1 { top: -10%; left: 20%; width: 500px; height: 500px; background: var(--accent-primary); }
 .orb-2 { bottom: -10%; right: 15%; width: 600px; height: 600px; background: var(--accent-secondary); }
@@ -173,6 +185,9 @@ body {
     font-size: 0.72rem;
     font-family: var(--font-mono);
     color: var(--text-dim);
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 .ticker-inner {
     max-width: 1520px;
@@ -180,8 +195,14 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    overflow-x: auto;
+    overflow: hidden;
     white-space: nowrap;
+    text-overflow: ellipsis;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.ticker-inner::-webkit-scrollbar {
+    display: none;
 }
 .ticker-badge {
     display: inline-flex;
@@ -220,9 +241,11 @@ body {
 .app-container {
     position: relative;
     z-index: 10;
+    width: 100%;
     max-width: 1520px;
     margin: 0 auto;
     padding: 12px 24px 60px;
+    box-sizing: border-box;
 }
 
 .app-navbar {
@@ -1570,18 +1593,28 @@ body {
 }
 
 /* ==========================================================================
-   RESPONSIVE QUERIES
+   RESPONSIVE QUERIES (NO HORIZONTAL OVERFLOW ACROSS ALL RESOLUTIONS)
    ========================================================================== */
 @media (max-width: 1024px) {
+    .app-container { padding: 10px 16px 40px; }
     .ops-bento-layout { grid-template-columns: 1fr; }
     .dossier-grid { grid-template-columns: 1fr; }
     .radar-feed-layout { grid-template-columns: 1fr; }
     .dossier-kpi-bar { grid-template-columns: repeat(2, 1fr); }
+    .nav-modes-wrapper { overflow: hidden; }
 }
 
 @media (max-width: 768px) {
-    .app-navbar { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .nav-modes-wrapper { width: 100%; }
-    .nav-modes { width: 100%; overflow-x: auto; }
+    .global-ticker-bar { display: none; }
+    .app-navbar { flex-direction: column; align-items: stretch; gap: 12px; }
+    .nav-modes-wrapper { width: 100%; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+    .nav-modes-wrapper::-webkit-scrollbar { display: none; }
+    .nav-modes { width: max-content; }
+    .nav-controls { justify-content: space-between; width: 100%; }
     .ops-vectors-grid { grid-template-columns: 1fr; }
+    #vis-full-canvas { height: 420px; }
+    .spotlight-box { flex-direction: column; align-items: stretch; gap: 8px; }
+    .btn-spotlight-exec { width: 100%; justify-content: center; }
+    .palette-modal { width: calc(100vw - 32px); left: 16px; transform: none; }
+    .customizer-drawer { width: 100vw; }
 }
