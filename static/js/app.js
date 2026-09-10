@@ -20,8 +20,16 @@
         glow: localStorage.getItem('spectre_glow') || 'high',
         particles: localStorage.getItem('spectre_particles') !== 'false',
         tilt: localStorage.getItem('spectre_tilt') !== 'false',
-        font: localStorage.getItem('spectre_font') || 'sans'
+        font: localStorage.getItem('spectre_font') || 'sans',
+        atmosphere: localStorage.getItem('spectre_atmosphere') || 'neural',
+        shape: localStorage.getItem('spectre_shape') || 'dots',
+        lineStyle: localStorage.getItem('spectre_linestyle') || 'straight',
+        density: parseInt(localStorage.getItem('spectre_density') || '50', 10),
+        lineDensity: parseInt(localStorage.getItem('spectre_linedensity') || '50', 10),
+        speed: parseInt(localStorage.getItem('spectre_speed') || '100', 10)
     };
+
+    let particleRebuildTrigger = null;
 
     function applyPreferences() {
         document.documentElement.setAttribute('data-theme', prefs.theme);
@@ -54,10 +62,45 @@
             btn.classList.toggle('active', btn.dataset.font === prefs.font);
         });
 
-        // Update HUD label
-        const hudTheme = document.getElementById('stat-active-theme');
-        if (hudTheme) {
-            hudTheme.textContent = prefs.theme.toUpperCase() + ' THEME';
+        // Update Atmosphere UI
+        document.querySelectorAll('#atmosphere-grid .atmo-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.atmo === prefs.atmosphere);
+        });
+
+        // Update Shape UI
+        document.querySelectorAll('#shape-grid .shape-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.shape === prefs.shape);
+        });
+
+        // Update Line Style UI
+        document.querySelectorAll('#line-grid .line-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.line === prefs.lineStyle);
+        });
+
+        // Update Sliders UI
+        const sDensity = document.getElementById('slider-density');
+        const vDensity = document.getElementById('val-density');
+        if (sDensity && vDensity) {
+            sDensity.value = prefs.density;
+            vDensity.textContent = `${prefs.density}%`;
+        }
+
+        const sLineDensity = document.getElementById('slider-linedensity');
+        const vLineDensity = document.getElementById('val-linedensity');
+        if (sLineDensity && vLineDensity) {
+            sLineDensity.value = prefs.lineDensity;
+            vLineDensity.textContent = `${prefs.lineDensity}%`;
+        }
+
+        const sSpeed = document.getElementById('slider-speed');
+        const vSpeed = document.getElementById('val-speed');
+        if (sSpeed && vSpeed) {
+            sSpeed.value = prefs.speed;
+            vSpeed.textContent = `${(prefs.speed / 100).toFixed(1)}x`;
+        }
+
+        if (typeof particleRebuildTrigger === 'function') {
+            particleRebuildTrigger();
         }
     }
 
@@ -101,7 +144,170 @@
         }
     }
 
-    // --- Interactive Particle Mesh Canvas Background ---
+    // --- Geometry / Shape Drawing Utilities ---
+    function drawParticleShape(ctx, p, shape, size) {
+        ctx.beginPath();
+        switch (shape) {
+            case 'circles':
+                ctx.arc(p.x, p.y, size * 1.3, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
+            case 'squares':
+                ctx.fillRect(p.x - size, p.y - size, size * 2, size * 2);
+                break;
+            case 'diamonds':
+                ctx.moveTo(p.x, p.y - size * 1.4);
+                ctx.lineTo(p.x + size * 1.4, p.y);
+                ctx.lineTo(p.x, p.y + size * 1.4);
+                ctx.lineTo(p.x - size * 1.4, p.y);
+                ctx.closePath();
+                ctx.fill();
+                break;
+            case 'stars': {
+                const spikes = 5;
+                const outer = size * 1.6;
+                const inner = size * 0.7;
+                let rot = Math.PI / 2 * 3;
+                let x = p.x;
+                let y = p.y;
+                const step = Math.PI / spikes;
+                ctx.moveTo(p.x, p.y - outer);
+                for (let i = 0; i < spikes; i++) {
+                    x = p.x + Math.cos(rot) * outer;
+                    y = p.y + Math.sin(rot) * outer;
+                    ctx.lineTo(x, y);
+                    rot += step;
+                    x = p.x + Math.cos(rot) * inner;
+                    y = p.y + Math.sin(rot) * inner;
+                    ctx.lineTo(x, y);
+                    rot += step;
+                }
+                ctx.lineTo(p.x, p.y - outer);
+                ctx.closePath();
+                ctx.fill();
+                break;
+            }
+            case 'hexagons': {
+                const sides = 6;
+                const r = size * 1.3;
+                for (let i = 0; i < sides; i++) {
+                    const angle = (i * 2 * Math.PI) / sides;
+                    const hx = p.x + r * Math.cos(angle);
+                    const hy = p.y + r * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(hx, hy);
+                    else ctx.lineTo(hx, hy);
+                }
+                ctx.closePath();
+                ctx.fill();
+                break;
+            }
+            case 'crosses': {
+                const arm = size * 1.4;
+                const thick = size * 0.45;
+                ctx.fillRect(p.x - thick, p.y - arm, thick * 2, arm * 2);
+                ctx.fillRect(p.x - arm, p.y - thick, arm * 2, thick * 2);
+                break;
+            }
+            case 'hearts': {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                const s = size * 0.22;
+                ctx.scale(s, s);
+                ctx.beginPath();
+                ctx.moveTo(0, -3);
+                ctx.bezierCurveTo(-4, -10, -12, -7, -12, 0);
+                ctx.bezierCurveTo(-12, 6, 0, 14, 0, 14);
+                ctx.bezierCurveTo(0, 14, 12, 6, 12, 0);
+                ctx.bezierCurveTo(12, -7, 4, -10, 0, -3);
+                ctx.fill();
+                ctx.restore();
+                break;
+            }
+            case 'flowers': {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                const pr = size * 0.7;
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * 2 * Math.PI) / 5;
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(angle) * pr, Math.sin(angle) * pr, pr * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.beginPath();
+                ctx.arc(0, 0, pr * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                break;
+            }
+            case 'dots':
+            default:
+                ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+        }
+    }
+
+    function drawConnectionLine(ctx, p1, p2, style, dist, maxDist, baseColor) {
+        ctx.save();
+        const alpha = Math.max(0, 1 - dist / maxDist) * 0.25;
+
+        switch (style) {
+            case 'dotted':
+                ctx.setLineDash([2, 3]);
+                ctx.strokeStyle = `rgba(99, 102, 241, ${alpha})`;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                break;
+            case 'dashed':
+                ctx.setLineDash([6, 5]);
+                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha * 1.2})`;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                break;
+            case 'glow':
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(99, 102, 241, 0.6)';
+                ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 1.5})`;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                break;
+            case 'thin':
+                ctx.lineWidth = 0.5;
+                ctx.strokeStyle = `rgba(148, 163, 184, ${alpha * 0.6})`;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                break;
+            case 'orbital': {
+                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha * 0.8})`;
+                ctx.beginPath();
+                const midX = (p1.x + p2.x) / 2 + (p1.y - p2.y) * 0.2;
+                const midY = (p1.y + p2.y) / 2 + (p2.x - p1.x) * 0.2;
+                ctx.moveTo(p1.x, p1.y);
+                ctx.quadraticCurveTo(midX, midY, p2.x, p2.y);
+                ctx.stroke();
+                break;
+            }
+            case 'straight':
+            default:
+                ctx.strokeStyle = `rgba(99, 102, 241, ${alpha})`;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                break;
+        }
+        ctx.restore();
+    }
+
+    // --- Interactive Atmospheric Particle Engine ---
     function initParticles() {
         const canvas = document.getElementById('bg-particles-canvas');
         if (!canvas) return;
@@ -112,19 +318,30 @@
         window.addEventListener('resize', () => {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            rebuildParticles();
         });
 
-        const particles = [];
-        const count = Math.min(Math.floor(width / 28), 55);
-        for (let i = 0; i < count; i++) {
-            particles.push({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                vx: (Math.random() - 0.5) * 0.6,
-                vy: (Math.random() - 0.5) * 0.6,
-                size: Math.random() * 2 + 1
-            });
+        let particles = [];
+
+        function rebuildParticles() {
+            particles = [];
+            const baseCount = Math.floor((width / 32) * (prefs.density / 50));
+            const count = Math.max(10, Math.min(baseCount, 120));
+            const speedFactor = (prefs.speed / 100) * 0.6;
+
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * speedFactor,
+                    vy: (Math.random() - 0.5) * speedFactor,
+                    size: Math.random() * 2 + 1.2
+                });
+            }
         }
+
+        particleRebuildTrigger = rebuildParticles;
+        rebuildParticles();
 
         let mouseX = -1000;
         let mouseY = -1000;
@@ -141,47 +358,50 @@
             }
 
             ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = 'rgba(99, 102, 241, 0.4)';
-            ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)';
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.45)';
+            ctx.strokeStyle = 'rgba(99, 102, 241, 0.45)';
+
+            const maxLineDist = 60 + (prefs.lineDensity * 0.9);
+            const shape = prefs.shape || 'dots';
+            const lineStyle = prefs.lineStyle || 'straight';
 
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
 
-                if (p.x < 0) p.x = width;
-                if (p.x > width) p.x = 0;
-                if (p.y < 0) p.y = height;
-                if (p.y > height) p.y = 0;
+                if (p.x < -20) p.x = width + 20;
+                if (p.x > width + 20) p.x = -20;
+                if (p.y < -20) p.y = height + 20;
+                if (p.y > height + 20) p.y = -20;
 
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
+                drawParticleShape(ctx, p, shape, p.size);
 
-                for (let j = i + 1; j < particles.length; j++) {
-                    const p2 = particles[j];
-                    const dx = p.x - p2.x;
-                    const dy = p.y - p2.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
+                if (prefs.lineDensity > 0) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const p2 = particles[j];
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    if (dist < 110) {
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
+                        if (dist < maxLineDist) {
+                            drawConnectionLine(ctx, p, p2, lineStyle, dist, maxLineDist);
+                        }
                     }
                 }
 
+                // Interactive Mouse Connection
                 const mdx = p.x - mouseX;
                 const mdy = p.y - mouseY;
                 const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
                 if (mdist < 140) {
-                    ctx.strokeStyle = `rgba(6, 182, 212, ${0.35 * (1 - mdist / 140)})`;
+                    ctx.save();
+                    ctx.strokeStyle = `rgba(6, 182, 212, ${0.4 * (1 - mdist / 140)})`;
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(mouseX, mouseY);
                     ctx.stroke();
-                    ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)';
+                    ctx.restore();
                 }
             }
             requestAnimationFrame(animate);
@@ -534,6 +754,133 @@
         if (btnClose) btnClose.addEventListener('click', closeDrawer);
         if (backdrop) backdrop.addEventListener('click', closeDrawer);
 
+        // Atmosphere Presets
+        document.querySelectorAll('#atmosphere-grid .atmo-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const atmo = btn.dataset.atmo;
+                prefs.atmosphere = atmo;
+                localStorage.setItem('spectre_atmosphere', atmo);
+
+                if (atmo === 'neural') {
+                    prefs.shape = 'dots';
+                    prefs.lineStyle = 'straight';
+                    prefs.density = 50;
+                    prefs.lineDensity = 50;
+                    prefs.speed = 100;
+                } else if (atmo === 'minimal') {
+                    prefs.shape = 'dots';
+                    prefs.lineStyle = 'thin';
+                    prefs.density = 25;
+                    prefs.lineDensity = 15;
+                    prefs.speed = 50;
+                } else if (atmo === 'orbital') {
+                    prefs.shape = 'circles';
+                    prefs.lineStyle = 'orbital';
+                    prefs.density = 40;
+                    prefs.lineDensity = 35;
+                    prefs.speed = 120;
+                } else if (atmo === 'matrix') {
+                    prefs.shape = 'hexagons';
+                    prefs.lineStyle = 'dotted';
+                    prefs.density = 65;
+                    prefs.lineDensity = 45;
+                    prefs.speed = 90;
+                } else if (atmo === 'cosmic') {
+                    prefs.shape = 'stars';
+                    prefs.lineStyle = 'glow';
+                    prefs.density = 75;
+                    prefs.lineDensity = 30;
+                    prefs.speed = 60;
+                } else if (atmo === 'aurora') {
+                    prefs.shape = 'diamonds';
+                    prefs.lineStyle = 'dashed';
+                    prefs.density = 45;
+                    prefs.lineDensity = 55;
+                    prefs.speed = 80;
+                }
+
+                localStorage.setItem('spectre_shape', prefs.shape);
+                localStorage.setItem('spectre_linestyle', prefs.lineStyle);
+                localStorage.setItem('spectre_density', prefs.density);
+                localStorage.setItem('spectre_linedensity', prefs.lineDensity);
+                localStorage.setItem('spectre_speed', prefs.speed);
+
+                applyPreferences();
+                playTone(600, 'sine', 0.08);
+                showToast(`Atmosphere: ${atmo.toUpperCase()}`, 'fas fa-meteor');
+            });
+        });
+
+        // Particle Shape Choices
+        document.querySelectorAll('#shape-grid .shape-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const s = btn.dataset.shape;
+                prefs.shape = s;
+                prefs.atmosphere = 'custom';
+                localStorage.setItem('spectre_shape', s);
+                localStorage.setItem('spectre_atmosphere', 'custom');
+                applyPreferences();
+                playTone(640, 'sine', 0.06);
+                showToast(`Particle Shape: ${s.toUpperCase()}`, 'fas fa-shapes');
+            });
+        });
+
+        // Connection Line Style Choices
+        document.querySelectorAll('#line-grid .line-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const l = btn.dataset.line;
+                prefs.lineStyle = l;
+                prefs.atmosphere = 'custom';
+                localStorage.setItem('spectre_linestyle', l);
+                localStorage.setItem('spectre_atmosphere', 'custom');
+                applyPreferences();
+                playTone(640, 'sine', 0.06);
+                showToast(`Line Style: ${l.toUpperCase()}`, 'fas fa-bezier-curve');
+            });
+        });
+
+        // Sliders Listeners
+        const sDensity = document.getElementById('slider-density');
+        if (sDensity) {
+            sDensity.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10);
+                prefs.density = val;
+                prefs.atmosphere = 'custom';
+                localStorage.setItem('spectre_density', val);
+                localStorage.setItem('spectre_atmosphere', 'custom');
+                const v = document.getElementById('val-density');
+                if (v) v.textContent = `${val}%`;
+                if (typeof particleRebuildTrigger === 'function') particleRebuildTrigger();
+            });
+        }
+
+        const sLineDensity = document.getElementById('slider-linedensity');
+        if (sLineDensity) {
+            sLineDensity.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10);
+                prefs.lineDensity = val;
+                prefs.atmosphere = 'custom';
+                localStorage.setItem('spectre_linedensity', val);
+                localStorage.setItem('spectre_atmosphere', 'custom');
+                const v = document.getElementById('val-linedensity');
+                if (v) v.textContent = `${val}%`;
+            });
+        }
+
+        const sSpeed = document.getElementById('slider-speed');
+        if (sSpeed) {
+            sSpeed.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10);
+                prefs.speed = val;
+                prefs.atmosphere = 'custom';
+                localStorage.setItem('spectre_speed', val);
+                localStorage.setItem('spectre_atmosphere', 'custom');
+                const v = document.getElementById('val-speed');
+                if (v) v.textContent = `${(val / 100).toFixed(1)}x`;
+                if (typeof particleRebuildTrigger === 'function') particleRebuildTrigger();
+            });
+        }
+
         // Theme choices
         document.querySelectorAll('.theme-choice').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -591,6 +938,12 @@
                 prefs.particles = true;
                 prefs.tilt = true;
                 prefs.font = 'sans';
+                prefs.atmosphere = 'neural';
+                prefs.shape = 'dots';
+                prefs.lineStyle = 'straight';
+                prefs.density = 50;
+                prefs.lineDensity = 50;
+                prefs.speed = 100;
                 applyPreferences();
                 playTone(400, 'sine', 0.12);
                 showToast('Reset to Factory Defaults', 'fas fa-arrow-rotate-left');
