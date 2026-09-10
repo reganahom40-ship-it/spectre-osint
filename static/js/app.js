@@ -34,6 +34,11 @@
             btn.classList.toggle('active', btn.dataset.t === prefs.theme);
         });
 
+        // Update Deck Theme chips
+        document.querySelectorAll('.theme-chip-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.themeSet === prefs.theme);
+        });
+
         // Update Glow UI
         document.querySelectorAll('#glow-segmented .seg-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.glow === prefs.glow);
@@ -534,10 +539,20 @@
         if (btnClose) btnClose.addEventListener('click', closeDrawer);
         if (backdrop) backdrop.addEventListener('click', closeDrawer);
 
-        // Theme choices
+        // Theme choices from Drawer
         document.querySelectorAll('.theme-choice').forEach(btn => {
             btn.addEventListener('click', () => {
                 const t = btn.dataset.t;
+                savePref('theme', t);
+                playTone(620, 'sine', 0.08);
+                showToast(`Applied Theme: ${t.toUpperCase()}`, 'fas fa-palette');
+            });
+        });
+
+        // Theme choices from Command Deck Bar
+        document.querySelectorAll('.theme-chip-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const t = btn.dataset.themeSet;
                 savePref('theme', t);
                 playTone(620, 'sine', 0.08);
                 showToast(`Applied Theme: ${t.toUpperCase()}`, 'fas fa-palette');
