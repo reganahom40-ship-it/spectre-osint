@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_workspace_v32">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_workspace_v33">
 </head>
 <body>
 
@@ -111,47 +111,42 @@
                  ============================================== -->
             <section class="mode-view active" id="view-omni">
                 <div class="hero-section">
-                    <div class="hero-tag-glow">
-                        <span class="hero-sparkle"><i class="fas fa-sparkles"></i></span>
-                        <span>Autonomous Intelligence Investigation Gateway</span>
-                    </div>
-
                     <h1 class="hero-heading">
-                        Investigate Any <span class="text-gradient">Entity or Indicator.</span>
+                        Investigate a Target
                     </h1>
 
                     <p class="hero-subheading">
-                        Correlate identities across 112+ platforms, decode Discord snowflake epochs, map BGP routing CIDRs, and inspect Certificate Transparency logs in sub-second parallel streams.
+                        Enter an IP, domain, username, email, phone, Discord ID, or hash.
                     </p>
 
-                    <!-- Spotlight Search Chassis with Animated Glow & 3D Tilt -->
+                    <!-- Spotlight Search Chassis -->
                     <div class="spotlight-wrapper tilt-box">
                         <div class="spotlight-box">
                             <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
                                 <i class="fas fa-magnifying-glass"></i>
                             </div>
-                            <input type="text" id="omni-input" placeholder="Enter IP, domain, username, email, phone, Discord ID, or hash..." autocomplete="off" spellcheck="false">
+                            <input type="text" id="omni-input" placeholder="Enter target identifier..." autocomplete="off" spellcheck="false">
                             <button class="btn-spotlight-exec" id="btn-omni-exec">
                                 <span class="btn-shine"></span>
                                 <i class="fas fa-bolt"></i>
-                                <span>Execute Recon</span>
+                                <span>Investigate</span>
                                 <kbd>↵</kbd>
                             </button>
                         </div>
 
-                        <!-- Real-Time Live Target Detective HUD (Updates dynamically as you type) -->
+                        <!-- Real-Time Live Target Detective HUD -->
                         <div class="target-inspector-card" id="target-inspector">
                             <div class="tinspect-header">
                                 <div class="tinspect-badge" id="tinspect-type-badge">
                                     <i class="fas fa-satellite-dish"></i>
-                                    <span id="tinspect-type-text">READY • AWAITING TARGET</span>
+                                    <span id="tinspect-type-text">Ready</span>
                                 </div>
                                 <div class="tinspect-live-signal">
                                     <span class="live-signal-bar bar-1"></span>
                                     <span class="live-signal-bar bar-2"></span>
                                     <span class="live-signal-bar bar-3"></span>
                                     <span class="live-signal-bar bar-4"></span>
-                                    <span class="tinspect-confidence" id="tinspect-confidence-badge">KEYSTROKE DETECTIVE ACTIVE</span>
+                                    <span class="tinspect-confidence" id="tinspect-confidence-badge">Keystroke Detective Active</span>
                                 </div>
                             </div>
                             
@@ -769,6 +764,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_workspace_v32"></script>
+    <script src="/static/js/app.js?v=20260910_workspace_v33"></script>
 </body>
 </html>

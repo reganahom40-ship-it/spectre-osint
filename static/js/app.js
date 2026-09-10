@@ -709,24 +709,26 @@
 
         const data = {
             nodes: new vis.DataSet([
-                { id: 'spectre', label: 'SPECTRE CORE', color: '#6366f1', shape: 'dot', size: 28, font: { color: '#fff', face: 'JetBrains Mono', size: 14 } },
-                { id: 'v_user', label: 'Social Vectors', color: '#06b6d4', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } },
-                { id: 'v_ip', label: 'GeoIP & BGP', color: '#10b981', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } },
-                { id: 'v_dns', label: 'DNS & CT Logs', color: '#f59e0b', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } },
-                { id: 'v_disc', label: 'Discord Engine', color: '#a855f7', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } }
+                { id: 'spectre', label: 'SPECTRE CORE', color: { background: '#4f46e5', border: '#6366f1', highlight: { background: '#6366f1', border: '#818cf8' } }, shape: 'dot', size: 24, font: { color: '#f8fafc', face: 'JetBrains Mono', size: 12 } },
+                { id: 'v_user', label: 'Social & Identity', color: { background: '#0e7490', border: '#06b6d4', highlight: { background: '#06b6d4', border: '#67e8f9' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
+                { id: 'v_ip', label: 'Network & BGP', color: { background: '#047857', border: '#10b981', highlight: { background: '#10b981', border: '#6ee7b7' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
+                { id: 'v_dns', label: 'DNS & CT Logs', color: { background: '#b45309', border: '#f59e0b', highlight: { background: '#f59e0b', border: '#fcd34d' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
+                { id: 'v_disc', label: 'Discord Epochs', color: { background: '#6d28d9', border: '#8b5cf6', highlight: { background: '#8b5cf6', border: '#c4b5fd' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
+                { id: 'v_phone', label: 'Carrier & Telco', color: { background: '#0f766e', border: '#14b8a6', highlight: { background: '#14b8a6', border: '#5eead4' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } }
             ]),
             edges: new vis.DataSet([
-                { from: 'spectre', to: 'v_user', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' },
-                { from: 'spectre', to: 'v_ip', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' },
-                { from: 'spectre', to: 'v_dns', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' },
-                { from: 'spectre', to: 'v_disc', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' }
+                { from: 'spectre', to: 'v_user', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(6,182,212,0.6)' }, width: 1.5 },
+                { from: 'spectre', to: 'v_ip', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(16,185,129,0.6)' }, width: 1.5 },
+                { from: 'spectre', to: 'v_dns', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(245,158,11,0.6)' }, width: 1.5 },
+                { from: 'spectre', to: 'v_disc', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(139,92,246,0.6)' }, width: 1.5 },
+                { from: 'spectre', to: 'v_phone', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(20,184,166,0.6)' }, width: 1.5 }
             ])
         };
 
         const options = {
             physics: {
-                stabilization: { iterations: 100 },
-                barnesHut: { gravitationalConstant: -3800, springLength: 130, springConstant: 0.04, damping: 0.09 }
+                stabilization: { iterations: 120 },
+                barnesHut: { gravitationalConstant: -3600, springLength: 120, springConstant: 0.04, damping: 0.09 }
             },
             interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true }
         };
