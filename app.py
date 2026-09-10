@@ -63,39 +63,71 @@ def api_omni():
     if not target:
         return make_response_json(False, 'omni', '', error='Missing target query string'), 400
 
+    target = target.strip()
     detected_type = 'username'
+    confidence = 0.95
+    schema_info = 'Alphanumeric Username / Handle'
+    summary_intel = {}
     dossier = {}
 
-    # 1. IP Check
-    ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
-    if re.match(ip_pattern, target):
+    # 1. ASN Check (e.g. AS15169 or AS13335)
+    if re.match(r'^AS\d+$', target, re.IGNORECASE):
+        detected_type = 'asn'
+        schema_info = 'Autonomous System Number (BGP)'
+        confidence = 0.99
+        try:
+            bgp_res = lookup_bgp(target.upper())
+            dossier['bgp'] = bgp_res
+            summary_intel['asn_name'] = bgp_res.get('holder', 'Unknown Carrier')
+            summary_intel['prefixes_count'] = len(bgp_res.get('prefixes', []))
+        except Exception as e:
+            dossier['bgp_error'] = str(e)
+
+    # 2. IP Address Check (IPv4)
+    elif re.match(r'^(\d{1,3}\.){3}\d{1,3}$', target):
         detected_type = 'ip'
+        schema_info = 'IPv4 Global Unicast Address'
+        confidence = 0.99
         try:
             ip_res = lookup_ip(target)
             dossier['ip'] = ip_res
+            summary_intel['location'] = f"{ip_res.get('city', 'Unknown')}, {ip_res.get('country', 'Unknown')}"
+            summary_intel['isp'] = ip_res.get('isp', ip_res.get('org', 'Unknown ISP'))
+            
             asn = ip_res.get('asn') or ip_res.get('as') or ''
             asn_match = re.search(r'AS\d+', asn, re.IGNORECASE)
             if asn_match:
                 try:
-                    dossier['bgp'] = lookup_bgp(asn_match.group(0))
+                    bgp_data = lookup_bgp(asn_match.group(0))
+                    dossier['bgp'] = bgp_data
                 except Exception:
                     pass
         except Exception as e:
             dossier['ip_error'] = str(e)
 
-    # 2. Discord Snowflake Check (17-19 digits)
+    # 3. Discord Snowflake Check (17-19 digits)
     elif re.match(r'^\d{17,19}$', target):
         detected_type = 'discord'
+        schema_info = '64-Bit Discord Snowflake Epoch'
+        confidence = 0.99
         try:
-            dossier['discord'] = lookup_discord(target)
+            disc_res = lookup_discord(target)
+            dossier['discord'] = disc_res
+            summary_intel['account_age_days'] = disc_res.get('age_days', 0)
+            summary_intel['created_utc'] = disc_res.get('timestamp_utc', 'Unknown')
         except Exception as e:
             dossier['discord_error'] = str(e)
 
-    # 3. Email Check
+    # 4. Email Address Check
     elif '@' in target and '.' in target:
         detected_type = 'email'
+        schema_info = 'RFC 5322 Standard Email Address'
+        confidence = 0.98
         try:
-            dossier['email'] = lookup_email(target)
+            email_res = lookup_email(target)
+            dossier['email'] = email_res
+            summary_intel['mx_servers'] = email_res.get('mx_records', [])
+            summary_intel['has_gravatar'] = email_res.get('gravatar_exists', False)
         except Exception as e:
             dossier['email_error'] = str(e)
         domain_part = target.split('@')[-1]
@@ -105,20 +137,30 @@ def api_omni():
         except Exception:
             pass
 
-    # 4. Hash Check (Hex strings of length 32, 40, 64)
+    # 5. Cryptographic Hash Check (Hex 32 MD5/NTLM, 40 SHA-1, 64 SHA-256)
     elif re.match(r'^[a-fA-F0-9]{32}$|^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{64}$', target):
         detected_type = 'hash'
+        schema_info = 'Hexadecimal Digest / Cryptographic Checksum'
+        confidence = 0.99
         try:
-            dossier['hash'] = analyze_hash(target)
+            hash_res = analyze_hash(target)
+            dossier['hash'] = hash_res
+            summary_intel['possible_algos'] = hash_res.get('possible_algorithms', [])
+            summary_intel['entropy'] = hash_res.get('entropy', 0)
         except Exception as e:
             dossier['hash_error'] = str(e)
 
-    # 5. Domain / URL Check
+    # 6. Domain / URL Check
     elif '.' in target and not target.startswith('+') and not ' ' in target:
         detected_type = 'domain'
+        schema_info = 'Fully Qualified Domain Name (FQDN)'
+        confidence = 0.97
         clean_domain = re.sub(r'^https?://', '', target).split('/')[0]
         try:
-            dossier['domain'] = lookup_domain(clean_domain)
+            dom_res = lookup_domain(clean_domain)
+            dossier['domain'] = dom_res
+            summary_intel['registrar'] = dom_res.get('registrar', 'Unknown')
+            summary_intel['subdomains_count'] = len(dom_res.get('subdomains_ct', []))
         except Exception as e:
             dossier['domain_error'] = str(e)
         try:
@@ -131,29 +173,57 @@ def api_omni():
         except Exception:
             pass
 
-    # 6. Phone Check
+    # 7. Phone Check (E.164 international)
     elif target.startswith('+') or (re.match(r'^\+?[\d\s\-\(\)]{8,20}$', target) and sum(c.isdigit() for c in target) >= 10):
         detected_type = 'phone'
+        schema_info = 'ITU-T E.164 Global Telephone Number'
+        confidence = 0.95
         try:
-            dossier['phone'] = lookup_phone(target)
+            phone_res = lookup_phone(target)
+            dossier['phone'] = phone_res
+            summary_intel['country'] = phone_res.get('country', 'Unknown')
+            summary_intel['carrier'] = phone_res.get('carrier', 'Unknown')
         except Exception as e:
             dossier['phone_error'] = str(e)
 
-    # 7. Default: Username & Dorks
+    # 8. Username Discovery
     else:
         detected_type = 'username'
+        clean_user = target.lstrip('@')
+        schema_info = f'Social / Web Handle (@{clean_user})'
+        confidence = 0.95
         try:
-            dossier['username'] = check_username(target)
+            user_res = check_username(clean_user)
+            dossier['username'] = user_res
+            summary_intel['found_count'] = len(user_res.get('found', []))
+            summary_intel['total_checked'] = user_res.get('total_checked', 112)
         except Exception as e:
             dossier['username_error'] = str(e)
         try:
-            dossier['dorks'] = generate_dorks(target)
+            dossier['dorks'] = generate_dorks(clean_user)
         except Exception:
             pass
 
-    return make_response_json(True, 'omni', target, data={
+    resp_data = {
         'detected_type': detected_type,
-        'dossier': dossier
+        'schema_info': schema_info,
+        'confidence': confidence,
+        'summary_intel': summary_intel,
+        'dossier': dossier,
+        'results': dossier
+    }
+
+    return jsonify({
+        'success': True,
+        'module': 'omni',
+        'query': target,
+        'data': resp_data,
+        'detected_type': detected_type,
+        'schema_info': schema_info,
+        'confidence': confidence,
+        'summary_intel': summary_intel,
+        'results': dossier,
+        'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
     }), 200
 
 # =========================================================================
