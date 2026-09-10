@@ -119,34 +119,7 @@ body {
   height: 100vh;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.6;
-}
-
-.cyber-grid-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 44px 44px;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.cyber-scanline {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  background-size: 100% 4px, 6px 100%;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0.35;
+  opacity: 0.7;
 }
 
 .cursor-glow {
@@ -499,37 +472,23 @@ body {
 }
 
 .spotlight-box {
-  background: rgba(15, 23, 42, 0.85);
-  position: relative;
   display: flex;
   align-items: center;
   gap: 16px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-muted);
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-xl);
   padding: 12px 14px 12px 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-.hud-corner {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--accent-secondary);
-  pointer-events: none;
-  opacity: 0.8;
-}
-.corner-tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-.corner-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
-.corner-bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
-.corner-br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
 .spotlight-box:focus-within {
   border-color: var(--accent-primary);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 40px var(--accent-glow);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 35px var(--accent-glow);
+  background: rgba(15, 23, 42, 0.9);
 }
 
 .tinspect-live-signal {

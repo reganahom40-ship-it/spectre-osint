@@ -16,17 +16,15 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
-    <!-- Stylesheet with Cyber HUD Cache Buster -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_ultra_v22">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_clean_v23">
 </head>
 <body>
 
-    <!-- Cyber Background Matrix & Scanlines -->
+    <!-- Smooth Ambient Particles Background -->
     <canvas id="bg-particles-canvas"></canvas>
-    <div class="cyber-grid-overlay"></div>
-    <div class="cyber-scanline"></div>
 
-    <!-- Dynamic Mouse Cursor Glow & Floating Mesh Orbs -->
+    <!-- Dynamic Ambient Cursor Glow & Mesh Orbs -->
     <div class="cursor-glow" id="cursor-glow"></div>
     <div class="mesh-orb orb-1"></div>
     <div class="mesh-orb orb-2"></div>
@@ -128,22 +126,17 @@
 
                     <!-- Spotlight Search Chassis with Animated Glow & 3D Tilt -->
                     <div class="spotlight-wrapper tilt-box">
-                        <div class="spotlight-box hud-bracket-frame">
+                        <div class="spotlight-box">
                             <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
                                 <i class="fas fa-magnifying-glass"></i>
                             </div>
-                            <input type="text" id="omni-input" placeholder="Type or paste any target (e.g. 8080, 1.1.1.1, +14155552671, discord ID, domain, hash, handle)..." autocomplete="off" spellcheck="false">
+                            <input type="text" id="omni-input" placeholder="Search any port (8080), phone (+1...), IP (1.1.1.1), Discord ID, handle, hash..." autocomplete="off" spellcheck="false">
                             <button class="btn-spotlight-exec" id="btn-omni-exec">
                                 <span class="btn-shine"></span>
                                 <i class="fas fa-bolt"></i>
                                 <span>Execute Recon</span>
                                 <kbd>↵</kbd>
                             </button>
-                            <!-- Corner HUD markings -->
-                            <div class="hud-corner corner-tl"></div>
-                            <div class="hud-corner corner-tr"></div>
-                            <div class="hud-corner corner-bl"></div>
-                            <div class="hud-corner corner-br"></div>
                         </div>
 
                         <!-- Real-Time Live Target Detective HUD (Updates dynamically as you type) -->
@@ -539,7 +532,7 @@
     <!-- Toast Notifications Deck -->
     <div id="toast-container"></div>
 
-    <!-- Scripts with Cyber HUD Cache Buster -->
-    <script src="/static/js/app.js?v=20260910_ultra_v22"></script>
+    <!-- Scripts -->
+    <script src="/static/js/app.js?v=20260910_clean_v23"></script>
 </body>
 </html>
