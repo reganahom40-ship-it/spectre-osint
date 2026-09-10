@@ -1,995 +1,977 @@
 /* =========================================================
-   SPECTRE INTELLIGENCE PLATFORM — TACTICAL HUD JS (V5.0)
+   SPECTRE — LINEAR / VERCEL MODERN RECON ENGINE JS (V5.5)
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ---- System State & Audio Engine ----
-    let audioEnabled = true;
-    let audioCtx = null;
-
-    // ---- Initialize Canvas, Clock & Telemetry ----
-    initCyberCanvas();
-    initClock();
-    loadTargetHistory();
-
-    // ---- DOM Elements ----
-    const vectorTabs = document.querySelectorAll('.v-tab');
-    const opsPanels = document.querySelectorAll('.ops-panel');
-    const scanButtons = document.querySelectorAll('.hud-scan-btn');
+    // ---- Navigation & Active State ----
+    const navLinks = document.querySelectorAll('.nav-link');
+    const tabPanels = document.querySelectorAll('.tab-panel');
     const vectorTitle = document.getElementById('current-vector-title');
-    const toastContainer = document.getElementById('hud-toast-container');
-    const audioToggleBtn = document.getElementById('audio-toggle');
-    const audioIcon = document.getElementById('audio-icon');
-    const audioLabel = document.getElementById('audio-label');
-    const clearHistoryBtn = document.getElementById('btn-clear-history');
+    const clockEl = document.getElementById('utc-clock');
+    const toastContainer = document.getElementById('toast-container');
 
-    const VECTOR_TITLES = {
-        username: '01 // USERNAME_ENUMERATION',
-        dorks:    '02 // GOOGLE_DORK_ENGINE',
-        discord:  '03 // DISCORD_SNOWFLAKE_DECODER',
-        ip:       '04 // IP_GEOLOCATION_AND_ASN',
-        bgp:      '05 // BGP_ROUTING_AND_PREFIXES',
-        email:    '06 // EMAIL_AND_DNS_SECURITY',
-        domain:   '07 // DOMAIN_AND_SUBDOMAIN_MAP',
-        phone:    '08 // PHONE_AND_TELCO_VALIDATION',
-        headers:  '09 // HTTP_SECURITY_COMPLIANCE',
-        hash:     '10 // CRYPTOGRAPHIC_HASH_IDENTIFIER'
+    const VECTOR_NAMES = {
+        username: 'Username Reconnaissance',
+        dorks: 'Google Dork Engine',
+        discord: 'Discord Snowflake Intelligence',
+        ip: 'IP Intelligence & Routing',
+        bgp: 'BGP Routing & Peering',
+        email: 'Email & Mail Server Analysis',
+        domain: 'Domain WHOIS & Subdomains',
+        phone: 'Phone & Carrier Intelligence',
+        headers: 'HTTP Security Headers Audit',
+        hash: 'Cryptographic Hash Identifier'
     };
 
     const API_ROUTES = {
-        username: { endpoint: '/api/username', key: 'username' },
-        dorks:    { endpoint: '/api/dorks',    key: 'target' },
-        discord:  { endpoint: '/api/discord',  key: 'id' },
-        ip:       { endpoint: '/api/ip',       key: 'ip' },
-        bgp:      { endpoint: '/api/bgp',      key: 'asn' },
-        email:    { endpoint: '/api/email',    key: 'email' },
-        domain:   { endpoint: '/api/domain',   key: 'domain' },
-        phone:    { endpoint: '/api/phone',    key: 'phone' },
-        headers:  { endpoint: '/api/headers',  key: 'url' },
-        hash:     { endpoint: '/api/hash',     key: 'hash' }
+        username: { endpoint: '/api/username', param: 'username' },
+        dorks:    { endpoint: '/api/dorks',    param: 'target' },
+        discord:  { endpoint: '/api/discord',  param: 'id' },
+        ip:       { endpoint: '/api/ip',       param: 'ip' },
+        bgp:      { endpoint: '/api/bgp',      param: 'asn' },
+        email:    { endpoint: '/api/email',    param: 'email' },
+        domain:   { endpoint: '/api/domain',   param: 'domain' },
+        phone:    { endpoint: '/api/phone',    param: 'phone' },
+        headers:  { endpoint: '/api/headers',  param: 'url' },
+        hash:     { endpoint: '/api/hash',     param: 'hash' }
     };
 
-    // ---- Tactical Sound Synthesizer (Web Audio API) ----
-    function playBeep(type = 'click') {
-        if (!audioEnabled) return;
-        try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            const now = audioCtx.currentTime;
-
-            if (type === 'click') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
-                gain.gain.setValueAtTime(0.08, now);
-                gain.gain.linearRampToValueAtTime(0.001, now + 0.04);
-                osc.start(now);
-                osc.stop(now + 0.04);
-            } else if (type === 'engage') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.linearRampToValueAtTime(0.001, now + 0.12);
-                osc.start(now);
-                osc.stop(now + 0.12);
-            } else if (type === 'success') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(520, now);
-                osc.frequency.setValueAtTime(880, now + 0.08);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0.001, now + 0.18);
-                osc.start(now);
-                osc.stop(now + 0.18);
-            } else if (type === 'error') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.setValueAtTime(160, now + 0.08);
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
-            }
-        } catch (e) {}
+    // Initialize UTC Clock
+    function updateClock() {
+        if (!clockEl) return;
+        const now = new Date();
+        clockEl.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    // Audio Toggle Handler
-    if (audioToggleBtn) {
-        audioToggleBtn.addEventListener('click', () => {
-            audioEnabled = !audioEnabled;
-            if (audioEnabled) {
-                audioIcon.className = 'fas fa-volume-high';
-                audioLabel.textContent = 'AUDIO FX: ON';
-                audioToggleBtn.classList.remove('muted');
-                playBeep('success');
+    // Tab Navigation
+    navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            const tabId = link.getAttribute('data-tab');
+            switchTab(tabId);
+        });
+    });
+
+    function switchTab(tabId) {
+        navLinks.forEach(l => {
+            if (l.getAttribute('data-tab') === tabId) {
+                l.classList.add('active');
             } else {
-                audioIcon.className = 'fas fa-volume-xmark';
-                audioLabel.textContent = 'AUDIO FX: MUTED';
-                audioToggleBtn.classList.add('muted');
+                l.classList.remove('active');
             }
         });
-    }
 
-    // ---- Sidebar Navigation ----
-    function switchTab(modName) {
-        const targetTab = document.querySelector(`.v-tab[data-tab="${modName}"]`);
-        const targetPanel = document.getElementById(`panel-${modName}`);
-        if (!targetTab || !targetPanel) return;
-
-        vectorTabs.forEach(t => t.classList.remove('active'));
-        opsPanels.forEach(p => p.classList.remove('active'));
-
-        targetTab.classList.add('active');
-        targetPanel.classList.add('active');
-
-        if (vectorTitle && VECTOR_TITLES[modName]) {
-            vectorTitle.textContent = VECTOR_TITLES[modName];
-        }
-
-        const input = targetPanel.querySelector('.hud-input');
-        if (input) input.focus();
-
-        playBeep('click');
-        appendLog(`[VECTOR_SWITCH] Active tool set to: ${modName.toUpperCase()}`);
-    }
-
-    vectorTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const mod = tab.getAttribute('data-tab');
-            switchTab(mod);
-        });
-    });
-
-    // Keyboard Shortcuts (1-9 and 0)
-    window.addEventListener('keydown', (e) => {
-        if (document.activeElement.tagName === 'INPUT') return;
-        const keyMap = {
-            '1': 'username', '2': 'dorks', '3': 'discord', '4': 'ip', '5': 'bgp',
-            '6': 'email', '7': 'domain', '8': 'phone', '9': 'headers', '0': 'hash'
-        };
-        if (keyMap[e.key]) {
-            switchTab(keyMap[e.key]);
-        }
-    });
-
-    // ---- Scan Triggering ----
-    scanButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const mod = btn.getAttribute('data-module');
-            const input = document.getElementById(`input-${mod}`);
-            const queryVal = input ? input.value.trim() : '';
-
-            if (!queryVal) {
-                showToast('Target input is empty!', 'error');
-                playBeep('error');
-                if (input) input.focus();
-                return;
+        tabPanels.forEach(panel => {
+            if (panel.id === `panel-${tabId}`) {
+                panel.classList.add('active');
+            } else {
+                panel.classList.remove('active');
             }
-
-            executeScan(mod, queryVal, btn);
         });
-    });
 
-    // Enter Key Listener
-    document.querySelectorAll('.hud-input').forEach(input => {
+        if (vectorTitle && VECTOR_NAMES[tabId]) {
+            vectorTitle.textContent = VECTOR_NAMES[tabId];
+        }
+
+        // Focus input of active panel
+        const activeInput = document.getElementById(`input-${tabId}`);
+        if (activeInput) activeInput.focus();
+    }
+
+    // Enter Key Trigger
+    document.querySelectorAll('.action-input').forEach(input => {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                const mod = input.id.replace('input-', '');
-                const btn = document.querySelector(`.hud-scan-btn[data-module="${mod}"]`);
-                if (btn && !btn.disabled) {
-                    btn.click();
-                }
+                e.preventDefault();
+                const panel = input.closest('.tab-panel');
+                const btn = panel.querySelector('.btn-primary');
+                if (btn) btn.click();
             }
         });
     });
 
-    // ---- Scan Engine ----
-    async function executeScan(module, query, btn) {
-        const resultsDiv = document.getElementById(`results-${module}`);
-        const route = API_ROUTES[module];
-        const initialBtnContent = btn.innerHTML;
+    // Button Click Handlers
+    document.querySelectorAll('.btn-primary').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const moduleName = btn.getAttribute('data-module');
+            executeModule(moduleName, btn);
+        });
+    });
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>PROBING...</span>';
-        resultsDiv.innerHTML = getLoadingHTML(module, query);
+    // ---- Execution Engine ----
+    async function executeModule(moduleName, triggerBtn) {
+        const inputEl = document.getElementById(`input-${moduleName}`);
+        const resultsEl = document.getElementById(`results-${moduleName}`);
+        if (!inputEl || !resultsEl) return;
 
-        playBeep('engage');
-        appendLog(`[PROBE_ENGAGED] Vector: ${module.toUpperCase()} // Query: "${query}"`);
-        saveTargetHistory(module, query);
+        const rawValue = inputEl.value.trim();
+        if (!rawValue) {
+            showToast('Input required for query execution', 'error');
+            inputEl.focus();
+            return;
+        }
+
+        const route = API_ROUTES[moduleName];
+        if (!route) return;
+
+        // UI Loading State
+        setLoading(triggerBtn, true);
+        resultsEl.innerHTML = `
+            <div class="result-card loading-card">
+                <div class="spinner-linear"></div>
+                <div class="loading-text">
+                    <strong>Executing passive reconnaissance query...</strong>
+                    <span>Aggregating endpoints, querying live zone data, parsing response feeds.</span>
+                </div>
+            </div>
+        `;
 
         const startTime = performance.now();
+        const url = `${route.endpoint}?${encodeURIComponent(route.param)}=${encodeURIComponent(rawValue)}`;
 
         try {
-            const payload = {};
-            payload[route.key] = query;
+            const response = await fetch(url);
+            const data = await response.json();
+            const elapsed = Math.round(performance.now() - startTime);
 
-            const res = await fetch(route.endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const json = await res.json();
-            const duration = Math.round(performance.now() - startTime);
-
-            if (json.success && json.data) {
-                renderModuleResults(module, json.data, query);
-                showToast(`Scan complete in ${duration}ms`, 'success');
-                playBeep('success');
-                appendLog(`[PROBE_OK] 200 SUCCESS in ${duration}ms`);
+            if (!response.ok || data.error) {
+                renderError(resultsEl, data.error || 'Server responded with an anomalous error code.', elapsed);
+                showToast(`Query failed: ${data.error || 'Unknown error'}`, 'error');
             } else {
-                resultsDiv.innerHTML = getErrorHTML(json.error || 'Vector execution returned an error');
-                showToast(json.error || 'Scan failed', 'error');
-                playBeep('error');
-                appendLog(`[PROBE_ERR] 400 FAILURE: ${json.error || 'Unknown'}`);
+                renderResults(moduleName, data, resultsEl, elapsed, rawValue);
+                showToast(`Scan complete (${elapsed}ms)`, 'success');
             }
         } catch (err) {
-            resultsDiv.innerHTML = getErrorHTML('Connection failed: ' + err.message);
-            showToast('Network error', 'error');
-            playBeep('error');
-            appendLog(`[NET_FATAL] Error communicating with endpoint: ${err.message}`);
+            const elapsed = Math.round(performance.now() - startTime);
+            renderError(resultsEl, `Network or timeout exception: ${err.message}`, elapsed);
+            showToast('Connection failed or timed out', 'error');
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = initialBtnContent;
+            setLoading(triggerBtn, false);
         }
     }
 
-    // ---- Result Render Router ----
-    function renderModuleResults(module, data, query) {
-        const container = document.getElementById(`results-${module}`);
-        let html = '';
+    function setLoading(btn, isLoading) {
+        if (!btn) return;
+        if (isLoading) {
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.dataset.originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Scanning...</span>`;
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            if (btn.dataset.originalText) {
+                btn.innerHTML = btn.dataset.originalText;
+            }
+        }
+    }
 
-        switch (module) {
-            case 'username': html = buildUsernameView(data, query); break;
-            case 'dorks':    html = buildDorksView(data, query); break;
-            case 'discord':  html = buildDiscordView(data, query); break;
-            case 'ip':       html = buildIPView(data, query); break;
-            case 'bgp':      html = buildBGPView(data, query); break;
-            case 'email':    html = buildEmailView(data, query); break;
-            case 'domain':   html = buildDomainView(data, query); break;
-            case 'phone':    html = buildPhoneView(data, query); break;
-            case 'headers':  html = buildHeadersView(data, query); break;
-            case 'hash':     html = buildHashView(data, query); break;
+    function renderError(container, message, elapsed) {
+        container.innerHTML = `
+            <div class="result-card error-card">
+                <div class="card-header">
+                    <div class="card-title text-red">
+                        <i class="fas fa-circle-exclamation"></i>
+                        <span>Reconnaissance Query Failed</span>
+                    </div>
+                    <span class="latency-tag">${elapsed}ms</span>
+                </div>
+                <div class="card-body">
+                    <p class="error-msg">${escapeHtml(message)}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // ---- Render Dispatcher ----
+    function renderResults(moduleName, data, container, elapsed, target) {
+        let html = '';
+        switch (moduleName) {
+            case 'username':
+                html = renderUsernameModule(data, elapsed, target);
+                break;
+            case 'dorks':
+                html = renderDorksModule(data, elapsed, target);
+                break;
+            case 'discord':
+                html = renderDiscordModule(data, elapsed, target);
+                break;
+            case 'ip':
+                html = renderIpModule(data, elapsed, target);
+                break;
+            case 'bgp':
+                html = renderBgpModule(data, elapsed, target);
+                break;
+            case 'email':
+                html = renderEmailModule(data, elapsed, target);
+                break;
+            case 'domain':
+                html = renderDomainModule(data, elapsed, target);
+                break;
+            case 'phone':
+                html = renderPhoneModule(data, elapsed, target);
+                break;
+            case 'headers':
+                html = renderHeadersModule(data, elapsed, target);
+                break;
+            case 'hash':
+                html = renderHashModule(data, elapsed, target);
+                break;
+            default:
+                html = `<pre class="code-block">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
         }
 
         container.innerHTML = html;
-
-        // Attach Export JSON
-        const exportBtn = container.querySelector('.export-json-btn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                exportData(data, `spectre_${module}_${query}`);
-            });
-        }
-
-        // Attach Username Filters
-        if (module === 'username') {
-            attachUsernameFilterLogic(container, data.results || []);
-        }
+        bindResultActions(container, data, target, moduleName);
     }
 
     // =========================================================
-    //  MODULE RENDERERS
+    // 1. USERNAME MODULE
     // =========================================================
-    function buildUsernameView(data, query) {
-        const list = data.results || [];
-        const found = list.filter(r => r.status === 'found');
-        const notFound = list.filter(r => r.status === 'not_found');
-        const errors = list.filter(r => r.status === 'error');
+    function renderUsernameModule(data, elapsed, target) {
+        const found = data.found || [];
+        const notFound = data.not_found || [];
+        const total = data.total_checked || (found.length + notFound.length);
+        const rate = total > 0 ? Math.round((found.length / total) * 100) : 0;
+
+        let rowsHtml = '';
+        found.forEach(item => {
+            rowsHtml += `
+                <tr class="row-found" data-name="${escapeHtml(item.platform.toLowerCase())}">
+                    <td>
+                        <span class="platform-badge">${escapeHtml(item.platform)}</span>
+                    </td>
+                    <td>
+                        <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="link-target">
+                            ${escapeHtml(item.url)} <i class="fas fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </td>
+                    <td><span class="badge-status status-active">FOUND</span></td>
+                    <td class="text-right">
+                        <button class="btn-sm-action copy-btn" data-copy="${escapeHtml(item.url)}" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
 
         return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-crosshairs"></i> TARGET: <strong>${esc(query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-user-check"></i>
+                        <span>Username Reconnaissance — @${escapeHtml(target)}</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="latency-tag">${elapsed}ms</span>
+                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    </div>
+                </div>
 
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val green">${found.length}</div>
-                    <div class="metric-lbl">FOUND</div>
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Platforms Scanned</span>
+                        <span class="metric-value">${total}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Confirmed Profiles</span>
+                        <span class="metric-value text-green">${found.length}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Unregistered</span>
+                        <span class="metric-value text-muted">${notFound.length}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Hit Rate</span>
+                        <span class="metric-value">${rate}%</span>
+                    </div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-val pink">${notFound.length}</div>
-                    <div class="metric-lbl">NOT FOUND</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">${errors.length}</div>
-                    <div class="metric-lbl">ERR / LIMIT</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.total_platforms || list.length}</div>
-                    <div class="metric-lbl">TOTAL SCANNED</div>
-                </div>
-            </div>
 
-            <div class="filter-bar">
-                <button class="filter-btn active" data-filter="all">ALL (${list.length})</button>
-                <button class="filter-btn" data-filter="found">FOUND (${found.length})</button>
-                <button class="filter-btn" data-filter="not_found">NOT FOUND (${notFound.length})</button>
-                <input type="text" class="filter-search" placeholder="Filter 112+ networks...">
-            </div>
+                <div class="table-filter-bar">
+                    <div class="input-filter-wrapper">
+                        <i class="fas fa-filter"></i>
+                        <input type="text" id="username-filter-input" placeholder="Filter detected platforms..." autocomplete="off">
+                    </div>
+                    <span class="table-counter" id="username-filter-count">Showing ${found.length} profiles</span>
+                </div>
 
-            <div class="platform-grid" id="username-platform-grid">
-                ${renderPlatformCards(list)}
+                <div class="table-responsive">
+                    <table class="data-table" id="username-table">
+                        <thead>
+                            <tr>
+                                <th>Platform</th>
+                                <th>Profile Endpoint</th>
+                                <th>Status</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${found.length > 0 ? rowsHtml : `<tr><td colspan="4" class="text-center text-muted">No public profiles detected across the 112 probing platforms.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         `;
     }
 
-    function renderPlatformCards(items) {
-        if (!items || items.length === 0) {
-            return '<div class="info-item full-span" style="text-align:center;color:var(--text-muted);padding:24px;">No matching networks discovered.</div>';
-        }
+    // =========================================================
+    // 2. GOOGLE DORKS MODULE
+    // =========================================================
+    function renderDorksModule(data, elapsed, target) {
+        const categories = data.categories || {};
+        let catSections = '';
 
-        return items.map(item => {
-            const isFound = item.status === 'found';
-            const isErr = item.status === 'error';
-            const badgeClass = isFound ? 'badge-found' : (isErr ? 'badge-error' : 'badge-not-found');
-            const badgeText = isFound ? 'FOUND' : (isErr ? 'RATE/ERR' : 'NONE');
-
-            const linkMarkup = isFound 
-                ? `<a href="${esc(item.url)}" target="_blank" rel="noopener" class="platform-link"><i class="fas fa-arrow-up-right-from-square"></i> ${esc(item.url)}</a>`
-                : `<span class="platform-link" style="color:var(--text-dim);">${esc(item.platform)}</span>`;
-
-            return `
-                <div class="platform-row">
-                    <div class="platform-left">
-                        <div class="platform-title-line">
-                            <span class="platform-name">${esc(item.platform)}</span>
-                            <span class="platform-cat">${esc(item.category || 'Web')}</span>
+        for (const [catKey, catData] of Object.entries(categories)) {
+            const queries = catData.queries || [];
+            let itemsHtml = '';
+            queries.forEach(q => {
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(q.dork)}`;
+                itemsHtml += `
+                    <div class="dork-row">
+                        <div class="dork-meta">
+                            <span class="dork-purpose">${escapeHtml(q.purpose || q.name || 'Security Query')}</span>
+                            <code class="dork-query">${escapeHtml(q.dork)}</code>
                         </div>
-                        ${linkMarkup}
+                        <div class="dork-actions">
+                            <button class="btn-sm-action copy-btn" data-copy="${escapeHtml(q.dork)}" title="Copy Dork">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="btn-sm-action btn-link" title="Open Google Search">
+                                <i class="fas fa-external-link"></i> Launch
+                            </a>
+                        </div>
                     </div>
-                    <span class="badge ${badgeClass}">${badgeText}</span>
+                `;
+            });
+
+            catSections += `
+                <div class="dork-category-block">
+                    <div class="category-header">
+                        <span class="category-title">${escapeHtml(catData.title || catKey.toUpperCase())}</span>
+                        <span class="category-badge">${queries.length} queries</span>
+                    </div>
+                    <div class="dork-list">
+                        ${itemsHtml}
+                    </div>
                 </div>
             `;
-        }).join('');
-    }
-
-    function attachUsernameFilterLogic(container, allItems) {
-        const filterBtns = container.querySelectorAll('.filter-btn');
-        const filterSearch = container.querySelector('.filter-search');
-        const grid = container.querySelector('#username-platform-grid');
-
-        let currentStatusFilter = 'all';
-        let currentSearchQuery = '';
-
-        function applyFilters() {
-            const filtered = allItems.filter(item => {
-                const matchesStatus = (currentStatusFilter === 'all') || (item.status === currentStatusFilter);
-                const matchesSearch = !currentSearchQuery || 
-                    item.platform.toLowerCase().includes(currentSearchQuery) || 
-                    (item.category && item.category.toLowerCase().includes(currentSearchQuery));
-                return matchesStatus && matchesSearch;
-            });
-            grid.innerHTML = renderPlatformCards(filtered);
         }
 
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentStatusFilter = btn.getAttribute('data-filter');
-                applyFilters();
-                playBeep('click');
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-search-nodes"></i>
+                        <span>Passive Google Dorks — ${escapeHtml(target)}</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="latency-tag">${elapsed}ms</span>
+                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="dork-matrix">
+                    ${catSections}
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 3. DISCORD MODULE
+    // =========================================================
+    function renderDiscordModule(data, elapsed, target) {
+        const user = data.user || data;
+        const avatarUrl = data.avatar_url || (user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256` : null);
+
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fa-brands fa-discord"></i>
+                        <span>Discord Snowflake Telemetry</span>
+                    </div>
+                    <span class="latency-tag">${elapsed}ms</span>
+                </div>
+
+                <div class="discord-profile-layout">
+                    <div class="discord-avatar-col">
+                        ${avatarUrl ? `
+                            <img src="${escapeHtml(avatarUrl)}" alt="Avatar" class="discord-avatar" onerror="this.src='/static/img/default-avatar.png'">
+                        ` : `
+                            <div class="discord-avatar-placeholder"><i class="fa-brands fa-discord"></i></div>
+                        `}
+                        <div class="discord-tag">${escapeHtml(user.username || 'Snowflake Target')}</div>
+                        <div class="discord-id">ID: ${escapeHtml(target)}</div>
+                    </div>
+
+                    <div class="discord-details-col">
+                        <div class="property-grid">
+                            <div class="property-item">
+                                <span class="prop-key">Account Created (UTC)</span>
+                                <span class="prop-val">${escapeHtml(data.created_at_utc || data.timestamp || 'N/A')}</span>
+                            </div>
+                            <div class="property-item">
+                                <span class="prop-key">Account Age</span>
+                                <span class="prop-val text-green">${escapeHtml(data.account_age || data.age || 'N/A')}</span>
+                            </div>
+                            <div class="property-item">
+                                <span class="prop-key">Worker ID</span>
+                                <span class="prop-val"><code>${escapeHtml(String(data.worker_id !== undefined ? data.worker_id : 'N/A'))}</code></span>
+                            </div>
+                            <div class="property-item">
+                                <span class="prop-key">Process ID</span>
+                                <span class="prop-val"><code>${escapeHtml(String(data.process_id !== undefined ? data.process_id : 'N/A'))}</code></span>
+                            </div>
+                            <div class="property-item">
+                                <span class="prop-key">Increment ID</span>
+                                <span class="prop-val"><code>${escapeHtml(String(data.increment !== undefined ? data.increment : 'N/A'))}</code></span>
+                            </div>
+                            <div class="property-item">
+                                <span class="prop-key">Binary Snowflake</span>
+                                <span class="prop-val mono-xs">${escapeHtml(data.binary || 'N/A')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 4. IP INTELLIGENCE MODULE
+    // =========================================================
+    function renderIpModule(data, elapsed, target) {
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-network-wired"></i>
+                        <span>IP Intelligence — ${escapeHtml(data.ip || target)}</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="latency-tag">${elapsed}ms</span>
+                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Country</span>
+                        <span class="metric-value">${escapeHtml(data.country || 'N/A')} (${escapeHtml(data.country_code || '--')})</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">City / Region</span>
+                        <span class="metric-value">${escapeHtml(data.city || 'N/A')}, ${escapeHtml(data.region || 'N/A')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Autonomous System</span>
+                        <span class="metric-value text-blue">${escapeHtml(data.asn || data.as || 'N/A')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Hosting / Proxy Flag</span>
+                        <span class="metric-value ${data.is_hosting || data.is_proxy ? 'text-yellow' : 'text-green'}">
+                            ${data.is_hosting ? 'DATACENTER' : (data.is_proxy ? 'PROXY' : 'RESIDENTIAL / DIRECT')}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="property-grid">
+                    <div class="property-item">
+                        <span class="prop-key">ISP / Carrier</span>
+                        <span class="prop-val">${escapeHtml(data.isp || 'N/A')}</span>
+                    </div>
+                    <div class="property-item">
+                        <span class="prop-key">Organization</span>
+                        <span class="prop-val">${escapeHtml(data.org || 'N/A')}</span>
+                    </div>
+                    <div class="property-item">
+                        <span class="prop-key">Coordinates (Lat, Lon)</span>
+                        <span class="prop-val">${escapeHtml(String(data.latitude || data.lat || 'N/A'))}, ${escapeHtml(String(data.longitude || data.lon || 'N/A'))}</span>
+                    </div>
+                    <div class="property-item">
+                        <span class="prop-key">Timezone</span>
+                        <span class="prop-val">${escapeHtml(data.timezone || 'N/A')}</span>
+                    </div>
+                    <div class="property-item">
+                        <span class="prop-key">Reverse DNS (PTR)</span>
+                        <span class="prop-val"><code>${escapeHtml(data.reverse_dns || data.hostname || 'None')}</code></span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 5. BGP ROUTING MODULE
+    // =========================================================
+    function renderBgpModule(data, elapsed, target) {
+        const prefixes = data.announced_prefixes || data.prefixes || [];
+        let prefixRows = '';
+
+        prefixes.slice(0, 100).forEach(p => {
+            const cidr = typeof p === 'string' ? p : (p.prefix || JSON.stringify(p));
+            prefixRows += `
+                <tr>
+                    <td><code>${escapeHtml(cidr)}</code></td>
+                    <td><span class="badge-status status-active">ANNOUNCED</span></td>
+                    <td class="text-right">
+                        <button class="btn-sm-action copy-btn" data-copy="${escapeHtml(cidr)}" title="Copy Prefix">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-diagram-project"></i>
+                        <span>BGP Routing Table — ${escapeHtml(data.asn || target)}</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="latency-tag">${elapsed}ms</span>
+                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Holder / Entity</span>
+                        <span class="metric-value">${escapeHtml(data.holder || data.name || 'N/A')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Announced IPv4/IPv6 Prefixes</span>
+                        <span class="metric-value text-blue">${prefixes.length}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Data Source</span>
+                        <span class="metric-value">RIPE Stat Global Tables</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Prefix Range (CIDR)</th>
+                                <th>Routing Status</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${prefixes.length > 0 ? prefixRows : `<tr><td colspan="3" class="text-center text-muted">No prefixes found or empty table.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 6. EMAIL MODULE
+    // =========================================================
+    function renderEmailModule(data, elapsed, target) {
+        const mxRecords = data.mx_records || [];
+        let mxRows = '';
+        mxRecords.forEach(mx => {
+            mxRows += `
+                <tr>
+                    <td><span class="priority-badge">${escapeHtml(String(mx.priority || '0'))}</span></td>
+                    <td><code>${escapeHtml(mx.host || mx.exchange || String(mx))}</code></td>
+                </tr>
+            `;
+        });
+
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-envelope-circle-check"></i>
+                        <span>Mail Host & DNS Security — ${escapeHtml(target)}</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="latency-tag">${elapsed}ms</span>
+                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Provider</span>
+                        <span class="metric-value text-blue">${escapeHtml(data.provider || 'Custom / Self-Hosted')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">SPF Record</span>
+                        <span class="metric-value ${data.has_spf ? 'text-green' : 'text-red'}">
+                            ${data.has_spf ? 'CONFIGURED' : 'MISSING'}
+                        </span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">DMARC Record</span>
+                        <span class="metric-value ${data.has_dmarc ? 'text-green' : 'text-red'}">
+                            ${data.has_dmarc ? 'CONFIGURED' : 'MISSING'}
+                        </span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Gravatar Presence</span>
+                        <span class="metric-value ${data.gravatar_exists ? 'text-green' : 'text-muted'}">
+                            ${data.gravatar_exists ? 'FOUND' : 'NOT DETECTED'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="property-grid">
+                    <div class="property-item">
+                        <span class="prop-key">SPF Text Record</span>
+                        <span class="prop-val mono-xs">${escapeHtml(data.spf_record || 'None')}</span>
+                    </div>
+                    <div class="property-item">
+                        <span class="prop-key">DMARC Policy</span>
+                        <span class="prop-val mono-xs">${escapeHtml(data.dmarc_record || 'None')}</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="margin-top: 14px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Priority</th>
+                                <th>MX Exchange Host</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${mxRecords.length > 0 ? mxRows : `<tr><td colspan="2" class="text-center text-muted">No MX records returned.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 7. DOMAIN MODULE
+    // =========================================================
+    function renderDomainModule(data, elapsed, target) {
+        const subdomains = data.subdomains || [];
+        const dnsRecords = data.dns_records || {};
+        let subRows = '';
+
+        subdomains.slice(0, 100).forEach(sub => {
+            subRows += `
+                <tr>
+                    <td><code>${escapeHtml(sub)}</code></td>
+                    <td><span class="badge-status status-active">CT LOG</span></td>
+                    <td class="text-right">
+                        <a href="https://${escapeHtml(sub)}" target="_blank" rel="noopener noreferrer" class="link-target">
+                            <i class="fas fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </td>
+                </tr>
+            `;
+        });
+
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-globe"></i>
+                        <span>Domain Infrastructure — ${escapeHtml(target)}</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="latency-tag">${elapsed}ms</span>
+                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Registrar</span>
+                        <span class="metric-value">${escapeHtml(data.registrar || data.whois?.registrar || 'N/A')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Creation Date</span>
+                        <span class="metric-value">${escapeHtml(data.creation_date || data.whois?.creation_date || 'N/A')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Expiration Date</span>
+                        <span class="metric-value">${escapeHtml(data.expiration_date || data.whois?.expiration_date || 'N/A')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Discovered Subdomains</span>
+                        <span class="metric-value text-blue">${subdomains.length}</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subdomain</th>
+                                <th>Source</th>
+                                <th class="text-right">Endpoint</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subdomains.length > 0 ? subRows : `<tr><td colspan="3" class="text-center text-muted">No Certificate Transparency subdomains logged.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 8. PHONE MODULE
+    // =========================================================
+    function renderPhoneModule(data, elapsed, target) {
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-phone-volume"></i>
+                        <span>Phone / Telco Identification — ${escapeHtml(target)}</span>
+                    </div>
+                    <span class="latency-tag">${elapsed}ms</span>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Valid Number</span>
+                        <span class="metric-value ${data.is_valid ? 'text-green' : 'text-red'}">
+                            ${data.is_valid ? 'VALID E.164' : 'INVALID'}
+                        </span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Line Type</span>
+                        <span class="metric-value text-blue">${escapeHtml(data.line_type || 'Unknown')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Carrier</span>
+                        <span class="metric-value">${escapeHtml(data.carrier || 'N/A')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Geographic Region</span>
+                        <span class="metric-value">${escapeHtml(data.location || data.country || 'N/A')}</span>
+                    </div>
+                </div>
+
+                <div class="property-grid">
+                    <div class="property-item">
+                        <span class="prop-key">International Format</span>
+                        <span class="prop-val"><code>${escapeHtml(data.international_format || 'N/A')}</code></span>
+                    </div>
+                    <div class="property-item">
+                        <span class="prop-key">National Format</span>
+                        <span class="prop-val"><code>${escapeHtml(data.national_format || 'N/A')}</code></span>
+                    </div>
+                    <div class="property-item">
+                        <span class="prop-key">Timezones</span>
+                        <span class="prop-val">${escapeHtml((data.timezones || []).join(', ') || 'N/A')}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 9. HEADERS MODULE
+    // =========================================================
+    function renderHeadersModule(data, elapsed, target) {
+        const grade = data.security_score || data.grade || 'B';
+        const headers = data.headers || {};
+        let headerRows = '';
+
+        for (const [hk, hv] of Object.entries(headers)) {
+            headerRows += `
+                <tr>
+                    <td><code>${escapeHtml(hk)}</code></td>
+                    <td class="mono-xs">${escapeHtml(String(hv))}</td>
+                </tr>
+            `;
+        }
+
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-shield-halved"></i>
+                        <span>HTTP Response Security Audit — ${escapeHtml(target)}</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="latency-tag">${elapsed}ms</span>
+                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Server Fingerprint</span>
+                        <span class="metric-value">${escapeHtml(data.server || headers['server'] || 'Undisclosed')}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">HSTS (Strict-Transport-Security)</span>
+                        <span class="metric-value ${data.has_hsts ? 'text-green' : 'text-red'}">
+                            ${data.has_hsts ? 'PRESENT' : 'MISSING'}
+                        </span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Content-Security-Policy</span>
+                        <span class="metric-value ${data.has_csp ? 'text-green' : 'text-red'}">
+                            ${data.has_csp ? 'PRESENT' : 'MISSING'}
+                        </span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">X-Frame-Options</span>
+                        <span class="metric-value ${data.has_x_frame ? 'text-green' : 'text-red'}">
+                            ${data.has_x_frame ? 'PROTECTED' : 'NOT SET'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 260px;">Header Key</th>
+                                <th>Header Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${headerRows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // 10. HASH MODULE
+    // =========================================================
+    function renderHashModule(data, elapsed, target) {
+        const matches = data.possible_types || data.matches || [];
+        return `
+            <div class="result-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-key"></i>
+                        <span>Cryptographic Hash Identification</span>
+                    </div>
+                    <span class="latency-tag">${elapsed}ms</span>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Byte Length</span>
+                        <span class="metric-value">${escapeHtml(String(data.length || target.length))} chars</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Shannon Entropy</span>
+                        <span class="metric-value text-blue">${escapeHtml(String(data.entropy || 'N/A'))}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Primary Candidate</span>
+                        <span class="metric-value text-green">${escapeHtml(matches[0] || 'Unknown Hash Type')}</span>
+                    </div>
+                </div>
+
+                <div class="property-grid">
+                    <div class="property-item">
+                        <span class="prop-key">All Possible Algorithms</span>
+                        <span class="prop-val">${matches.map(m => `<span class="platform-badge">${escapeHtml(m)}</span>`).join(' ')}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // DOM INTERACTIONS (COPY, EXPORT, FILTERS)
+    // =========================================================
+    function bindResultActions(container, data, target, moduleName) {
+        // Copy buttons
+        container.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const text = btn.getAttribute('data-copy');
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast('Copied to clipboard', 'info');
+                    });
+                }
             });
         });
 
-        if (filterSearch) {
-            filterSearch.addEventListener('input', (e) => {
-                currentSearchQuery = e.target.value.toLowerCase().trim();
-                applyFilters();
+        // Export JSON
+        const exportBtn = container.querySelector('#btn-export-json');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `spectre-${moduleName}-${target}-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('JSON export downloaded', 'success');
+            });
+        }
+
+        // Live username filter
+        const filterInput = container.querySelector('#username-filter-input');
+        if (filterInput) {
+            filterInput.addEventListener('input', () => {
+                const q = filterInput.value.toLowerCase().trim();
+                const rows = container.querySelectorAll('#username-table tbody tr.row-found');
+                let count = 0;
+                rows.forEach(r => {
+                    const name = r.getAttribute('data-name') || '';
+                    if (name.includes(q)) {
+                        r.style.display = '';
+                        count++;
+                    } else {
+                        r.style.display = 'none';
+                    }
+                });
+                const countEl = container.querySelector('#username-filter-count');
+                if (countEl) countEl.textContent = `Showing ${count} profiles`;
             });
         }
     }
 
-    function buildDorksView(data, query) {
-        const categories = data.categories || [];
-        const catCards = categories.map(cat => {
-            const dorkItems = (cat.dorks || []).map(d => `
-                <div class="dork-item-box">
-                    <div class="dork-item-top">
-                        <span class="dork-title">${esc(d.title)}</span>
-                        <div class="dork-links">
-                            <a href="${esc(d.google_url)}" target="_blank" rel="noopener" class="dork-btn google">
-                                <i class="fa-brands fa-google"></i> Google
-                            </a>
-                            <a href="${esc(d.duckduckgo_url)}" target="_blank" rel="noopener" class="dork-btn ddg">
-                                <i class="fa-solid fa-duck"></i> DuckDuckGo
-                            </a>
-                        </div>
-                    </div>
-                    <div class="dork-query-text">${esc(d.query)}</div>
-                </div>
-            `).join('');
-
-            return `
-                <div class="dork-category-card">
-                    <div class="dork-category-header">
-                        <i class="fas ${esc(cat.icon || 'fa-folder')}"></i>
-                        <span>${esc(cat.category)}</span>
-                    </div>
-                    <div class="dork-category-body">
-                        ${dorkItems}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-fire-flame-curved"></i> TARGET: <strong>${esc(data.target || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val pink">${data.total_dorks}</div>
-                    <div class="metric-lbl">TARGET DORKS</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.total_categories}</div>
-                    <div class="metric-lbl">CATEGORIES</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val green">100%</div>
-                    <div class="metric-lbl">PASSIVE RECON</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">DIRECT</div>
-                    <div class="metric-lbl">1-CLICK LAUNCH</div>
-                </div>
-            </div>
-
-            ${catCards}
-        `;
-    }
-
-    function buildDiscordView(data, query) {
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fa-brands fa-discord"></i> SNOWFLAKE: <strong>${esc(data.id || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-
-            <div class="discord-profile-banner">
-                <img src="${esc(data.avatar_url)}" alt="Avatar" class="discord-avatar-large" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-                <div class="discord-user-info">
-                    <h3>${esc(data.global_name)}</h3>
-                    <div class="tag">@${esc(data.username)}</div>
-                </div>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val purple">${data.account_age_years} yrs</div>
-                    <div class="metric-lbl">ACCOUNT AGE</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.account_age_days} days</div>
-                    <div class="metric-lbl">REGISTRATION DAYS</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val green">${data.bot ? 'BOT' : 'USER'}</div>
-                    <div class="metric-lbl">ENTITY TYPE</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">${data.snowflake_metadata.worker_id} / ${data.snowflake_metadata.process_id}</div>
-                    <div class="metric-lbl">WORKER / PROCESS</div>
-                </div>
-            </div>
-
-            <div class="data-grid-two">
-                ${infoBox('Exact Registration Timestamp', data.created_at, true, true)}
-                ${infoBox('Discord Snowflake ID', data.id)}
-                ${infoBox('Unix Epoch Timestamp (ms)', data.created_timestamp)}
-                ${infoBox('Internal Sequence Increment', data.snowflake_metadata.increment)}
-                ${infoBox('Avatar URL', data.avatar_url, true, false, true)}
-            </div>
-        `;
-    }
-
-    function buildIPView(data, query) {
-        const flag = data.countryCode ? getFlagEmoji(data.countryCode) : '🌐';
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-network-wired"></i> IP_REPORT: <strong>${esc(data.query || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-            <div class="data-grid-two">
-                ${infoBox('IP Address', data.query || query, true, true)}
-                ${infoBox('Geographic Country', `${flag} ${data.country || 'N/A'} (${data.countryCode || 'N/A'})`)}
-                ${infoBox('Region / City', `${data.regionName || 'N/A'}, ${data.city || 'N/A'} (${data.zip || 'N/A'})`)}
-                ${infoBox('Coordinates', `${data.lat ?? 'N/A'}, ${data.lon ?? 'N/A'}`)}
-                ${infoBox('Timezone', `${data.timezone || 'N/A'} (UTC ${data.offset ? (data.offset / 3600) + 'h' : '0'})`)}
-                ${infoBox('ISP / Organization', `${data.isp || 'N/A'} // ${data.org || 'N/A'}`)}
-                ${infoBox('Autonomous System', `${data.as || 'N/A'} (${data.asname || 'N/A'})`)}
-                ${infoBox('Reverse DNS PTR', data.reverse_dns || data.reverse || 'None', false, false, true)}
-                ${infoBox('Proxy / VPN Status', data.proxy ? 'FLAGGED (PROXY / VPN)' : 'CLEAN (DIRECT)', false, data.proxy)}
-                ${infoBox('Hosting Network', data.hosting ? 'YES (DATACENTER / VPS)' : 'RESIDENTIAL', false, false)}
-            </div>
-        `;
-    }
-
-    function buildBGPView(data, query) {
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-diagram-project"></i> BGP_ASN: <strong>${esc(data.asn || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val green">${data.total_announced_prefixes}</div>
-                    <div class="metric-lbl">ANNOUNCED CIDR</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.prefixes_v4_count}</div>
-                    <div class="metric-lbl">IPV4 PREFIXES</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val purple">${data.prefixes_v6_count}</div>
-                    <div class="metric-lbl">IPV6 PREFIXES</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">RIPE</div>
-                    <div class="metric-lbl">DATA FEED</div>
-                </div>
-            </div>
-
-            <div class="data-grid-two">
-                ${infoBox('Autonomous System Number', data.asn, false, true)}
-                ${infoBox('Resource Name', data.resource || 'N/A')}
-                ${infoBox('Network Owner / Holder', data.holder || 'N/A', true, false, true)}
-                ${infoBox('HE Looking Glass', `<a href="${esc(data.looking_glass_url)}" target="_blank" rel="noopener" style="color:var(--neon-cyan);">${esc(data.looking_glass_url)}</a>`, true)}
-            </div>
-
-            <div class="sub-header"><i class="fas fa-network-wired"></i> Announced CIDR Prefixes (Sample)</div>
-            <div class="intel-code-box">${(data.sample_prefixes && data.sample_prefixes.length > 0) ? data.sample_prefixes.map(p => `• ${esc(p)}`).join('\n') : 'No active CIDR prefixes'}</div>
-        `;
-    }
-
-    function buildEmailView(data, query) {
-        let mxRows = '';
-        if (data.mx_records && data.mx_records.length > 0) {
-            mxRows = data.mx_records.map(mx => `
-                <tr>
-                    <td><span class="badge badge-found">Priority ${mx.priority}</span></td>
-                    <td style="color:var(--neon-cyan);">${esc(mx.server)}</td>
-                </tr>
-            `).join('');
-        } else {
-            mxRows = '<tr><td colspan="2" style="color:var(--text-muted);">No MX records discovered</td></tr>';
-        }
-
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-at"></i> TARGET: <strong>${esc(data.email || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-            <div class="data-grid-two">
-                ${infoBox('Handle', data.handle || 'N/A')}
-                ${infoBox('Domain', data.domain || 'N/A', false, false, true)}
-                ${infoBox('Mail Provider Fingerprint', data.mail_provider || 'Unknown', false, true)}
-                ${infoBox('RFC Validation', data.valid_format ? 'Valid Format (RFC 5322)' : 'Invalid', false, false)}
-            </div>
-
-            <div class="sub-header"><i class="fas fa-server"></i> Mail Exchange (MX) Servers</div>
-            <table class="intel-table">
-                <thead><tr><th>Priority</th><th>Server Hostname</th></tr></thead>
-                <tbody>${mxRows}</tbody>
-            </table>
-
-            <div class="sub-header"><i class="fas fa-shield-halved"></i> Authentication & SPF / DMARC</div>
-            <div class="info-lbl">SPF Policy</div>
-            <div class="intel-code-box">${esc(data.spf_record || 'None configured')}</div>
-            <div class="info-lbl">DMARC Policy</div>
-            <div class="intel-code-box">${esc(data.dmarc_record || 'None configured')}</div>
-        `;
-    }
-
-    function buildDomainView(data, query) {
-        const w = data.whois || {};
-        const subdomains = data.subdomains || [];
-
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-globe"></i> TARGET: <strong>${esc(data.domain || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-
-            <div class="sub-header"><i class="fas fa-id-card"></i> Domain WHOIS Summary</div>
-            <div class="data-grid-two">
-                ${infoBox('Registrar', w.registrar || 'N/A')}
-                ${infoBox('Created Date', formatDate(w.creation_date))}
-                ${infoBox('Expiration Date', formatDate(w.expiration_date))}
-                ${infoBox('Registry Status', Array.isArray(w.status) ? w.status.slice(0, 2).join(', ') : (w.status || 'Active'))}
-                ${infoBox('Nameservers', Array.isArray(w.name_servers) ? w.name_servers.join(', ') : (w.name_servers || 'N/A'), true, false, true)}
-            </div>
-
-            <div class="sub-header"><i class="fas fa-diagram-project"></i> Subdomains Discovered (${subdomains.length})</div>
-            <div class="intel-code-box">${subdomains.length > 0 ? subdomains.map(s => esc(s)).join('\n') : 'No public Certificate Transparency subdomains found'}</div>
-        `;
-    }
-
-    function buildPhoneView(data, query) {
-        const fmt = data.formatted || {};
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-phone-volume"></i> TARGET: <strong>${esc(data.input || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-            <div class="data-grid-two">
-                ${infoBox('Valid Phone', data.valid ? 'YES (VALID NUMBER)' : 'NO', false, data.valid)}
-                ${infoBox('Country Location', `${data.country || 'Unknown'} (+${data.country_code || ''})`)}
-                ${infoBox('Carrier Network', data.carrier || 'Unknown Network', false, true)}
-                ${infoBox('Line Type', data.line_type || 'Unknown Line')}
-                ${infoBox('Timezone(s)', (data.timezones || []).join(', ') || 'N/A', true)}
-            </div>
-            <div class="sub-header"><i class="fas fa-hashtag"></i> Standard Dial Formats</div>
-            <div class="data-grid-two">
-                ${infoBox('International', fmt.international || 'N/A')}
-                ${infoBox('National Format', fmt.national || 'N/A')}
-                ${infoBox('E.164 Clean Format', fmt.e164 || 'N/A', false, true)}
-                ${infoBox('RFC3966 URI', fmt.rfc3966 || 'N/A')}
-            </div>
-        `;
-    }
-
-    function buildHeadersView(data, query) {
-        const auditList = (data.security_audit || []).map(a => `
-            <tr>
-                <td>
-                    <span class="badge ${a.present ? 'badge-found' : 'badge-not-found'}">
-                        ${a.present ? 'PASS' : 'MISSING'}
-                    </span>
-                </td>
-                <td style="color:var(--text-main);font-weight:700;">${esc(a.header)}</td>
-                <td style="color:${a.present ? 'var(--neon-green)' : 'var(--text-dim)'};">${a.value ? esc(a.value) : 'Absent'}</td>
-            </tr>
-        `).join('');
-
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-shield-virus"></i> TARGET: <strong>${esc(data.url || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-            <div class="data-grid-two">
-                ${infoBox('HTTP Status', `${data.status_code || 'N/A'} OK`, false, true)}
-                ${infoBox('Web Server', data.server || 'Hidden / Cloudflare')}
-                ${infoBox('X-Powered-By', data.powered_by || 'Not Disclosed')}
-                ${infoBox('Cookies Detected', (data.cookies || []).length + ' session cookies')}
-            </div>
-
-            <div class="sub-header"><i class="fas fa-shield-halved"></i> Security Compliance Audit</div>
-            <table class="intel-table">
-                <thead><tr><th>Status</th><th>Security Header</th><th>Value</th></tr></thead>
-                <tbody>${auditList}</tbody>
-            </table>
-        `;
-    }
-
-    function buildHashView(data, query) {
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-key"></i> TARGET: <strong>${esc(data.hash || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val green">${data.length} chars</div>
-                    <div class="metric-lbl">HASH LENGTH</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.is_hex ? 'HEX' : 'BASE64'}</div>
-                    <div class="metric-lbl">ENCODING</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">${data.entropy}</div>
-                    <div class="metric-lbl">ENTROPY</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val purple">${data.possible_algorithms.length}</div>
-                    <div class="metric-lbl">MATCHES</div>
-                </div>
-            </div>
-
-            <div class="sub-header"><i class="fas fa-fingerprint"></i> Primary Algorithm Match</div>
-            <div class="info-item full-span" style="background:rgba(0,255,157,0.08);border-color:var(--neon-green);padding:14px;">
-                <div style="font-size:0.65rem;color:var(--neon-green);font-family:var(--font-mono);font-weight:800;">CONFIRMED HIGH PROBABILITY</div>
-                <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-top:2px;">${esc(data.primary_match)}</div>
-            </div>
-
-            <div class="sub-header"><i class="fas fa-list"></i> Candidate Algorithms</div>
-            <div class="intel-code-box">${data.possible_algorithms.map(a => `• ${esc(a)}`).join('\n')}</div>
-        `;
-    }
-
-    // =========================================================
-    //  UI UTILITIES
-    // =========================================================
-    function infoBox(lbl, val, isFull = false, isGreen = false, isCyan = false) {
-        const spanClass = isFull ? 'info-item full-span' : 'info-item';
-        const valClass = isGreen ? 'info-val highlight' : (isCyan ? 'info-val cyan' : 'info-val');
-        return `
-            <div class="${spanClass}">
-                <div class="info-lbl">${esc(lbl)}</div>
-                <div class="${valClass}">${esc(String(val || 'N/A'))}</div>
-            </div>
-        `;
-    }
-
-    function formatDate(val) {
-        if (!val) return 'N/A';
-        if (Array.isArray(val)) val = val[0];
-        if (typeof val === 'string') {
-            try {
-                const d = new Date(val);
-                if (!isNaN(d)) return d.toISOString().split('T')[0];
-            } catch (e) {}
-        }
-        return String(val);
-    }
-
-    function getFlagEmoji(countryCode) {
-        if (!countryCode || countryCode.length !== 2) return '🌐';
-        const codePoints = [...countryCode.toUpperCase()].map(c => 127397 + c.charCodeAt(0));
-        return String.fromCodePoint(...codePoints);
-    }
-
-    function esc(text) {
-        if (text === null || text === undefined) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
-    }
-
-    function getLoadingHTML(module, target) {
-        return `
-            <div class="loading-box">
-                <div class="loading-pulse-text">
-                    <i class="fas fa-crosshairs fa-spin"></i>
-                    <span>PROBING // ${esc(target)}</span>
-                </div>
-                <div class="loading-track">
-                    <div class="loading-bar-fill"></div>
-                </div>
-            </div>
-        `;
-    }
-
-    function getErrorHTML(msg) {
-        return `
-            <div class="error-box">
-                <i class="fas fa-triangle-exclamation" style="margin-right:8px;"></i>
-                ${esc(msg)}
-            </div>
-        `;
-    }
-
-    function exportData(data, filenamePrefix) {
-        const ts = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `${filenamePrefix}_${ts}.json`;
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast(`Exported ${filename}`, 'success');
-        playBeep('success');
-    }
-
-    function showToast(msg, type = 'info') {
+    // Toast Notifications
+    function showToast(message, type = 'info') {
+        if (!toastContainer) return;
         const toast = document.createElement('div');
-        toast.className = `hud-toast ${type}`;
-        toast.textContent = msg;
+        toast.className = `toast toast-${type}`;
+        
+        let icon = 'fa-circle-info';
+        if (type === 'success') icon = 'fa-circle-check';
+        if (type === 'error') icon = 'fa-circle-exclamation';
+
+        toast.innerHTML = `<i class="fas ${icon}"></i><span>${escapeHtml(message)}</span>`;
         toastContainer.appendChild(toast);
 
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(20px)';
-            toast.style.transition = 'all 0.2s ease';
-            setTimeout(() => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 200);
-        }, 2600);
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 250);
+        }, 3000);
     }
 
-    function initClock() {
-        const clock = document.getElementById('hud-clock');
-        if (!clock) return;
-        function update() {
-            const now = new Date();
-            clock.textContent = now.toUTCString().split(' ')[4] + ' UTC';
-        }
-        setInterval(update, 1000);
-        update();
-    }
-
-    function appendLog(text) {
-        const logBox = document.getElementById('telemetry-log');
-        if (!logBox) return;
-        const now = new Date();
-        const timeStr = now.toTimeString().split(' ')[0];
-        const line = document.createElement('div');
-        line.className = 'log-line';
-        line.innerHTML = `<span class="log-ts">[${timeStr}]</span> ${esc(text)}`;
-        logBox.appendChild(line);
-        logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    // ---- Recent Target History Engine (localStorage) ----
-    function saveTargetHistory(module, target) {
-        try {
-            let history = JSON.parse(localStorage.getItem('spectre_history') || '[]');
-            history = history.filter(h => !(h.module === module && h.target === target));
-            history.unshift({ module, target, ts: Date.now() });
-            if (history.length > 10) history = history.slice(0, 10);
-            localStorage.setItem('spectre_history', JSON.stringify(history));
-            loadTargetHistory();
-        } catch (e) {}
-    }
-
-    function loadTargetHistory() {
-        const box = document.getElementById('recent-targets-box');
-        if (!box) return;
-        try {
-            const history = JSON.parse(localStorage.getItem('spectre_history') || '[]');
-            if (history.length === 0) {
-                box.innerHTML = '<div class="empty-history">No past engagements</div>';
-                return;
-            }
-            box.innerHTML = history.map(item => `
-                <div class="target-pill" data-module="${esc(item.module)}" data-target="${esc(item.target)}">
-                    <i class="fas fa-angle-right"></i>
-                    <span>${esc(item.target)}</span>
-                </div>
-            `).join('');
-
-            box.querySelectorAll('.target-pill').forEach(pill => {
-                pill.addEventListener('click', () => {
-                    const mod = pill.getAttribute('data-module');
-                    const trg = pill.getAttribute('data-target');
-                    switchTab(mod);
-                    const input = document.getElementById(`input-${mod}`);
-                    if (input) {
-                        input.value = trg;
-                        const btn = document.querySelector(`.hud-scan-btn[data-module="${mod}"]`);
-                        if (btn) btn.click();
-                    }
-                });
-            });
-        } catch (e) {}
-    }
-
-    if (clearHistoryBtn) {
-        clearHistoryBtn.addEventListener('click', () => {
-            localStorage.removeItem('spectre_history');
-            loadTargetHistory();
-            showToast('Target history cleared', 'info');
-            playBeep('click');
-        });
-    }
-
-    // =========================================================
-    //  INTERACTIVE CYBER CONSTELLATION CANVAS
-    // =========================================================
-    function initCyberCanvas() {
-        const canvas = document.getElementById('cyber-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        let particles = [];
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        for (let i = 0; i < 45; i++) {
-            particles.push({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                vx: (Math.random() - 0.5) * 0.4,
-                vy: (Math.random() - 0.5) * 0.4,
-                radius: Math.random() * 2 + 1
-            });
-        }
-
-        let mouseX = -1000, mouseY = -1000;
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-
-        // Click shockwave
-        window.addEventListener('click', (e) => {
-            particles.forEach(p => {
-                const dx = p.x - e.clientX;
-                const dy = p.y - e.clientY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 150) {
-                    const force = (150 - dist) / 150;
-                    p.vx += (dx / dist) * force * 4;
-                    p.vy += (dy / dist) * force * 4;
-                }
-            });
-        });
-
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-
-            // Update and draw particles
-            for (let i = 0; i < particles.length; i++) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-
-                // Friction
-                p.vx *= 0.98;
-                p.vy *= 0.98;
-
-                // Edge wrap
-                if (p.x < 0) p.x = width;
-                if (p.x > width) p.x = 0;
-                if (p.y < 0) p.y = height;
-                if (p.y > height) p.y = 0;
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(0, 255, 157, 0.4)';
-                ctx.fill();
-
-                // Connect nearby particles with laser grid lines
-                for (let j = i + 1; j < particles.length; j++) {
-                    const p2 = particles[j];
-                    const dx = p.x - p2.x;
-                    const dy = p.y - p2.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < 130) {
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.strokeStyle = `rgba(0, 229, 255, ${0.15 * (1 - dist / 130)})`;
-                        ctx.lineWidth = 0.8;
-                        ctx.stroke();
-                    }
-                }
-
-                // Connect to mouse
-                const mdx = p.x - mouseX;
-                const mdy = p.y - mouseY;
-                const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-                if (mdist < 140) {
-                    ctx.beginPath();
-                    ctx.moveTo(p.x, p.y);
-                    ctx.lineTo(mouseX, mouseY);
-                    ctx.strokeStyle = `rgba(0, 255, 157, ${0.25 * (1 - mdist / 140)})`;
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                }
-            }
-
-            requestAnimationFrame(animate);
-        }
-
-        animate();
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 });
