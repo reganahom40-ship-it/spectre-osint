@@ -16,13 +16,15 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
-    <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=999002">
+    <!-- Stylesheet with Cyber HUD Cache Buster -->
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_ultra_v22">
 </head>
 <body>
 
-    <!-- Interactive Particle Background Canvas -->
+    <!-- Cyber Background Matrix & Scanlines -->
     <canvas id="bg-particles-canvas"></canvas>
+    <div class="cyber-grid-overlay"></div>
+    <div class="cyber-scanline"></div>
 
     <!-- Dynamic Mouse Cursor Glow & Floating Mesh Orbs -->
     <div class="cursor-glow" id="cursor-glow"></div>
@@ -126,17 +128,22 @@
 
                     <!-- Spotlight Search Chassis with Animated Glow & 3D Tilt -->
                     <div class="spotlight-wrapper tilt-box">
-                        <div class="spotlight-box">
+                        <div class="spotlight-box hud-bracket-frame">
                             <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
                                 <i class="fas fa-magnifying-glass"></i>
                             </div>
-                            <input type="text" id="omni-input" placeholder="Type or paste any target (e.g. 1.1.1.1, discord ID, @handle, domain, hash, email)..." autocomplete="off" spellcheck="false">
+                            <input type="text" id="omni-input" placeholder="Type or paste any target (e.g. 8080, 1.1.1.1, +14155552671, discord ID, domain, hash, handle)..." autocomplete="off" spellcheck="false">
                             <button class="btn-spotlight-exec" id="btn-omni-exec">
                                 <span class="btn-shine"></span>
                                 <i class="fas fa-bolt"></i>
                                 <span>Execute Recon</span>
                                 <kbd>↵</kbd>
                             </button>
+                            <!-- Corner HUD markings -->
+                            <div class="hud-corner corner-tl"></div>
+                            <div class="hud-corner corner-tr"></div>
+                            <div class="hud-corner corner-bl"></div>
+                            <div class="hud-corner corner-br"></div>
                         </div>
 
                         <!-- Real-Time Live Target Detective HUD (Updates dynamically as you type) -->
@@ -146,7 +153,13 @@
                                     <i class="fas fa-satellite-dish"></i>
                                     <span id="tinspect-type-text">STANDBY • AWAITING TARGET</span>
                                 </div>
-                                <span class="tinspect-confidence" id="tinspect-confidence-badge"><i class="fas fa-microchip"></i> LIVE ENGINE ACTIVE</span>
+                                <div class="tinspect-live-signal">
+                                    <span class="live-signal-bar bar-1"></span>
+                                    <span class="live-signal-bar bar-2"></span>
+                                    <span class="live-signal-bar bar-3"></span>
+                                    <span class="live-signal-bar bar-4"></span>
+                                    <span class="tinspect-confidence" id="tinspect-confidence-badge">KEYSTROKE DETECTIVE ACTIVE</span>
+                                </div>
                             </div>
                             
                             <div class="tinspect-body" id="tinspect-body">
@@ -526,7 +539,7 @@
     <!-- Toast Notifications Deck -->
     <div id="toast-container"></div>
 
-    <!-- Scripts -->
-    <script src="/static/js/app.js?v=999002"></script>
+    <!-- Scripts with Cyber HUD Cache Buster -->
+    <script src="/static/js/app.js?v=20260910_ultra_v22"></script>
 </body>
 </html>
