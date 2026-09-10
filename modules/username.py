@@ -29,7 +29,7 @@ def check_single_platform(platform, username):
         response = _session.get(
             url,
             headers=headers,
-            timeout=config.REQUEST_TIMEOUT,
+            timeout=(1.0, 1.5),
             allow_redirects=True,
             stream=True
         )
@@ -74,27 +74,32 @@ def check_single_platform(platform, username):
     }
 
 
-def check_username(username: str) -> dict:
+def check_username(username: str, fast_mode: bool = True) -> dict:
     results = []
     found_count = 0
     not_found_count = 0
     errors_count = 0
 
-    # 50 parallel threads = 100+ platforms checked in ~2 seconds
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+    platforms_to_check = config.PLATFORMS[:45] if fast_mode else config.PLATFORMS
+
+    # 45 parallel threads = checked in ~1 second
+    with concurrent.futures.ThreadPoolExecutor(max_workers=45) as executor:
         future_to_platform = {
             executor.submit(check_single_platform, platform, username): platform
-            for platform in config.PLATFORMS
+            for platform in platforms_to_check
         }
 
         for future in concurrent.futures.as_completed(future_to_platform):
-            res = future.result()
-            results.append(res)
-            if res['status'] == 'found':
-                found_count += 1
-            elif res['status'] == 'not_found':
-                not_found_count += 1
-            else:
+            try:
+                res = future.result()
+                results.append(res)
+                if res['status'] == 'found':
+                    found_count += 1
+                elif res['status'] == 'not_found':
+                    not_found_count += 1
+                else:
+                    errors_count += 1
+            except Exception:
                 errors_count += 1
 
     sort_order = {'found': 0, 'not_found': 1, 'error': 2}
@@ -102,9 +107,13 @@ def check_username(username: str) -> dict:
 
     return {
         'username': username,
+        'total_checked': len(platforms_to_check),
         'total_platforms': len(config.PLATFORMS),
-        'found': found_count,
-        'not_found': not_found_count,
-        'errors': errors_count,
+        'found_count': found_count,
+        'not_found_count': not_found_count,
+        'errors_count': errors_count,
+        'found': [r for r in results if r['status'] == 'found'],
+        'not_found': [r for r in results if r['status'] == 'not_found'],
+        'errors': [r for r in results if r['status'] == 'error'],
         'results': results
     }

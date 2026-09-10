@@ -172,18 +172,11 @@ def api_omni():
             if num_forensics.get('timestamp_epoch'):
                 summary_intel['epoch_utc'] = num_forensics['timestamp_epoch']['utc_datetime']
 
-        # Dorks & username fallback if short
+        # Dorks & pivots
         try:
             dossier['dorks'] = generate_dorks(target)
         except Exception:
             pass
-        if digit_len <= 15:
-            try:
-                u_res = check_username(target)
-                if u_res.get('found'):
-                    dossier['username'] = u_res
-            except Exception:
-                pass
 
     # 4. Formatted Phone Number (+, -, (), spaces)
     elif target.startswith('+') or (re.match(r'^\+?[\d\s\-\(\)\.]{7,25}$', target) and len(digits_only) >= 7):
