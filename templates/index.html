@@ -3,396 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPECTRE // GLOBAL OSINT & THREAT INTELLIGENCE APPARATUS</title>
+    <title>SPECTRE — Modern OSINT & Threat Reconnaissance</title>
     
-    <!-- High-tech Typography -->
+    <!-- Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Icons & Third-Party Engines -->
+    <!-- Icons & Leaflet / Vis.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
-    <link rel="stylesheet" href="/static/css/style.css?v=50">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css?v=100">
 </head>
-<body class="spectre-cockpit">
+<body>
 
-    <!-- Background Matrix & Grid Canvas -->
-    <canvas id="radar-canvas"></canvas>
+    <!-- Subtle Ambient Glow -->
+    <div class="ambient-glow"></div>
 
-    <!-- Top Command Ribbon -->
-    <header class="cockpit-topbar">
-        <div class="brand-cluster">
-            <div class="logo-shield">
-                <div class="shield-inner"><i class="fas fa-crosshairs"></i></div>
-            </div>
-            <div class="brand-title-group">
-                <div class="brand-primary-row">
-                    <span class="brand-title">SPECTRE</span>
-                    <span class="brand-sub-badge">APPARATUS v7.0</span>
-                    <span class="threat-indicator defcon-1"><span class="blink-dot"></span> DEFCON 1 // ACTIVE</span>
-                </div>
-                <div class="brand-motto">AUTONOMOUS OPEN-SOURCE THREAT INTELLIGENCE & RECON NETWORK</div>
-            </div>
-        </div>
-
-        <!-- Global Stat Counters -->
-        <div class="top-stats-strip">
-            <div class="top-stat-item">
-                <span class="stat-k">VECTORS</span>
-                <span class="stat-v" style="color: var(--accent-cyan);">10/10 ONLINE</span>
-            </div>
-            <div class="top-stat-item">
-                <span class="stat-k">PLATFORMS</span>
-                <span class="stat-v" style="color: var(--accent-green);">112 PROBES</span>
-            </div>
-            <div class="top-stat-item">
-                <span class="stat-k">SOCKET POOL</span>
-                <span class="stat-v" style="color: var(--accent-amber);">ASYNC x50</span>
-            </div>
-            <div class="top-stat-item">
-                <span class="stat-k">SYS TIME</span>
-                <span class="stat-v mono" id="utc-clock">00:00:00 UTC</span>
-            </div>
-        </div>
-
-        <div class="top-controls-group">
-            <button class="hud-audio-btn" id="audio-toggle" title="Toggle Tactical Audio Feedback">
-                <i class="fas fa-volume-high" id="audio-icon"></i>
-                <span id="audio-label">AUDIO: ON</span>
-            </button>
-            <button class="cmd-trigger-btn" id="btn-cmd-k">
-                <i class="fas fa-terminal"></i> <span>CMD</span> <kbd>⌘K</kbd>
-            </button>
-        </div>
-    </header>
-
-    <!-- 3-Column Command Cockpit Layout -->
-    <div class="cockpit-layout">
-        
+    <div class="app-container">
         <!-- ==============================================
-             LEFT COLUMN: TARGET ARSENAL & VECTOR SELECTOR
+             NAVIGATION BAR
              ============================================== -->
-        <aside class="left-dock">
-            <div class="dock-section-title">
-                <span><i class="fas fa-satellite"></i> INTELLIGENCE ARSENAL</span>
-                <span class="dock-count">10 VECTORS</span>
-            </div>
-
-            <nav class="vector-nav-list">
-                <button class="v-btn active" data-v="omni">
-                    <span class="v-btn-num">00</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">OMNI RECON MATRIX</span>
-                        <span class="v-btn-sub">Auto-Cascade Multi-Vector</span>
-                    </div>
-                    <span class="v-btn-tag tag-omni">ALL-IN-ONE</span>
-                </button>
-
-                <button class="v-btn" data-v="username">
-                    <span class="v-btn-num">01</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">USERNAME ENUMERATOR</span>
-                        <span class="v-btn-sub">112+ Social & Dev Platforms</span>
-                    </div>
-                    <span class="v-btn-tag">112+</span>
-                </button>
-
-                <button class="v-btn" data-v="dorks">
-                    <span class="v-btn-num">02</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">PASSIVE GOOGLE DORKS</span>
-                        <span class="v-btn-sub">Configs, Buckets, Portals</span>
-                    </div>
-                    <span class="v-btn-tag">DORKS</span>
-                </button>
-
-                <button class="v-btn" data-v="discord">
-                    <span class="v-btn-num">03</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">DISCORD SNOWFLAKE</span>
-                        <span class="v-btn-sub">64-Bit Epoch & Thread Audit</span>
-                    </div>
-                    <span class="v-btn-tag">EPOCH</span>
-                </button>
-
-                <button class="v-btn" data-v="ip">
-                    <span class="v-btn-num">04</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">IP TELEMETRY & MAP</span>
-                        <span class="v-btn-sub">GeoIP, ISP, Dark Satellite</span>
-                    </div>
-                    <span class="v-btn-tag">GEO</span>
-                </button>
-
-                <button class="v-btn" data-v="bgp">
-                    <span class="v-btn-num">05</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">BGP ROUTING & ASN</span>
-                        <span class="v-btn-sub">CIDR Prefixes & Peering</span>
-                    </div>
-                    <span class="v-btn-tag">RIPE</span>
-                </button>
-
-                <button class="v-btn" data-v="email">
-                    <span class="v-btn-num">06</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">EMAIL & DNS SECURITY</span>
-                        <span class="v-btn-sub">MX, SPF, DMARC, Gravatar</span>
-                    </div>
-                    <span class="v-btn-tag">DNS</span>
-                </button>
-
-                <button class="v-btn" data-v="domain">
-                    <span class="v-btn-num">07</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">DOMAIN & CT SUBDOMAINS</span>
-                        <span class="v-btn-sub">WHOIS + Cert Transparency</span>
-                    </div>
-                    <span class="v-btn-tag">CT LOG</span>
-                </button>
-
-                <button class="v-btn" data-v="phone">
-                    <span class="v-btn-num">08</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">PHONE & CARRIER TELCO</span>
-                        <span class="v-btn-sub">E.164, Line Type, Carrier</span>
-                    </div>
-                    <span class="v-btn-tag">TELCO</span>
-                </button>
-
-                <button class="v-btn" data-v="headers">
-                    <span class="v-btn-num">09</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">HTTP SECURITY AUDIT</span>
-                        <span class="v-btn-sub">HSTS, CSP, X-Frame, Cookies</span>
-                    </div>
-                    <span class="v-btn-tag">HEADERS</span>
-                </button>
-
-                <button class="v-btn" data-v="hash">
-                    <span class="v-btn-num">10</span>
-                    <div class="v-btn-meta">
-                        <span class="v-btn-name">HASH CLASSIFIER & ENTROPY</span>
-                        <span class="v-btn-sub">MD5, SHA, NTLM, Shannon</span>
-                    </div>
-                    <span class="v-btn-tag">HASH</span>
-                </button>
-            </nav>
-
-            <div class="recent-intel-feed">
-                <div class="dock-section-title">
-                    <span><i class="fas fa-clock-rotate-left"></i> TARGET RADAR</span>
-                    <button class="btn-xs" id="btn-clear-history">CLEAR</button>
+        <header class="app-navbar">
+            <div class="nav-brand">
+                <div class="brand-logo">
+                    <i class="fas fa-fingerprint"></i>
                 </div>
-                <div class="history-list" id="history-container">
-                    <div class="history-item sample" data-target="shadow" data-vector="username">
-                        <span class="hist-type">USER</span>
-                        <span class="hist-val">@shadow</span>
-                    </div>
-                    <div class="history-item sample" data-target="1.1.1.1" data-vector="ip">
-                        <span class="hist-type">IP</span>
-                        <span class="hist-val">1.1.1.1 (Cloudflare)</span>
-                    </div>
-                    <div class="history-item sample" data-target="github.com" data-vector="domain">
-                        <span class="hist-type">DOM</span>
-                        <span class="hist-val">github.com</span>
-                    </div>
-                    <div class="history-item sample" data-target="155149108183695360" data-vector="discord">
-                        <span class="hist-type">DC</span>
-                        <span class="hist-val">155149108183695360</span>
-                    </div>
+                <div class="brand-info">
+                    <div class="brand-title">SPECTRE <span class="brand-pill">OSINT</span></div>
+                    <div class="brand-desc">Intelligence Engine</div>
                 </div>
             </div>
-        </aside>
+
+            <!-- Mode Selector -->
+            <div class="nav-modes">
+                <button class="mode-pill active" data-mode="omni">
+                    <i class="fas fa-bolt"></i> Universal Recon
+                </button>
+                <button class="mode-pill" data-mode="vectors">
+                    <i class="fas fa-layer-group"></i> 10 Vectors
+                </button>
+                <button class="mode-pill" data-mode="graph">
+                    <i class="fas fa-diagram-project"></i> Topology Graph
+                </button>
+            </div>
+
+            <!-- Status Indicator & Utilities -->
+            <div class="nav-utils">
+                <div class="system-status-pill">
+                    <span class="status-dot"></span>
+                    <span>10 Engines Online</span>
+                </div>
+                <div class="clock-pill" id="utc-clock">00:00:00 UTC</div>
+            </div>
+        </header>
 
         <!-- ==============================================
-             CENTER COLUMN: PRIMARY ENGAGEMENT STAGE
+             HERO & SEARCH SECTION
              ============================================== -->
-        <main class="center-stage">
+        <main class="main-content">
             
-            <!-- Global Omni Command Weapon Box -->
-            <div class="tactical-input-pod">
-                <div class="pod-header">
-                    <div class="pod-title-block">
-                        <span class="pod-icon"><i class="fas fa-radar"></i></span>
-                        <span class="pod-name" id="current-vector-heading">00 // OMNI_RECON_MATRIX</span>
-                    </div>
-                    <div class="pod-status-pill"><span class="blink-cyan"></span> WEAPON LOCKED & READY</div>
+            <section class="hero-section">
+                <div class="hero-badge">
+                    <i class="fas fa-shield-halved"></i> Passive Intelligence Apparatus
                 </div>
-
-                <div class="hud-search-chassis">
-                    <span class="chassis-bracket left">[</span>
-                    <div class="chassis-input-field">
-                        <span class="chassis-prompt">&gt;&gt;</span>
-                        <input type="text" id="target-input" placeholder="ENTER TARGET (USERNAME, IP, DOMAIN, EMAIL, DISCORD ID, HASH, PHONE)..." autocomplete="off" spellcheck="false">
-                    </div>
-                    <button class="btn-engage-recon" id="btn-engage">
-                        <span class="btn-glow-bar"></span>
-                        <i class="fas fa-bolt"></i>
-                        <span>ENGAGE RECON</span>
-                        <kbd>↵</kbd>
-                    </button>
-                    <span class="chassis-bracket right">]</span>
-                </div>
-
-                <!-- Quick Pivot Shortcut Tags -->
-                <div class="quick-preset-ribbon">
-                    <span class="preset-label">INSTANT TARGET PRESETS:</span>
-                    <button class="preset-tag" data-input="shadow" data-v="omni">@shadow</button>
-                    <button class="preset-tag" data-input="1.1.1.1" data-v="ip">1.1.1.1</button>
-                    <button class="preset-tag" data-input="8.8.8.8" data-v="ip">8.8.8.8</button>
-                    <button class="preset-tag" data-input="tesla.com" data-v="domain">tesla.com</button>
-                    <button class="preset-tag" data-input="155149108183695360" data-v="discord">Discord: 155149...</button>
-                    <button class="preset-tag" data-input="5d41402abc4b2a76b9719d911017c592" data-v="hash">MD5 Hash</button>
-                </div>
-            </div>
-
-            <!-- Stage Display Switcher (Data Dossier vs Force Topology Graph vs Live Terminal Log) -->
-            <div class="stage-view-tabs">
-                <button class="stage-tab active" data-stage="dossier">
-                    <i class="fas fa-file-shield"></i> <span>INTELLIGENCE DOSSIER</span>
-                </button>
-                <button class="stage-tab" data-stage="graph">
-                    <i class="fas fa-circle-nodes"></i> <span>TOPOLOGY GRAPH</span>
-                </button>
-                <button class="stage-tab" data-stage="raw">
-                    <i class="fas fa-code"></i> <span>RAW JSON PAYLOAD</span>
-                </button>
-            </div>
-
-            <!-- Stage Screen Content -->
-            <div class="stage-viewport">
-                <!-- 1. Dossier View -->
-                <div class="stage-screen active" id="screen-dossier">
-                    <div class="empty-cockpit-slate" id="empty-slate">
-                        <div class="crosshair-lens">
-                            <div class="crosshair-ring"></div>
-                            <div class="crosshair-line x"></div>
-                            <div class="crosshair-line y"></div>
-                            <i class="fas fa-crosshairs lens-icon"></i>
+                <h1 class="hero-heading">Open-Source Intelligence, <span class="text-gradient">Engineered Clean.</span></h1>
+                <p class="hero-subheading">Probe usernames across 112+ platforms, extract Discord snowflake metadata, map BGP routing prefixes, query WHOIS & Certificate Transparency logs, and audit HTTP security in milliseconds.</p>
+                
+                <!-- Main Search Chassis -->
+                <div class="search-box-wrapper">
+                    <div class="search-box">
+                        <div class="search-icon">
+                            <i class="fas fa-magnifying-glass"></i>
                         </div>
-                        <div class="slate-title">SPECTRE RECONNAISSANCE SUITE // READY FOR TARGET</div>
-                        <div class="slate-sub">Enter any entity identifier in the engagement console above or select a preset target to trigger multi-threaded passive reconnaissance pipelines.</div>
+                        <input type="text" id="main-search-input" placeholder="Enter target (e.g. shadow, 1.1.1.1, github.com, 155149108183695360, admin@domain.com)..." autocomplete="off" spellcheck="false">
+                        <button class="btn-search" id="btn-search-exec">
+                            <span>Scan Target</span>
+                            <kbd>↵</kbd>
+                        </button>
                     </div>
-                    <div class="results-container" id="results-container" style="display: none;"></div>
+
+                    <!-- Filter / Vector Selector Chips -->
+                    <div class="vector-chips-bar" id="vector-chips-bar">
+                        <button class="chip active" data-vector="omni"><i class="fas fa-wand-magic-sparkles"></i> Auto Detect</button>
+                        <button class="chip" data-vector="username"><i class="fas fa-user"></i> Username</button>
+                        <button class="chip" data-vector="ip"><i class="fas fa-network-wired"></i> IP & Geo</button>
+                        <button class="chip" data-vector="domain"><i class="fas fa-globe"></i> Domain / WHOIS</button>
+                        <button class="chip" data-vector="dorks"><i class="fas fa-search-nodes"></i> Google Dorks</button>
+                        <button class="chip" data-vector="discord"><i class="fa-brands fa-discord"></i> Discord</button>
+                        <button class="chip" data-vector="bgp"><i class="fas fa-diagram-project"></i> BGP Routing</button>
+                        <button class="chip" data-vector="email"><i class="fas fa-envelope"></i> Email</button>
+                        <button class="chip" data-vector="phone"><i class="fas fa-phone"></i> Phone</button>
+                        <button class="chip" data-vector="headers"><i class="fas fa-shield"></i> Headers</button>
+                        <button class="chip" data-vector="hash"><i class="fas fa-key"></i> Hash</button>
+                    </div>
+
+                    <!-- Preset Target Suggestions -->
+                    <div class="sample-presets-bar">
+                        <span class="sample-lbl">Try Sample:</span>
+                        <button class="sample-btn" data-val="shadow" data-vec="username">@shadow</button>
+                        <button class="sample-btn" data-val="1.1.1.1" data-vec="ip">1.1.1.1 (Cloudflare)</button>
+                        <button class="sample-btn" data-val="github.com" data-vec="domain">github.com</button>
+                        <button class="sample-btn" data-val="155149108183695360" data-vec="discord">Discord ID</button>
+                        <button class="sample-btn" data-val="5d41402abc4b2a76b9719d911017c592" data-vec="hash">MD5 Hash</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 DYNAMIC RESULTS VIEWPORT
+                 ============================================== -->
+            <section class="results-stage" id="results-stage">
+                
+                <!-- Initial Empty State -->
+                <div class="empty-state-card" id="empty-state">
+                    <div class="empty-icon-wrap">
+                        <i class="fas fa-radar"></i>
+                    </div>
+                    <h3>Ready for Target Input</h3>
+                    <p>Enter any username, IP address, root domain, email, hash, or Discord ID above to execute multi-threaded passive reconnaissance.</p>
                 </div>
 
-                <!-- 2. Topology Graph View -->
-                <div class="stage-screen" id="screen-graph">
-                    <div class="graph-hud-controls">
-                        <span class="graph-hud-title"><i class="fas fa-network-wired"></i> ENTITY CORRELATION TOPOLOGY</span>
-                        <div class="graph-btn-group">
-                            <button class="hud-btn-xs" id="btn-graph-fit"><i class="fas fa-expand"></i> FIT GRAPH</button>
-                            <button class="hud-btn-xs" id="btn-graph-reset"><i class="fas fa-rotate"></i> RE-PHYSICS</button>
+                <!-- Live Results Container -->
+                <div class="results-content" id="results-content" style="display: none;"></div>
+
+                <!-- Force Topology Graph Viewport -->
+                <div class="graph-viewport-card" id="graph-viewport-card" style="display: none;">
+                    <div class="graph-card-header">
+                        <div class="graph-title-block">
+                            <i class="fas fa-diagram-project"></i>
+                            <span>Entity Relationship Topology</span>
+                        </div>
+                        <div class="graph-actions">
+                            <button class="btn-graph-tool" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit Graph</button>
+                            <button class="btn-graph-tool" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset</button>
                         </div>
                     </div>
-                    <div id="vis-network-stage"></div>
+                    <div id="vis-graph-canvas"></div>
                 </div>
 
-                <!-- 3. Raw JSON View -->
-                <div class="stage-screen" id="screen-raw">
-                    <div class="raw-hud-header">
-                        <span>LIVE REST API JSON RESPONSE STREAM</span>
-                        <button class="hud-btn-xs copy-btn" id="btn-copy-raw"><i class="fas fa-copy"></i> COPY JSON</button>
-                    </div>
-                    <pre class="raw-json-viewer" id="raw-json-viewer">// No telemetry payload active</pre>
-                </div>
-            </div>
+            </section>
         </main>
-
-        <!-- ==============================================
-             RIGHT COLUMN: REAL-TIME TELEMETRY & LOG STREAM
-             ============================================== -->
-        <aside class="right-dock">
-            
-            <!-- Threat Level Meter -->
-            <div class="threat-meter-card">
-                <div class="meter-title">
-                    <span>SYSTEM THREAT POSTURE</span>
-                    <span class="threat-score" style="color: var(--accent-red);">LEVEL 5 // MAXIMUM</span>
-                </div>
-                <div class="meter-bars">
-                    <span class="bar fill red"></span>
-                    <span class="bar fill red"></span>
-                    <span class="bar fill red"></span>
-                    <span class="bar fill amber"></span>
-                    <span class="bar fill cyan"></span>
-                </div>
-            </div>
-
-            <!-- Dark Geolocation Map Mini-Pod (Mounted on IP Scans) -->
-            <div class="geo-map-pod" id="geo-map-pod" style="display: none;">
-                <div class="dock-section-title">
-                    <span><i class="fas fa-earth-americas"></i> GEOSPATIAL RADAR</span>
-                    <span class="geo-status-tag" id="geo-target-label">0.0.0.0</span>
-                </div>
-                <div id="mini-leaflet-map"></div>
-            </div>
-
-            <!-- Live Engine Telemetry Terminal -->
-            <div class="terminal-telemetry-pod">
-                <div class="dock-section-title">
-                    <span><i class="fas fa-terminal"></i> LIVE KERNEL LOGS</span>
-                    <button class="btn-xs" id="btn-clear-logs">CLEAR</button>
-                </div>
-                <div class="telemetry-log-stream" id="telemetry-log-stream">
-                    <div class="t-log info"><span class="t-ts">[00:00:01]</span> SPECTRE Core v7.0 initialized.</div>
-                    <div class="t-log ok"><span class="t-ts">[00:00:02]</span> 10 intelligence vector endpoints bound.</div>
-                    <div class="t-log ok"><span class="t-ts">[00:00:03]</span> 112 multi-threaded probe workers online.</div>
-                    <div class="t-log warn"><span class="t-ts">[00:00:04]</span> RIPE BGP looking glass socket attached.</div>
-                    <div class="t-log info"><span class="t-ts">[00:00:05]</span> Awaiting engagement trigger...</div>
-                </div>
-            </div>
-
-            <!-- Quick Action Arsenal -->
-            <div class="quick-arsenal-pod">
-                <div class="dock-section-title">
-                    <span><i class="fas fa-toolbox"></i> TACTICAL ACTIONS</span>
-                </div>
-                <div class="arsenal-grid">
-                    <button class="arsenal-btn" id="btn-quick-export-dossier"><i class="fas fa-file-export"></i> <span>Export Dossier</span></button>
-                    <button class="arsenal-btn" id="btn-quick-sweep"><i class="fas fa-arrows-rotate"></i> <span>Reset Stage</span></button>
-                    <button class="arsenal-btn" id="btn-quick-dorks"><i class="fas fa-magnifying-glass-chart"></i> <span>Dork Engine</span></button>
-                    <button class="arsenal-btn" id="btn-quick-test"><i class="fas fa-vial"></i> <span>Socket Ping</span></button>
-                </div>
-            </div>
-        </aside>
     </div>
 
-    <!-- ==============================================
-         TACTICAL COMMAND PALETTE (CMD+K / CTRL+K)
-         ============================================== -->
-    <div class="hud-modal-backdrop" id="cmd-modal" style="display: none;">
-        <div class="hud-cmd-dialog">
-            <div class="dialog-header">
-                <i class="fas fa-terminal"></i>
-                <input type="text" id="cmd-input-field" placeholder="Type vector, target or system command..." autocomplete="off">
-                <kbd>ESC</kbd>
-            </div>
-            <div class="dialog-results" id="cmd-dialog-results">
-                <div class="cmd-row active" data-v="omni"><i class="fas fa-radar"></i> <span>00 // OMNI Recon Matrix</span> <kbd>0</kbd></div>
-                <div class="cmd-row" data-v="username"><i class="fas fa-user-astronaut"></i> <span>01 // Username Probe (112+ Platforms)</span> <kbd>1</kbd></div>
-                <div class="cmd-row" data-v="dorks"><i class="fas fa-brain"></i> <span>02 // Passive Google Dork Matrix</span> <kbd>2</kbd></div>
-                <div class="cmd-row" data-v="discord"><i class="fa-brands fa-discord"></i> <span>03 // Discord Snowflake Telemetry</span> <kbd>3</kbd></div>
-                <div class="cmd-row" data-v="ip"><i class="fas fa-satellite-dish"></i> <span>04 // IP Geolocation & Dark Map</span> <kbd>4</kbd></div>
-                <div class="cmd-row" data-v="bgp"><i class="fas fa-diagram-project"></i> <span>05 // BGP Routing & ASN Tables</span> <kbd>5</kbd></div>
-                <div class="cmd-row" data-v="email"><i class="fas fa-envelope-shield"></i> <span>06 // Email & DNS Security</span> <kbd>6</kbd></div>
-                <div class="cmd-row" data-v="domain"><i class="fas fa-globe"></i> <span>07 // Domain & CT Subdomain Map</span> <kbd>7</kbd></div>
-                <div class="cmd-row" data-v="phone"><i class="fas fa-phone-nodes"></i> <span>08 // Phone Carrier & Telco</span> <kbd>8</kbd></div>
-                <div class="cmd-row" data-v="headers"><i class="fas fa-shield-halved"></i> <span>09 // HTTP Security Headers</span> <kbd>9</kbd></div>
-                <div class="cmd-row" data-v="hash"><i class="fas fa-fingerprint"></i> <span>10 // Cryptographic Hash Classifier</span> <kbd>H</kbd></div>
-            </div>
-        </div>
-    </div>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container"></div>
 
-    <!-- Notifications Toast Deck -->
-    <div id="toast-deck"></div>
-
-    <!-- Core Tactical App JS -->
-    <script src="/static/js/app.js?v=50"></script>
+    <!-- JavaScript Application Logic -->
+    <script src="/static/js/app.js?v=100"></script>
 </body>
 </html>
