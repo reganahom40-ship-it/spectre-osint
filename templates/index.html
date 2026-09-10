@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_tactical_v28">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_restore_v29">
 </head>
 <body>
 
@@ -107,36 +107,30 @@
         <main class="main-content">
             
             <!-- ==============================================
-                 MODE 1: UNIVERSAL OMNI RECON & COMMAND CENTER
+                 MODE 1: UNIVERSAL OMNI RECON
                  ============================================== -->
             <section class="mode-view active" id="view-omni">
-                <div class="command-deck-chassis">
-                    <div class="command-deck-topbar">
-                        <div class="cd-title-group">
-                            <span class="live-pulse-dot"></span>
-                            <span class="cd-title">TACTICAL COMMAND DECK</span>
-                            <span class="cd-tag"><i class="fas fa-microchip"></i> 10 PARALLEL VECTORS ACTIVE</span>
-                        </div>
-                        
-                        <!-- Instant One-Click Colorway Switcher -->
-                        <div class="cd-theme-quick-bar">
-                            <span class="cd-theme-label"><i class="fas fa-palette"></i> COLOR:</span>
-                            <button class="theme-chip-btn active" data-theme-set="indigo" title="Cyber Indigo"><span class="chip-dot" style="background:#6366f1;"></span> Indigo</button>
-                            <button class="theme-chip-btn" data-theme-set="emerald" title="Matrix Emerald"><span class="chip-dot" style="background:#10b981;"></span> Matrix</button>
-                            <button class="theme-chip-btn" data-theme-set="crimson" title="Crimson Red"><span class="chip-dot" style="background:#f43f5e;"></span> Crimson</button>
-                            <button class="theme-chip-btn" data-theme-set="amethyst" title="Amethyst Neon"><span class="chip-dot" style="background:#a855f7;"></span> Neon</button>
-                            <button class="theme-chip-btn" data-theme-set="amber" title="Solar Amber"><span class="chip-dot" style="background:#f59e0b;"></span> Amber</button>
-                            <button class="theme-chip-btn" data-theme-set="stealth" title="OLED Stealth"><span class="chip-dot" style="background:#e2e8f0;"></span> OLED</button>
-                        </div>
+                <div class="hero-section">
+                    <div class="hero-tag-glow">
+                        <span class="hero-sparkle"><i class="fas fa-sparkles"></i></span>
+                        <span>Autonomous Multi-Vector Target Classifier</span>
                     </div>
 
-                    <!-- Spotlight Search Chassis -->
-                    <div class="spotlight-wrapper">
+                    <h1 class="hero-heading">
+                        Intelligence Gathering, <span class="text-gradient">Redefined.</span>
+                    </h1>
+
+                    <p class="hero-subheading">
+                        Probe usernames across 112+ platforms, extract 64-bit Discord snowflake timestamps, map BGP routing CIDRs, and audit DNS CT logs in sub-second parallel streams.
+                    </p>
+
+                    <!-- Spotlight Search Chassis with Animated Glow & 3D Tilt -->
+                    <div class="spotlight-wrapper tilt-box">
                         <div class="spotlight-box">
                             <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
                                 <i class="fas fa-magnifying-glass"></i>
                             </div>
-                            <input type="text" id="omni-input" placeholder="Enter target: username (@shadow), IP (1.1.1.1), port (8080), phone (+1...), Discord ID, hash, domain..." autocomplete="off" spellcheck="false">
+                            <input type="text" id="omni-input" placeholder="Search any port (8080), phone (+1...), IP (1.1.1.1), Discord ID, handle, hash..." autocomplete="off" spellcheck="false">
                             <button class="btn-spotlight-exec" id="btn-omni-exec">
                                 <span class="btn-shine"></span>
                                 <i class="fas fa-bolt"></i>
@@ -145,7 +139,7 @@
                             </button>
                         </div>
 
-                        <!-- Real-Time Live Target Detective HUD -->
+                        <!-- Real-Time Live Target Detective HUD (Updates dynamically as you type) -->
                         <div class="target-inspector-card" id="target-inspector">
                             <div class="tinspect-header">
                                 <div class="tinspect-badge" id="tinspect-type-badge">
@@ -180,14 +174,47 @@
                         <!-- Instant Clickable Target Presets -->
                         <div class="preset-chips-row">
                             <span class="preset-label"><i class="fas fa-bolt-lightning text-amber"></i> Quick Targets:</span>
-                            <button class="preset-chip" data-val="shadow"><i class="fas fa-user-astronaut text-cyan"></i> @shadow (Username)</button>
-                            <button class="preset-chip" data-val="1.1.1.1"><i class="fas fa-network-wired text-emerald"></i> 1.1.1.1 (IP Address)</button>
                             <button class="preset-chip" data-val="8080"><i class="fas fa-ethernet text-orange"></i> 8080 (Port)</button>
                             <button class="preset-chip" data-val="+14155552671"><i class="fas fa-phone-nodes text-teal"></i> +1 415 555 2671 (Phone)</button>
-                            <button class="preset-chip" data-val="github.com"><i class="fas fa-globe text-indigo"></i> github.com (Domain)</button>
+                            <button class="preset-chip" data-val="1.1.1.1"><i class="fas fa-network-wired text-emerald"></i> 1.1.1.1 (IP Address)</button>
                             <button class="preset-chip" data-val="155149108183695360"><i class="fa-brands fa-discord text-purple"></i> Discord Snowflake</button>
-                            <button class="preset-chip" data-val="AS15169"><i class="fas fa-diagram-project text-amber"></i> AS15169 (BGP)</button>
+                            <button class="preset-chip" data-val="AS15169"><i class="fas fa-diagram-project text-amber"></i> AS15169 (BGP ASN)</button>
                             <button class="preset-chip" data-val="5d41402abc4b2a76b9719d911017c592"><i class="fas fa-key text-pink"></i> MD5 Hash</button>
+                            <button class="preset-chip" data-val="shadow"><i class="fas fa-user-astronaut text-cyan"></i> @shadow (Username)</button>
+                            <button class="preset-chip" data-val="github.com"><i class="fas fa-globe text-indigo"></i> github.com (Domain)</button>
+                        </div>
+
+                        <!-- Live Telemetry Stats Bar -->
+                        <div class="hero-live-stats-bar">
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-cyan"><i class="fas fa-user-astronaut"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">112+</span>
+                                    <span class="hstat-lbl">Global Platforms</span>
+                                </div>
+                            </div>
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-emerald"><i class="fas fa-network-wired"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">10 Vectors</span>
+                                    <span class="hstat-lbl">Parallel Sockets</span>
+                                </div>
+                            </div>
+                            <div class="hstat-icon-sep"></div>
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-amber"><i class="fas fa-bolt"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">&lt; 15ms</span>
+                                    <span class="hstat-lbl">Cascade Speed</span>
+                                </div>
+                            </div>
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-purple"><i class="fas fa-shield-halved"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">100%</span>
+                                    <span class="hstat-lbl">Passive Non-Intrusive</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -728,6 +755,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_tactical_v28"></script>
+    <script src="/static/js/app.js?v=20260910_restore_v29"></script>
 </body>
 </html>
