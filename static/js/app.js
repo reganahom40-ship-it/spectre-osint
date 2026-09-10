@@ -709,11 +709,11 @@
 
         const data = {
             nodes: new vis.DataSet([
-                { id: 'spectre', label: 'SPECTRE CORE', color: '#6366f1', shape: 'dot', size: 28, font: { color: '#fff', face: 'JetBrains Mono', size: 14 } },
-                { id: 'v_user', label: 'Social Vectors', color: '#06b6d4', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } },
-                { id: 'v_ip', label: 'GeoIP & BGP', color: '#10b981', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } },
-                { id: 'v_dns', label: 'DNS & CT Logs', color: '#f59e0b', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } },
-                { id: 'v_disc', label: 'Discord Engine', color: '#a855f7', shape: 'dot', size: 16, font: { color: '#94a3b8', face: 'JetBrains Mono' } }
+                { id: 'spectre', label: 'SPECTRE CORE', color: '#6366f1', shape: 'dot', size: 28, font: { color: '#fff', face: 'JetBrains Mono' } },
+                { id: 'v_user', label: 'Social Vectors (112+)', color: '#06b6d4', shape: 'dot', size: 16, font: { color: '#94a3b8' } },
+                { id: 'v_ip', label: 'GeoIP & BGP Sockets', color: '#10b981', shape: 'dot', size: 16, font: { color: '#94a3b8' } },
+                { id: 'v_dns', label: 'DNS & CT Certificate Stream', color: '#f59e0b', shape: 'dot', size: 16, font: { color: '#94a3b8' } },
+                { id: 'v_disc', label: 'Discord Bitshift Engine', color: '#a855f7', shape: 'dot', size: 16, font: { color: '#94a3b8' } }
             ]),
             edges: new vis.DataSet([
                 { from: 'spectre', to: 'v_user', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' },
@@ -725,38 +725,16 @@
 
         const options = {
             physics: {
-                stabilization: { iterations: 100 },
-                barnesHut: { gravitationalConstant: -3800, springLength: 130, springConstant: 0.04, damping: 0.09 }
+                stabilization: false,
+                barnesHut: { gravitationalConstant: -3500, springLength: 120 }
             },
-            interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true }
+            interaction: { hover: true, tooltipDelay: 100 }
         };
 
         networkGraph = new vis.Network(container, data, options);
 
-        // Interactive Click-to-Focus
-        networkGraph.on('selectNode', function (params) {
-            if (params.nodes.length > 0) {
-                const nodeId = params.nodes[0];
-                networkGraph.focus(nodeId, {
-                    scale: 1.25,
-                    animation: { duration: 400, easingFunction: 'easeInOutQuad' }
-                });
-                playTone(720, 'sine', 0.06);
-            }
-        });
-
-        networkGraph.on('hoverNode', function () {
-            container.style.cursor = 'pointer';
-        });
-        networkGraph.on('blurNode', function () {
-            container.style.cursor = 'default';
-        });
-
         const btnFit = document.getElementById('btn-graph-fit');
-        if (btnFit) btnFit.addEventListener('click', () => {
-            networkGraph.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
-            playTone(600, 'sine', 0.05);
-        });
+        if (btnFit) btnFit.addEventListener('click', () => networkGraph.fit());
 
         const btnReset = document.getElementById('btn-graph-reset');
         if (btnReset) {
@@ -777,117 +755,30 @@
             nodes.add({
                 id: tNodeId,
                 label: `TARGET: ${target}`,
-                color: '#6366f1',
+                color: '#f43f5e',
                 shape: 'dot',
-                size: 26,
-                font: { color: '#fff', face: 'JetBrains Mono', size: 14, strokeWidth: 2, strokeColor: '#000' }
+                size: 24,
+                font: { color: '#fff', face: 'JetBrains Mono', strokeWidth: 2, strokeColor: '#000' }
             });
-            edges.add({ from: 'spectre', to: tNodeId, color: { color: '#6366f1' }, width: 2, arrows: 'to' });
+            edges.add({ from: 'spectre', to: tNodeId, color: { color: '#f43f5e' }, width: 2, arrows: 'to' });
 
             const res = data.results || (data.data && data.data.dossier) || {};
-            
-            // 1. IP Nodes
-            if (res.ip && !res.ip.error) {
-                const ipNodeId = `res_ip_${Date.now()}`;
-                nodes.add({
-                    id: ipNodeId,
-                    label: `IP: ${res.ip.ip || target}`,
-                    color: '#10b981',
-                    shape: 'dot',
-                    size: 16,
-                    font: { color: '#6ee7b7', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: ipNodeId, color: { color: 'rgba(16,185,129,0.5)' } });
-
-                if (res.ip.city || res.ip.country) {
-                    const locNodeId = `res_loc_${Date.now()}`;
+            Object.keys(res).forEach((modKey) => {
+                const modData = res[modKey];
+                if (modData && !modData.error) {
+                    const modNodeId = `res_${modKey}_${Date.now()}`;
                     nodes.add({
-                        id: locNodeId,
-                        label: `${res.ip.city || ''}, ${res.ip.country || ''}`,
+                        id: modNodeId,
+                        label: `${modKey.toUpperCase()}`,
                         color: '#06b6d4',
                         shape: 'dot',
-                        size: 12,
-                        font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 }
+                        size: 14,
+                        font: { color: '#cbd5e1' }
                     });
-                    edges.add({ from: ipNodeId, to: locNodeId, color: { color: 'rgba(6,182,212,0.4)' } });
+                    edges.add({ from: tNodeId, to: modNodeId, color: { color: 'rgba(6, 182, 212, 0.5)' } });
                 }
-            }
-
-            // 2. BGP ASN Nodes
-            if (res.bgp && !res.bgp.error) {
-                const bgpNodeId = `res_bgp_${Date.now()}`;
-                nodes.add({
-                    id: bgpNodeId,
-                    label: `ASN: ${res.bgp.asn || target}`,
-                    color: '#f59e0b',
-                    shape: 'dot',
-                    size: 16,
-                    font: { color: '#fcd34d', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: bgpNodeId, color: { color: 'rgba(245,158,11,0.5)' } });
-            }
-
-            // 3. Social / Username Found Nodes
-            if (res.username && !res.username.error && res.username.found) {
-                const hits = res.username.found.slice(0, 4);
-                hits.forEach((h, idx) => {
-                    const uNodeId = `res_u_${idx}_${Date.now()}`;
-                    nodes.add({
-                        id: uNodeId,
-                        label: `${h.platform}`,
-                        color: '#06b6d4',
-                        shape: 'dot',
-                        size: 13,
-                        font: { color: '#67e8f9', face: 'JetBrains Mono', size: 11 }
-                    });
-                    edges.add({ from: tNodeId, to: uNodeId, color: { color: 'rgba(6,182,212,0.4)' } });
-                });
-            }
-
-            // 4. Domain & Subdomains Nodes
-            if (res.domain && !res.domain.error) {
-                const domNodeId = `res_dom_${Date.now()}`;
-                nodes.add({
-                    id: domNodeId,
-                    label: `DOMAIN: ${res.domain.domain || target}`,
-                    color: '#8b5cf6',
-                    shape: 'dot',
-                    size: 16,
-                    font: { color: '#c4b5fd', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: domNodeId, color: { color: 'rgba(139,92,246,0.5)' } });
-
-                if (res.domain.subdomains_ct) {
-                    res.domain.subdomains_ct.slice(0, 3).forEach((sub, idx) => {
-                        const sNodeId = `res_sub_${idx}_${Date.now()}`;
-                        nodes.add({
-                            id: sNodeId,
-                            label: `${sub}`,
-                            color: '#a855f7',
-                            shape: 'dot',
-                            size: 11,
-                            font: { color: '#94a3b8', face: 'JetBrains Mono', size: 10 }
-                        });
-                        edges.add({ from: domNodeId, to: sNodeId, color: { color: 'rgba(168,85,247,0.35)' } });
-                    });
-                }
-            }
-
-            // 5. Discord Snowflake Node
-            if (res.discord && !res.discord.error) {
-                const discNodeId = `res_disc_${Date.now()}`;
-                nodes.add({
-                    id: discNodeId,
-                    label: `Discord: ${res.discord.created_at_utc || 'Epoch'}`,
-                    color: '#a855f7',
-                    shape: 'dot',
-                    size: 14,
-                    font: { color: '#d8b4fe', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: discNodeId, color: { color: 'rgba(168,85,247,0.5)' } });
-            }
-
-            networkGraph.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
+            });
+            networkGraph.fit();
         } catch (e) {
             console.error('Graph update err', e);
         }
