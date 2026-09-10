@@ -249,12 +249,12 @@
 
     function drawConnectionLine(ctx, p1, p2, style, dist, maxDist, baseColor) {
         ctx.save();
-        const alpha = Math.max(0, 1 - dist / maxDist) * 0.25;
+        const alpha = Math.max(0, 1 - dist / maxDist) * 0.42;
 
         switch (style) {
             case 'dotted':
                 ctx.setLineDash([2, 3]);
-                ctx.strokeStyle = `rgba(99, 102, 241, ${alpha})`;
+                ctx.strokeStyle = `rgba(99, 102, 241, ${alpha * 1.1})`;
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
                 ctx.lineTo(p2.x, p2.y);
@@ -262,31 +262,31 @@
                 break;
             case 'dashed':
                 ctx.setLineDash([6, 5]);
-                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha * 1.2})`;
+                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha * 1.3})`;
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
                 ctx.lineTo(p2.x, p2.y);
                 ctx.stroke();
                 break;
             case 'glow':
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = 'rgba(99, 102, 241, 0.6)';
-                ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 1.5})`;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(99, 102, 241, 0.7)';
+                ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 1.6})`;
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
                 ctx.lineTo(p2.x, p2.y);
                 ctx.stroke();
                 break;
             case 'thin':
-                ctx.lineWidth = 0.5;
-                ctx.strokeStyle = `rgba(148, 163, 184, ${alpha * 0.6})`;
+                ctx.lineWidth = 0.6;
+                ctx.strokeStyle = `rgba(148, 163, 184, ${alpha * 0.8})`;
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
                 ctx.lineTo(p2.x, p2.y);
                 ctx.stroke();
                 break;
             case 'orbital': {
-                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha * 0.8})`;
+                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha * 1.1})`;
                 ctx.beginPath();
                 const midX = (p1.x + p2.x) / 2 + (p1.y - p2.y) * 0.2;
                 const midY = (p1.y + p2.y) / 2 + (p2.x - p1.x) * 0.2;
@@ -325,17 +325,19 @@
 
         function rebuildParticles() {
             particles = [];
-            const baseCount = Math.floor((width / 32) * (prefs.density / 50));
-            const count = Math.max(10, Math.min(baseCount, 120));
-            const speedFactor = (prefs.speed / 100) * 0.6;
+            const baseCount = Math.floor((width / 30) * (prefs.density / 50));
+            const count = Math.max(16, Math.min(baseCount, 130));
+            const speedFactor = (prefs.speed / 100) * 0.65;
 
             for (let i = 0; i < count; i++) {
+                const depth = Math.random() * 0.7 + 0.3; // depth scale 0.3 - 1.0
                 particles.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    vx: (Math.random() - 0.5) * speedFactor,
-                    vy: (Math.random() - 0.5) * speedFactor,
-                    size: Math.random() * 2 + 1.2
+                    vx: (Math.random() - 0.5) * speedFactor * depth,
+                    vy: (Math.random() - 0.5) * speedFactor * depth,
+                    size: (Math.random() * 2 + 1.2) * depth,
+                    depth: depth
                 });
             }
         }
@@ -358,10 +360,10 @@
             }
 
             ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = 'rgba(99, 102, 241, 0.45)';
-            ctx.strokeStyle = 'rgba(99, 102, 241, 0.45)';
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.75)';
+            ctx.strokeStyle = 'rgba(99, 102, 241, 0.6)';
 
-            const maxLineDist = 60 + (prefs.lineDensity * 0.9);
+            const maxLineDist = 65 + (prefs.lineDensity * 0.95);
             const shape = prefs.shape || 'dots';
             const lineStyle = prefs.lineStyle || 'straight';
 
@@ -390,13 +392,13 @@
                     }
                 }
 
-                // Interactive Mouse Connection
+                // Interactive Mouse Connection Glow
                 const mdx = p.x - mouseX;
                 const mdy = p.y - mouseY;
                 const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-                if (mdist < 140) {
+                if (mdist < 150) {
                     ctx.save();
-                    ctx.strokeStyle = `rgba(6, 182, 212, ${0.4 * (1 - mdist / 140)})`;
+                    ctx.strokeStyle = `rgba(6, 182, 212, ${0.55 * (1 - mdist / 150)})`;
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(mouseX, mouseY);
