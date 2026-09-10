@@ -1,33 +1,41 @@
 /* =========================================================
-   SPECTRE INTELLIGENCE PLATFORM — APP.JS (V4.0)
+   SPECTRE INTELLIGENCE PLATFORM — TACTICAL HUD JS (V5.0)
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ---- Initialize Canvas & Clock ----
-    initBubbleCanvas();
+    // ---- System State & Audio Engine ----
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    // ---- Initialize Canvas, Clock & Telemetry ----
+    initCyberCanvas();
     initClock();
+    loadTargetHistory();
 
     // ---- DOM Elements ----
-    const navItems = document.querySelectorAll('.nav-item');
-    const panels = document.querySelectorAll('.recon-panel');
-    const scanButtons = document.querySelectorAll('.super-btn');
-    const vectorLabel = document.getElementById('current-vector-label');
-    const toastContainer = document.getElementById('toast-container');
+    const vectorTabs = document.querySelectorAll('.v-tab');
+    const opsPanels = document.querySelectorAll('.ops-panel');
+    const scanButtons = document.querySelectorAll('.hud-scan-btn');
+    const vectorTitle = document.getElementById('current-vector-title');
+    const toastContainer = document.getElementById('hud-toast-container');
+    const audioToggleBtn = document.getElementById('audio-toggle');
+    const audioIcon = document.getElementById('audio-icon');
+    const audioLabel = document.getElementById('audio-label');
+    const clearHistoryBtn = document.getElementById('btn-clear-history');
 
     const VECTOR_TITLES = {
-        username: 'Username Reconnaissance',
-        dorks:    'Google Dork & Passive Recon Engine',
-        discord:  'Discord Snowflake Intelligence',
-        ip:       'IP Geolocation & Routing',
-        bgp:      'Autonomous System (BGP) Routing',
-        email:    'Email Intelligence & Security',
-        domain:   'Domain WHOIS & Subdomains',
-        phone:    'Phone Carrier & Validation',
-        headers:  'HTTP Security Compliance',
-        hash:     'Cryptographic Hash Identifier'
+        username: '01 // USERNAME_ENUMERATION',
+        dorks:    '02 // GOOGLE_DORK_ENGINE',
+        discord:  '03 // DISCORD_SNOWFLAKE_DECODER',
+        ip:       '04 // IP_GEOLOCATION_AND_ASN',
+        bgp:      '05 // BGP_ROUTING_AND_PREFIXES',
+        email:    '06 // EMAIL_AND_DNS_SECURITY',
+        domain:   '07 // DOMAIN_AND_SUBDOMAIN_MAP',
+        phone:    '08 // PHONE_AND_TELCO_VALIDATION',
+        headers:  '09 // HTTP_SECURITY_COMPLIANCE',
+        hash:     '10 // CRYPTOGRAPHIC_HASH_IDENTIFIER'
     };
 
-    // ---- API Routes Map ----
     const API_ROUTES = {
         username: { endpoint: '/api/username', key: 'username' },
         dorks:    { endpoint: '/api/dorks',    key: 'target' },
@@ -41,25 +49,117 @@ document.addEventListener('DOMContentLoaded', () => {
         hash:     { endpoint: '/api/hash',     key: 'hash' }
     };
 
-    // ---- Sidebar Navigation ----
-    navItems.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const targetMod = tab.getAttribute('data-tab');
-            
-            navItems.forEach(t => t.classList.remove('active'));
-            panels.forEach(p => p.classList.remove('active'));
+    // ---- Tactical Sound Synthesizer (Web Audio API) ----
+    function playBeep(type = 'click') {
+        if (!audioEnabled) return;
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
 
-            tab.classList.add('active');
-            const targetPanel = document.getElementById(`panel-${targetMod}`);
-            if (targetPanel) {
-                targetPanel.classList.add('active');
-                if (vectorLabel && VECTOR_TITLES[targetMod]) {
-                    vectorLabel.textContent = VECTOR_TITLES[targetMod];
-                }
-                const searchInput = targetPanel.querySelector('.super-input');
-                if (searchInput) searchInput.focus();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.04);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } else if (type === 'engage') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(520, now);
+                osc.frequency.setValueAtTime(880, now + 0.08);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.18);
+                osc.start(now);
+                osc.stop(now + 0.18);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(160, now + 0.08);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+        } catch (e) {}
+    }
+
+    // Audio Toggle Handler
+    if (audioToggleBtn) {
+        audioToggleBtn.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled) {
+                audioIcon.className = 'fas fa-volume-high';
+                audioLabel.textContent = 'AUDIO FX: ON';
+                audioToggleBtn.classList.remove('muted');
+                playBeep('success');
+            } else {
+                audioIcon.className = 'fas fa-volume-xmark';
+                audioLabel.textContent = 'AUDIO FX: MUTED';
+                audioToggleBtn.classList.add('muted');
             }
         });
+    }
+
+    // ---- Sidebar Navigation ----
+    function switchTab(modName) {
+        const targetTab = document.querySelector(`.v-tab[data-tab="${modName}"]`);
+        const targetPanel = document.getElementById(`panel-${modName}`);
+        if (!targetTab || !targetPanel) return;
+
+        vectorTabs.forEach(t => t.classList.remove('active'));
+        opsPanels.forEach(p => p.classList.remove('active'));
+
+        targetTab.classList.add('active');
+        targetPanel.classList.add('active');
+
+        if (vectorTitle && VECTOR_TITLES[modName]) {
+            vectorTitle.textContent = VECTOR_TITLES[modName];
+        }
+
+        const input = targetPanel.querySelector('.hud-input');
+        if (input) input.focus();
+
+        playBeep('click');
+        appendLog(`[VECTOR_SWITCH] Active tool set to: ${modName.toUpperCase()}`);
+    }
+
+    vectorTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const mod = tab.getAttribute('data-tab');
+            switchTab(mod);
+        });
+    });
+
+    // Keyboard Shortcuts (1-9 and 0)
+    window.addEventListener('keydown', (e) => {
+        if (document.activeElement.tagName === 'INPUT') return;
+        const keyMap = {
+            '1': 'username', '2': 'dorks', '3': 'discord', '4': 'ip', '5': 'bgp',
+            '6': 'email', '7': 'domain', '8': 'phone', '9': 'headers', '0': 'hash'
+        };
+        if (keyMap[e.key]) {
+            switchTab(keyMap[e.key]);
+        }
     });
 
     // ---- Scan Triggering ----
@@ -70,7 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const queryVal = input ? input.value.trim() : '';
 
             if (!queryVal) {
-                showToast('Please provide a target query!', 'error');
+                showToast('Target input is empty!', 'error');
+                playBeep('error');
                 if (input) input.focus();
                 return;
             }
@@ -79,12 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ---- Enter Key Listener ----
-    document.querySelectorAll('.super-input').forEach(input => {
+    // Enter Key Listener
+    document.querySelectorAll('.hud-input').forEach(input => {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const mod = input.id.replace('input-', '');
-                const btn = document.querySelector(`.super-btn[data-module="${mod}"]`);
+                const btn = document.querySelector(`.hud-scan-btn[data-module="${mod}"]`);
                 if (btn && !btn.disabled) {
                     btn.click();
                 }
@@ -99,8 +200,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialBtnContent = btn.innerHTML;
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Scanning...</span>';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>PROBING...</span>';
         resultsDiv.innerHTML = getLoadingHTML(module, query);
+
+        playBeep('engage');
+        appendLog(`[PROBE_ENGAGED] Vector: ${module.toUpperCase()} // Query: "${query}"`);
+        saveTargetHistory(module, query);
+
+        const startTime = performance.now();
 
         try {
             const payload = {};
@@ -113,17 +220,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const json = await res.json();
+            const duration = Math.round(performance.now() - startTime);
 
             if (json.success && json.data) {
                 renderModuleResults(module, json.data, query);
-                showToast(`Scan complete for ${query}`, 'success');
+                showToast(`Scan complete in ${duration}ms`, 'success');
+                playBeep('success');
+                appendLog(`[PROBE_OK] 200 SUCCESS in ${duration}ms`);
             } else {
-                resultsDiv.innerHTML = getErrorHTML(json.error || 'The recon probe encountered an error');
+                resultsDiv.innerHTML = getErrorHTML(json.error || 'Vector execution returned an error');
                 showToast(json.error || 'Scan failed', 'error');
+                playBeep('error');
+                appendLog(`[PROBE_ERR] 400 FAILURE: ${json.error || 'Unknown'}`);
             }
         } catch (err) {
             resultsDiv.innerHTML = getErrorHTML('Connection failed: ' + err.message);
-            showToast('Network request failed', 'error');
+            showToast('Network error', 'error');
+            playBeep('error');
+            appendLog(`[NET_FATAL] Error communicating with endpoint: ${err.message}`);
         } finally {
             btn.disabled = false;
             btn.innerHTML = initialBtnContent;
@@ -165,205 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    //  MODULE: GOOGLE DORKS GENERATOR (NEW)
-    // =========================================================
-    function buildDorksView(data, query) {
-        const categories = data.categories || [];
-        const catCards = categories.map(cat => {
-            const dorkItems = (cat.dorks || []).map(d => `
-                <div class="dork-item-box">
-                    <div class="dork-item-top">
-                        <span class="dork-title">${esc(d.title)}</span>
-                        <div class="dork-links">
-                            <a href="${esc(d.google_url)}" target="_blank" rel="noopener" class="dork-btn google">
-                                <i class="fa-brands fa-google"></i> Google
-                            </a>
-                            <a href="${esc(d.duckduckgo_url)}" target="_blank" rel="noopener" class="dork-btn ddg">
-                                <i class="fa-solid fa-duck"></i> DuckDuckGo
-                            </a>
-                        </div>
-                    </div>
-                    <div class="dork-query-text">${esc(d.query)}</div>
-                </div>
-            `).join('');
-
-            return `
-                <div class="dork-category-card">
-                    <div class="dork-category-header">
-                        <i class="fas ${esc(cat.icon || 'fa-folder')}"></i>
-                        <span>${esc(cat.category)}</span>
-                    </div>
-                    <div class="dork-category-body">
-                        ${dorkItems}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-fire-flame-curved"></i> Passive Dorks for Target: <strong>${esc(data.target || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val pink">${data.total_dorks}</div>
-                    <div class="metric-lbl">Target Dorks</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.total_categories}</div>
-                    <div class="metric-lbl">Vectors</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val green">100%</div>
-                    <div class="metric-lbl">Passive Recon</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">DIRECT</div>
-                    <div class="metric-lbl">1-Click Launch</div>
-                </div>
-            </div>
-
-            ${catCards}
-        `;
-    }
-
-    // =========================================================
-    //  MODULE: BGP ROUTING INTEL (NEW)
-    // =========================================================
-    function buildBGPView(data, query) {
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-diagram-project"></i> BGP Routing & ASN: <strong>${esc(data.asn || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val green">${data.total_announced_prefixes}</div>
-                    <div class="metric-lbl">Total Prefixes</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.prefixes_v4_count}</div>
-                    <div class="metric-lbl">IPv4 Blocks</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val purple">${data.prefixes_v6_count}</div>
-                    <div class="metric-lbl">IPv6 Blocks</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">RIPE</div>
-                    <div class="metric-lbl">Data Source</div>
-                </div>
-            </div>
-
-            <div class="data-grid-two">
-                ${infoBox('Autonomous System Number', data.asn, false, true)}
-                ${infoBox('Resource Name', data.resource || 'N/A')}
-                ${infoBox('Network Owner / Holder', data.holder || 'N/A', true, false, true)}
-                ${infoBox('Hurricane Electric Looking Glass', `<a href="${esc(data.looking_glass_url)}" target="_blank" rel="noopener" style="color:var(--neon-cyan);">${esc(data.looking_glass_url)}</a>`, true)}
-            </div>
-
-            <div class="sub-header"><i class="fas fa-network-wired"></i> Announced CIDR Prefixes (Sample)</div>
-            <div class="intel-code-box">${(data.sample_prefixes && data.sample_prefixes.length > 0) ? data.sample_prefixes.map(p => `• ${esc(p)}`).join('\n') : 'No active CIDR prefixes announced'}</div>
-        `;
-    }
-
-    // =========================================================
-    //  MODULE: DISCORD SNOWFLAKE
-    // =========================================================
-    function buildDiscordView(data, query) {
-        const badgesHtml = (data.badges && data.badges.length > 0)
-            ? data.badges.map(b => `<span class="badge badge-found">${esc(b)}</span>`).join('')
-            : '<span class="badge badge-found">Standard User</span>';
-
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fa-brands fa-discord"></i> Discord Snowflake: <strong>${esc(data.id || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
-            </div>
-
-            <div class="discord-profile-banner">
-                <img src="${esc(data.avatar_url)}" alt="Avatar" class="discord-avatar-large" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-                <div class="discord-user-info">
-                    <h3>${esc(data.global_name)}</h3>
-                    <div class="tag">@${esc(data.username)}</div>
-                    <div class="badge-tag-wrap">${badgesHtml}</div>
-                </div>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val purple">${data.account_age_years} yrs</div>
-                    <div class="metric-lbl">Account Age</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.account_age_days} days</div>
-                    <div class="metric-lbl">Days Registered</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val green">${data.bot ? 'BOT / APP' : 'HUMAN'}</div>
-                    <div class="metric-lbl">Entity Type</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">${data.snowflake_metadata.worker_id} / ${data.snowflake_metadata.process_id}</div>
-                    <div class="metric-lbl">Worker / Process</div>
-                </div>
-            </div>
-
-            <div class="data-grid-two">
-                ${infoBox('Exact Registration Time', data.created_at, true, true)}
-                ${infoBox('Discord Snowflake ID', data.id)}
-                ${infoBox('Unix Epoch Timestamp (ms)', data.created_timestamp)}
-                ${infoBox('Internal Sequence Inc', data.snowflake_metadata.increment)}
-                ${infoBox('Avatar Asset URL', data.avatar_url, true, false, true)}
-            </div>
-        `;
-    }
-
-    // =========================================================
-    //  MODULE: HASH IDENTIFIER
-    // =========================================================
-    function buildHashView(data, query) {
-        return `
-            <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-key"></i> Hash Analysis: <strong>${esc(data.hash || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
-            </div>
-
-            <div class="stats-metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val green">${data.length} chars</div>
-                    <div class="metric-lbl">Hash Length</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val cyan">${data.is_hex ? 'HEXADECIMAL' : 'BASE64/ASCII'}</div>
-                    <div class="metric-lbl">Encoding Format</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val yellow">${data.entropy}</div>
-                    <div class="metric-lbl">Shannon Entropy</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val purple">${data.possible_algorithms.length} matches</div>
-                    <div class="metric-lbl">Algorithms</div>
-                </div>
-            </div>
-
-            <div class="sub-header"><i class="fas fa-fingerprint"></i> Primary Algorithm Match</div>
-            <div class="info-item full-span" style="background:rgba(0,232,123,0.1);border-color:var(--neon-green);padding:18px;border-radius:18px;">
-                <div style="font-size:0.75rem;color:var(--neon-green);font-family:var(--font-mono);text-transform:uppercase;">CONFIRMED HIGH PROBABILITY</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-top:4px;">${esc(data.primary_match)}</div>
-            </div>
-
-            <div class="sub-header"><i class="fas fa-list"></i> All Potential Algorithm Matches</div>
-            <div class="intel-code-box">${data.possible_algorithms.map(a => `• ${esc(a)}`).join('\n')}</div>
-        `;
-    }
-
-    // =========================================================
-    //  MODULE: USERNAME (112+ PLATFORMS)
+    //  MODULE RENDERERS
     // =========================================================
     function buildUsernameView(data, query) {
         const list = data.results || [];
@@ -373,38 +289,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return `
             <div class="results-meta-bar">
-                <div class="results-title">
-                    <i class="fas fa-bullseye"></i>
-                    <span>Target: <strong>${esc(query)}</strong></span>
-                </div>
-                <button class="export-json-btn">
-                    <i class="fas fa-file-export"></i> Export JSON
-                </button>
+                <div class="results-title"><i class="fas fa-crosshairs"></i> TARGET: <strong>${esc(query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
             </div>
 
             <div class="stats-metrics-grid">
                 <div class="metric-card">
                     <div class="metric-val green">${found.length}</div>
-                    <div class="metric-lbl">Found</div>
+                    <div class="metric-lbl">FOUND</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-val red">${notFound.length}</div>
-                    <div class="metric-lbl">Not Found</div>
+                    <div class="metric-val pink">${notFound.length}</div>
+                    <div class="metric-lbl">NOT FOUND</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-val yellow">${errors.length}</div>
-                    <div class="metric-lbl">Rate / Err</div>
+                    <div class="metric-lbl">ERR / LIMIT</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-val cyan">${data.total_platforms || list.length}</div>
-                    <div class="metric-lbl">Scanned</div>
+                    <div class="metric-lbl">TOTAL SCANNED</div>
                 </div>
             </div>
 
             <div class="filter-bar">
-                <button class="filter-btn active" data-filter="all">All (${list.length})</button>
-                <button class="filter-btn" data-filter="found">Found (${found.length})</button>
-                <button class="filter-btn" data-filter="not_found">Not Found (${notFound.length})</button>
+                <button class="filter-btn active" data-filter="all">ALL (${list.length})</button>
+                <button class="filter-btn" data-filter="found">FOUND (${found.length})</button>
+                <button class="filter-btn" data-filter="not_found">NOT FOUND (${notFound.length})</button>
                 <input type="text" class="filter-search" placeholder="Filter 112+ networks...">
             </div>
 
@@ -416,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPlatformCards(items) {
         if (!items || items.length === 0) {
-            return '<div class="info-item full-span" style="text-align:center;color:var(--text-muted);padding:24px;">No matching networks found.</div>';
+            return '<div class="info-item full-span" style="text-align:center;color:var(--text-muted);padding:24px;">No matching networks discovered.</div>';
         }
 
         return items.map(item => {
@@ -469,6 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.classList.add('active');
                 currentStatusFilter = btn.getAttribute('data-filter');
                 applyFilters();
+                playBeep('click');
             });
         });
 
@@ -480,34 +392,172 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // =========================================================
-    //  MODULE: IP INTELLIGENCE
-    // =========================================================
+    function buildDorksView(data, query) {
+        const categories = data.categories || [];
+        const catCards = categories.map(cat => {
+            const dorkItems = (cat.dorks || []).map(d => `
+                <div class="dork-item-box">
+                    <div class="dork-item-top">
+                        <span class="dork-title">${esc(d.title)}</span>
+                        <div class="dork-links">
+                            <a href="${esc(d.google_url)}" target="_blank" rel="noopener" class="dork-btn google">
+                                <i class="fa-brands fa-google"></i> Google
+                            </a>
+                            <a href="${esc(d.duckduckgo_url)}" target="_blank" rel="noopener" class="dork-btn ddg">
+                                <i class="fa-solid fa-duck"></i> DuckDuckGo
+                            </a>
+                        </div>
+                    </div>
+                    <div class="dork-query-text">${esc(d.query)}</div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="dork-category-card">
+                    <div class="dork-category-header">
+                        <i class="fas ${esc(cat.icon || 'fa-folder')}"></i>
+                        <span>${esc(cat.category)}</span>
+                    </div>
+                    <div class="dork-category-body">
+                        ${dorkItems}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fas fa-fire-flame-curved"></i> TARGET: <strong>${esc(data.target || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val pink">${data.total_dorks}</div>
+                    <div class="metric-lbl">TARGET DORKS</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.total_categories}</div>
+                    <div class="metric-lbl">CATEGORIES</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val green">100%</div>
+                    <div class="metric-lbl">PASSIVE RECON</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">DIRECT</div>
+                    <div class="metric-lbl">1-CLICK LAUNCH</div>
+                </div>
+            </div>
+
+            ${catCards}
+        `;
+    }
+
+    function buildDiscordView(data, query) {
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fa-brands fa-discord"></i> SNOWFLAKE: <strong>${esc(data.id || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
+            </div>
+
+            <div class="discord-profile-banner">
+                <img src="${esc(data.avatar_url)}" alt="Avatar" class="discord-avatar-large" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                <div class="discord-user-info">
+                    <h3>${esc(data.global_name)}</h3>
+                    <div class="tag">@${esc(data.username)}</div>
+                </div>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val purple">${data.account_age_years} yrs</div>
+                    <div class="metric-lbl">ACCOUNT AGE</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.account_age_days} days</div>
+                    <div class="metric-lbl">REGISTRATION DAYS</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val green">${data.bot ? 'BOT' : 'USER'}</div>
+                    <div class="metric-lbl">ENTITY TYPE</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">${data.snowflake_metadata.worker_id} / ${data.snowflake_metadata.process_id}</div>
+                    <div class="metric-lbl">WORKER / PROCESS</div>
+                </div>
+            </div>
+
+            <div class="data-grid-two">
+                ${infoBox('Exact Registration Timestamp', data.created_at, true, true)}
+                ${infoBox('Discord Snowflake ID', data.id)}
+                ${infoBox('Unix Epoch Timestamp (ms)', data.created_timestamp)}
+                ${infoBox('Internal Sequence Increment', data.snowflake_metadata.increment)}
+                ${infoBox('Avatar URL', data.avatar_url, true, false, true)}
+            </div>
+        `;
+    }
+
     function buildIPView(data, query) {
         const flag = data.countryCode ? getFlagEmoji(data.countryCode) : '🌐';
         return `
             <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-network-wired"></i> IP Location & ASN: <strong>${esc(data.query || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+                <div class="results-title"><i class="fas fa-network-wired"></i> IP_REPORT: <strong>${esc(data.query || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
             </div>
             <div class="data-grid-two">
                 ${infoBox('IP Address', data.query || query, true, true)}
-                ${infoBox('Country', `${flag} ${data.country || 'N/A'} (${data.countryCode || 'N/A'})`)}
+                ${infoBox('Geographic Country', `${flag} ${data.country || 'N/A'} (${data.countryCode || 'N/A'})`)}
                 ${infoBox('Region / City', `${data.regionName || 'N/A'}, ${data.city || 'N/A'} (${data.zip || 'N/A'})`)}
                 ${infoBox('Coordinates', `${data.lat ?? 'N/A'}, ${data.lon ?? 'N/A'}`)}
                 ${infoBox('Timezone', `${data.timezone || 'N/A'} (UTC ${data.offset ? (data.offset / 3600) + 'h' : '0'})`)}
                 ${infoBox('ISP / Organization', `${data.isp || 'N/A'} // ${data.org || 'N/A'}`)}
                 ${infoBox('Autonomous System', `${data.as || 'N/A'} (${data.asname || 'N/A'})`)}
-                ${infoBox('Reverse DNS', data.reverse_dns || data.reverse || 'None', false, false, true)}
+                ${infoBox('Reverse DNS PTR', data.reverse_dns || data.reverse || 'None', false, false, true)}
                 ${infoBox('Proxy / VPN Status', data.proxy ? 'FLAGGED (PROXY / VPN)' : 'CLEAN (DIRECT)', false, data.proxy)}
-                ${infoBox('Hosting Provider', data.hosting ? 'YES (DATACENTER / VPS)' : 'RESIDENTIAL NETWORK', false, false)}
+                ${infoBox('Hosting Network', data.hosting ? 'YES (DATACENTER / VPS)' : 'RESIDENTIAL', false, false)}
             </div>
         `;
     }
 
-    // =========================================================
-    //  MODULE: EMAIL INTELLIGENCE
-    // =========================================================
+    function buildBGPView(data, query) {
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fas fa-diagram-project"></i> BGP_ASN: <strong>${esc(data.asn || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val green">${data.total_announced_prefixes}</div>
+                    <div class="metric-lbl">ANNOUNCED CIDR</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.prefixes_v4_count}</div>
+                    <div class="metric-lbl">IPV4 PREFIXES</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val purple">${data.prefixes_v6_count}</div>
+                    <div class="metric-lbl">IPV6 PREFIXES</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">RIPE</div>
+                    <div class="metric-lbl">DATA FEED</div>
+                </div>
+            </div>
+
+            <div class="data-grid-two">
+                ${infoBox('Autonomous System Number', data.asn, false, true)}
+                ${infoBox('Resource Name', data.resource || 'N/A')}
+                ${infoBox('Network Owner / Holder', data.holder || 'N/A', true, false, true)}
+                ${infoBox('HE Looking Glass', `<a href="${esc(data.looking_glass_url)}" target="_blank" rel="noopener" style="color:var(--neon-cyan);">${esc(data.looking_glass_url)}</a>`, true)}
+            </div>
+
+            <div class="sub-header"><i class="fas fa-network-wired"></i> Announced CIDR Prefixes (Sample)</div>
+            <div class="intel-code-box">${(data.sample_prefixes && data.sample_prefixes.length > 0) ? data.sample_prefixes.map(p => `• ${esc(p)}`).join('\n') : 'No active CIDR prefixes'}</div>
+        `;
+    }
+
     function buildEmailView(data, query) {
         let mxRows = '';
         if (data.mx_records && data.mx_records.length > 0) {
@@ -521,24 +571,13 @@ document.addEventListener('DOMContentLoaded', () => {
             mxRows = '<tr><td colspan="2" style="color:var(--text-muted);">No MX records discovered</td></tr>';
         }
 
-        const gravatarSection = (data.gravatar && data.gravatar.exists)
-            ? `<div class="info-item full-span" style="display:flex;align-items:center;gap:14px;">
-                 <img src="${esc(data.gravatar.url)}" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--neon-green);">
-                 <div>
-                    <div style="font-family:var(--font-sans);font-size:0.9rem;font-weight:700;color:var(--neon-green);">Gravatar Account Verified</div>
-                    <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted);">${esc(data.email)}</div>
-                 </div>
-               </div>`
-            : '';
-
         return `
             <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-at"></i> Target: <strong>${esc(data.email || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+                <div class="results-title"><i class="fas fa-at"></i> TARGET: <strong>${esc(data.email || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
             </div>
-            ${gravatarSection}
             <div class="data-grid-two">
-                ${infoBox('Handle / Username', data.handle || 'N/A')}
+                ${infoBox('Handle', data.handle || 'N/A')}
                 ${infoBox('Domain', data.domain || 'N/A', false, false, true)}
                 ${infoBox('Mail Provider Fingerprint', data.mail_provider || 'Unknown', false, true)}
                 ${infoBox('RFC Validation', data.valid_format ? 'Valid Format (RFC 5322)' : 'Invalid', false, false)}
@@ -558,17 +597,14 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // =========================================================
-    //  MODULE: DOMAIN RECON
-    // =========================================================
     function buildDomainView(data, query) {
         const w = data.whois || {};
         const subdomains = data.subdomains || [];
 
         return `
             <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-globe"></i> Domain Recon: <strong>${esc(data.domain || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+                <div class="results-title"><i class="fas fa-globe"></i> TARGET: <strong>${esc(data.domain || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
             </div>
 
             <div class="sub-header"><i class="fas fa-id-card"></i> Domain WHOIS Summary</div>
@@ -582,23 +618,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="sub-header"><i class="fas fa-diagram-project"></i> Subdomains Discovered (${subdomains.length})</div>
             <div class="intel-code-box">${subdomains.length > 0 ? subdomains.map(s => esc(s)).join('\n') : 'No public Certificate Transparency subdomains found'}</div>
-
-            ${data.robots_txt ? `
-                <div class="sub-header"><i class="fas fa-robot"></i> robots.txt</div>
-                <div class="intel-code-box">${esc(data.robots_txt)}</div>
-            ` : ''}
         `;
     }
 
-    // =========================================================
-    //  MODULE: PHONE INTELLIGENCE
-    // =========================================================
     function buildPhoneView(data, query) {
         const fmt = data.formatted || {};
         return `
             <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-phone-volume"></i> Phone Intel: <strong>${esc(data.input || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+                <div class="results-title"><i class="fas fa-phone-volume"></i> TARGET: <strong>${esc(data.input || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
             </div>
             <div class="data-grid-two">
                 ${infoBox('Valid Phone', data.valid ? 'YES (VALID NUMBER)' : 'NO', false, data.valid)}
@@ -617,9 +645,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // =========================================================
-    //  MODULE: HTTP HEADERS & SECURITY
-    // =========================================================
     function buildHeadersView(data, query) {
         const auditList = (data.security_audit || []).map(a => `
             <tr>
@@ -633,17 +658,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr>
         `).join('');
 
-        const headerRows = Object.entries(data.headers || {}).map(([k, v]) => `
-            <tr>
-                <td style="color:var(--neon-cyan);white-space:nowrap;font-weight:600;">${esc(k)}</td>
-                <td style="color:var(--text-muted);word-break:break-all;">${esc(String(v))}</td>
-            </tr>
-        `).join('');
-
         return `
             <div class="results-meta-bar">
-                <div class="results-title"><i class="fas fa-shield-virus"></i> Response Headers: <strong>${esc(data.url || query)}</strong></div>
-                <button class="export-json-btn"><i class="fas fa-file-export"></i> Export JSON</button>
+                <div class="results-title"><i class="fas fa-shield-virus"></i> TARGET: <strong>${esc(data.url || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
             </div>
             <div class="data-grid-two">
                 ${infoBox('HTTP Status', `${data.status_code || 'N/A'} OK`, false, true)}
@@ -657,17 +675,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 <thead><tr><th>Status</th><th>Security Header</th><th>Value</th></tr></thead>
                 <tbody>${auditList}</tbody>
             </table>
+        `;
+    }
 
-            <div class="sub-header"><i class="fas fa-list"></i> Full Response Headers</div>
-            <table class="intel-table">
-                <thead><tr><th>Header Name</th><th>Value</th></tr></thead>
-                <tbody>${headerRows}</tbody>
-            </table>
+    function buildHashView(data, query) {
+        return `
+            <div class="results-meta-bar">
+                <div class="results-title"><i class="fas fa-key"></i> TARGET: <strong>${esc(data.hash || query)}</strong></div>
+                <button class="export-json-btn"><i class="fas fa-file-export"></i> EXPORT_JSON</button>
+            </div>
+
+            <div class="stats-metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val green">${data.length} chars</div>
+                    <div class="metric-lbl">HASH LENGTH</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val cyan">${data.is_hex ? 'HEX' : 'BASE64'}</div>
+                    <div class="metric-lbl">ENCODING</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val yellow">${data.entropy}</div>
+                    <div class="metric-lbl">ENTROPY</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val purple">${data.possible_algorithms.length}</div>
+                    <div class="metric-lbl">MATCHES</div>
+                </div>
+            </div>
+
+            <div class="sub-header"><i class="fas fa-fingerprint"></i> Primary Algorithm Match</div>
+            <div class="info-item full-span" style="background:rgba(0,255,157,0.08);border-color:var(--neon-green);padding:14px;">
+                <div style="font-size:0.65rem;color:var(--neon-green);font-family:var(--font-mono);font-weight:800;">CONFIRMED HIGH PROBABILITY</div>
+                <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-top:2px;">${esc(data.primary_match)}</div>
+            </div>
+
+            <div class="sub-header"><i class="fas fa-list"></i> Candidate Algorithms</div>
+            <div class="intel-code-box">${data.possible_algorithms.map(a => `• ${esc(a)}`).join('\n')}</div>
         `;
     }
 
     // =========================================================
-    //  HELPERS & UTILITIES
+    //  UI UTILITIES
     // =========================================================
     function infoBox(lbl, val, isFull = false, isGreen = false, isCyan = false) {
         const spanClass = isFull ? 'info-item full-span' : 'info-item';
@@ -710,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="loading-box">
                 <div class="loading-pulse-text">
                     <i class="fas fa-crosshairs fa-spin"></i>
-                    <span>EXECUTING VECTOR PROBE ON: ${esc(target)}</span>
+                    <span>PROBING // ${esc(target)}</span>
                 </div>
                 <div class="loading-track">
                     <div class="loading-bar-fill"></div>
@@ -722,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getErrorHTML(msg) {
         return `
             <div class="error-box">
-                <i class="fas fa-circle-exclamation" style="margin-right:8px;"></i>
+                <i class="fas fa-triangle-exclamation" style="margin-right:8px;"></i>
                 ${esc(msg)}
             </div>
         `;
@@ -740,27 +789,28 @@ document.addEventListener('DOMContentLoaded', () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast(`Saved ${filename}`, 'success');
+        showToast(`Exported ${filename}`, 'success');
+        playBeep('success');
     }
 
     function showToast(msg, type = 'info') {
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+        toast.className = `hud-toast ${type}`;
         toast.textContent = msg;
         toastContainer.appendChild(toast);
 
         setTimeout(() => {
             toast.style.opacity = '0';
-            toast.style.transform = 'translateY(16px) scale(0.9)';
-            toast.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            toast.style.transform = 'translateX(20px)';
+            toast.style.transition = 'all 0.2s ease';
             setTimeout(() => {
                 if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 300);
-        }, 2800);
+            }, 200);
+        }, 2600);
     }
 
     function initClock() {
-        const clock = document.getElementById('live-clock');
+        const clock = document.getElementById('hud-clock');
         if (!clock) return;
         function update() {
             const now = new Date();
@@ -770,12 +820,80 @@ document.addEventListener('DOMContentLoaded', () => {
         update();
     }
 
-    function initBubbleCanvas() {
-        const canvas = document.getElementById('bubble-canvas');
+    function appendLog(text) {
+        const logBox = document.getElementById('telemetry-log');
+        if (!logBox) return;
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `<span class="log-ts">[${timeStr}]</span> ${esc(text)}`;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // ---- Recent Target History Engine (localStorage) ----
+    function saveTargetHistory(module, target) {
+        try {
+            let history = JSON.parse(localStorage.getItem('spectre_history') || '[]');
+            history = history.filter(h => !(h.module === module && h.target === target));
+            history.unshift({ module, target, ts: Date.now() });
+            if (history.length > 10) history = history.slice(0, 10);
+            localStorage.setItem('spectre_history', JSON.stringify(history));
+            loadTargetHistory();
+        } catch (e) {}
+    }
+
+    function loadTargetHistory() {
+        const box = document.getElementById('recent-targets-box');
+        if (!box) return;
+        try {
+            const history = JSON.parse(localStorage.getItem('spectre_history') || '[]');
+            if (history.length === 0) {
+                box.innerHTML = '<div class="empty-history">No past engagements</div>';
+                return;
+            }
+            box.innerHTML = history.map(item => `
+                <div class="target-pill" data-module="${esc(item.module)}" data-target="${esc(item.target)}">
+                    <i class="fas fa-angle-right"></i>
+                    <span>${esc(item.target)}</span>
+                </div>
+            `).join('');
+
+            box.querySelectorAll('.target-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    const mod = pill.getAttribute('data-module');
+                    const trg = pill.getAttribute('data-target');
+                    switchTab(mod);
+                    const input = document.getElementById(`input-${mod}`);
+                    if (input) {
+                        input.value = trg;
+                        const btn = document.querySelector(`.hud-scan-btn[data-module="${mod}"]`);
+                        if (btn) btn.click();
+                    }
+                });
+            });
+        } catch (e) {}
+    }
+
+    if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', () => {
+            localStorage.removeItem('spectre_history');
+            loadTargetHistory();
+            showToast('Target history cleared', 'info');
+            playBeep('click');
+        });
+    }
+
+    // =========================================================
+    //  INTERACTIVE CYBER CONSTELLATION CANVAS
+    // =========================================================
+    function initCyberCanvas() {
+        const canvas = document.getElementById('cyber-canvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         let width, height;
-        let bubbles = [];
+        let particles = [];
 
         function resize() {
             width = canvas.width = window.innerWidth;
@@ -784,23 +902,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', resize);
         resize();
 
-        const colors = [
-            'rgba(0, 232, 123, 0.22)',
-            'rgba(0, 210, 255, 0.22)',
-            'rgba(155, 92, 255, 0.2)',
-            'rgba(255, 59, 136, 0.2)'
-        ];
-
-        for (let i = 0; i < 30; i++) {
-            bubbles.push({
+        for (let i = 0; i < 45; i++) {
+            particles.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                radius: Math.random() * 16 + 6,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: -Math.random() * 0.7 - 0.2,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                pulse: Math.random() * Math.PI,
-                pulseSpeed: 0.02 + Math.random() * 0.02
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                radius: Math.random() * 2 + 1
             });
         }
 
@@ -810,41 +918,74 @@ document.addEventListener('DOMContentLoaded', () => {
             mouseY = e.clientY;
         });
 
+        // Click shockwave
+        window.addEventListener('click', (e) => {
+            particles.forEach(p => {
+                const dx = p.x - e.clientX;
+                const dy = p.y - e.clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150) {
+                    const force = (150 - dist) / 150;
+                    p.vx += (dx / dist) * force * 4;
+                    p.vy += (dy / dist) * force * 4;
+                }
+            });
+        });
+
         function animate() {
             ctx.clearRect(0, 0, width, height);
 
-            bubbles.forEach(b => {
-                b.x += b.vx;
-                b.y += b.vy;
-                b.pulse += b.pulseSpeed;
+            // Update and draw particles
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
 
-                if (b.y < -b.radius) {
-                    b.y = height + b.radius;
-                    b.x = Math.random() * width;
-                }
-                if (b.x < -b.radius) b.x = width + b.radius;
-                if (b.x > width + b.radius) b.x = -b.radius;
+                // Friction
+                p.vx *= 0.98;
+                p.vy *= 0.98;
 
-                const dx = b.x - mouseX;
-                const dy = b.y - mouseY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 100) {
-                    const force = (100 - dist) / 100;
-                    b.x += (dx / dist) * force * 2.5;
-                    b.y += (dy / dist) * force * 2.5;
-                }
-
-                const currentRadius = b.radius + Math.sin(b.pulse) * 2;
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, Math.max(1, currentRadius), 0, Math.PI * 2);
-                ctx.fillStyle = b.color;
-                ctx.fill();
+                // Edge wrap
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
+                if (p.y < 0) p.y = height;
+                if (p.y > height) p.y = 0;
 
                 ctx.beginPath();
-                ctx.arc(b.x - currentRadius * 0.3, b.y - currentRadius * 0.3, currentRadius * 0.3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 255, 157, 0.4)';
                 ctx.fill();
-            });
+
+                // Connect nearby particles with laser grid lines
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 130) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(0, 229, 255, ${0.15 * (1 - dist / 130)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+
+                // Connect to mouse
+                const mdx = p.x - mouseX;
+                const mdy = p.y - mouseY;
+                const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                if (mdist < 140) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(mouseX, mouseY);
+                    ctx.strokeStyle = `rgba(0, 255, 157, ${0.25 * (1 - mdist / 140)})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
 
             requestAnimationFrame(animate);
         }

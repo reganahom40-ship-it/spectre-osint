@@ -3,371 +3,458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPECTRE // Ultimate OSINT Reconnaissance</title>
+    <title>SPECTRE // Tactical Cyber Intelligence Terminal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css?v=6">
+    <link rel="stylesheet" href="/static/css/style.css?v=8">
 </head>
-<body class="sidebar-layout">
-    <!-- Interactive Canvas Background -->
-    <canvas id="bubble-canvas"></canvas>
+<body class="cyber-terminal">
+    <!-- Interactive Cyber Constellation Canvas -->
+    <canvas id="cyber-canvas"></canvas>
 
-    <!-- Glowing Background Aura Orbs -->
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    <div class="blob blob-3"></div>
+    <!-- Scanline & Vignette HUD Overlays -->
+    <div class="hud-overlay"></div>
+    <div class="hud-vignette"></div>
 
-    <div class="layout-wrapper">
+    <!-- Main Command Deck Layout -->
+    <div class="deck-container">
+        
         <!-- ==============================================
-             CYBER GLASS SIDEBAR
+             LEFT COMMAND NAVIGATION SIDEBAR
              ============================================== -->
-        <aside class="sidebar-container">
-            <div class="sidebar-header">
-                <div class="logo-box">
-                    <div class="logo-icon-wrap">
-                        <i class="fas fa-radar fa-spin"></i>
+        <aside class="command-sidebar">
+            <div class="brand-block">
+                <div class="brand-top">
+                    <div class="radar-mini-box">
+                        <div class="radar-sweep"></div>
+                        <div class="radar-dot dot-1"></div>
+                        <div class="radar-dot dot-2"></div>
                     </div>
                     <div>
-                        <h1 class="sidebar-logo-text">SPECTRE</h1>
-                        <span class="sidebar-version">v4.0 // ELITE EDITION</span>
+                        <div class="brand-title">SPECTRE<span class="version-tag">PRO</span></div>
+                        <div class="brand-classification">TACTICAL RECON OPS // V5.0</div>
                     </div>
                 </div>
-                <div class="sidebar-status-pill">
-                    <span class="live-dot"></span>
-                    <span>10 RECON VECTORS LIVE</span>
+
+                <div class="system-status-indicator">
+                    <div class="status-pulse-dot"></div>
+                    <span class="status-label">SYS_STATUS: OPTIMAL</span>
+                    <span class="latency-chip" id="hud-ping">24ms</span>
                 </div>
             </div>
 
-            <div class="sidebar-nav-label">RECONNAISSANCE VECTORS</div>
+            <!-- Operations Navigation -->
+            <div class="sidebar-section-title">
+                <span>RECON VECTORS</span>
+                <span class="section-count">[10]</span>
+            </div>
 
-            <nav class="sidebar-nav">
-                <button class="nav-item active" data-tab="username">
-                    <div class="nav-item-icon"><i class="fas fa-fingerprint"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">Username Recon</span>
-                        <span class="item-sub">112+ Global Platforms</span>
+            <nav class="vector-nav">
+                <button class="v-tab active" data-tab="username" data-key="1">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">01</span>
+                        <i class="fas fa-fingerprint"></i>
+                        <span class="tab-name">Username Recon</span>
                     </div>
-                    <span class="nav-chip green">112</span>
+                    <span class="v-badge green">112+</span>
                 </button>
 
-                <button class="nav-item" data-tab="dorks">
-                    <div class="nav-item-icon dorks-icon"><i class="fas fa-fire-flame-curved"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">Google Dork Engine</span>
-                        <span class="item-sub">Exposed Files, Buckets & Portals</span>
+                <button class="v-tab" data-tab="dorks" data-key="2">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">02</span>
+                        <i class="fas fa-fire-flame-curved"></i>
+                        <span class="tab-name">Google Dorks</span>
                     </div>
-                    <span class="nav-chip pink">PRO</span>
+                    <span class="v-badge pink">LIVE</span>
                 </button>
 
-                <button class="nav-item" data-tab="discord">
-                    <div class="nav-item-icon discord-icon"><i class="fa-brands fa-discord"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">Discord Snowflake</span>
-                        <span class="item-sub">Exact Reg Time & Profile</span>
+                <button class="v-tab" data-tab="discord" data-key="3">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">03</span>
+                        <i class="fa-brands fa-discord"></i>
+                        <span class="tab-name">Discord ID Intel</span>
                     </div>
-                    <span class="nav-chip purple">ID</span>
+                    <span class="v-badge purple">SNOW</span>
                 </button>
 
-                <button class="nav-item" data-tab="ip">
-                    <div class="nav-item-icon"><i class="fas fa-network-wired"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">IP Intelligence</span>
-                        <span class="item-sub">Geo, ASN, VPN Flag</span>
+                <button class="v-tab" data-tab="ip" data-key="4">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">04</span>
+                        <i class="fas fa-network-wired"></i>
+                        <span class="tab-name">IP Intelligence</span>
                     </div>
+                    <span class="v-badge cyan">GEO</span>
                 </button>
 
-                <button class="nav-item" data-tab="bgp">
-                    <div class="nav-item-icon bgp-icon"><i class="fas fa-diagram-project"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">BGP Routing & ASN</span>
-                        <span class="item-sub">Prefixes, RIPE Stat & Peers</span>
+                <button class="v-tab" data-tab="bgp" data-key="5">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">05</span>
+                        <i class="fas fa-diagram-project"></i>
+                        <span class="tab-name">BGP Routing / ASN</span>
                     </div>
-                    <span class="nav-chip cyan">BGP</span>
+                    <span class="v-badge blue">RIPE</span>
                 </button>
 
-                <button class="nav-item" data-tab="email">
-                    <div class="nav-item-icon"><i class="fas fa-envelope-open-text"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">Email Intelligence</span>
-                        <span class="item-sub">MX, SPF, Gravatar</span>
+                <button class="v-tab" data-tab="email" data-key="6">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">06</span>
+                        <i class="fas fa-envelope-open-text"></i>
+                        <span class="tab-name">Email Intel</span>
                     </div>
+                    <span class="v-badge yellow">DNS</span>
                 </button>
 
-                <button class="nav-item" data-tab="domain">
-                    <div class="nav-item-icon"><i class="fas fa-globe-americas"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">Domain & DNS</span>
-                        <span class="item-sub">WHOIS, crt.sh Subdomains</span>
-                    </div>
-                </button>
-
-                <button class="nav-item" data-tab="phone">
-                    <div class="nav-item-icon"><i class="fas fa-mobile-screen-button"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">Phone & Carrier</span>
-                        <span class="item-sub">Carrier, Line Type, E.164</span>
+                <button class="v-tab" data-tab="domain" data-key="7">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">07</span>
+                        <i class="fas fa-globe-americas"></i>
+                        <span class="tab-name">Domain & WHOIS</span>
                     </div>
                 </button>
 
-                <button class="nav-item" data-tab="headers">
-                    <div class="nav-item-icon"><i class="fas fa-shield-halved"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">HTTP Security</span>
-                        <span class="item-sub">HSTS, CSP, Cookies</span>
+                <button class="v-tab" data-tab="phone" data-key="8">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">08</span>
+                        <i class="fas fa-mobile-screen-button"></i>
+                        <span class="tab-name">Phone / Telco</span>
                     </div>
                 </button>
 
-                <button class="nav-item" data-tab="hash">
-                    <div class="nav-item-icon"><i class="fas fa-key"></i></div>
-                    <div class="nav-item-text">
-                        <span class="item-title">Hash Identifier</span>
-                        <span class="item-sub">MD5, SHA, bcrypt, NTLM</span>
+                <button class="v-tab" data-tab="headers" data-key="9">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">09</span>
+                        <i class="fas fa-shield-halved"></i>
+                        <span class="tab-name">HTTP Security</span>
+                    </div>
+                </button>
+
+                <button class="v-tab" data-tab="hash" data-key="0">
+                    <div class="v-tab-lead">
+                        <span class="tab-index">10</span>
+                        <i class="fas fa-key"></i>
+                        <span class="tab-name">Hash Identifier</span>
                     </div>
                 </button>
             </nav>
 
-            <div class="sidebar-footer">
-                <div class="sidebar-stats-card">
-                    <div class="stat-line">
-                        <span>TOTAL VECTORS</span>
-                        <span class="green-text">10 MODULES</span>
-                    </div>
-                    <div class="stat-line">
-                        <span>ENGINE SPEED</span>
-                        <span class="cyan-text">~2.2s PROBE</span>
-                    </div>
-                    <div class="stat-line">
-                        <span>CLOUD STATUS</span>
-                        <span class="yellow-text">RENDER 24/7</span>
-                    </div>
-                </div>
+            <!-- Quick Recent Operations -->
+            <div class="sidebar-section-title">
+                <span>RECENT TARGETS</span>
+                <button class="clear-history-btn" id="btn-clear-history" title="Clear History"><i class="fas fa-trash-can"></i></button>
+            </div>
+            <div class="recent-targets-list" id="recent-targets-box">
+                <div class="empty-history">No past engagements</div>
+            </div>
+
+            <!-- Tactical Audio & Controls -->
+            <div class="sidebar-bottom-panel">
+                <button class="audio-toggle-btn" id="audio-toggle" title="Toggle UI Sound FX">
+                    <i class="fas fa-volume-high" id="audio-icon"></i>
+                    <span id="audio-label">AUDIO FX: ON</span>
+                </button>
+                <div class="quick-shortcut-hint">HINT: PRESS <kbd>1</kbd>-<kbd>0</kbd> TO SWITCH VECTORS</div>
             </div>
         </aside>
 
         <!-- ==============================================
-             MAIN VIEWPORT STAGE
+             RIGHT TACTICAL WORKSPACE STAGE
              ============================================== -->
-        <main class="main-stage">
-            <!-- Topbar -->
-            <div class="stage-topbar">
-                <div class="breadcrumbs">
-                    <span class="bc-root">SPECTRE</span>
-                    <span class="bc-sep">/</span>
-                    <span class="bc-current" id="current-vector-label">Username Reconnaissance</span>
+        <main class="command-workspace">
+            
+            <!-- Top HUD Information Bar -->
+            <div class="hud-topbar">
+                <div class="target-breadcrumb">
+                    <span class="hud-tag">ENGAGEMENT</span>
+                    <i class="fas fa-angle-right"></i>
+                    <span class="hud-vector-name" id="current-vector-title">USERNAME_RECONNAISSANCE</span>
                 </div>
-                <div class="topbar-right">
-                    <div class="time-clock" id="live-clock">--:--:-- UTC</div>
+
+                <div class="hud-top-meta">
+                    <div class="hud-metric">
+                        <span class="m-lbl">CONCURRENCY:</span>
+                        <span class="m-val green">50 THREADS</span>
+                    </div>
+                    <div class="hud-metric">
+                        <span class="m-lbl">UTC TIME:</span>
+                        <span class="m-val cyan" id="hud-clock">00:00:00 UTC</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Panel 1: Username -->
-            <section class="recon-panel active" id="panel-username">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box"><i class="fas fa-user-secret"></i></div>
-                    <div class="hero-details">
-                        <h2>Global Identity & Username Recon</h2>
-                        <p>Simultaneously inspects 112+ social networks, developer hubs, gaming profiles, and creator websites in parallel.</p>
+            <!-- ==============================================
+                 VECTOR PANELS
+                 ============================================== -->
+
+            <!-- 1. Username Recon Panel -->
+            <section class="ops-panel active" id="panel-username">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-fingerprint"></i>
+                            <h3>VECTOR // 01: GLOBAL USERNAME ENUMERATION</h3>
+                        </div>
+                        <span class="hud-pill green">112+ PLATFORMS // ZERO API KEYS</span>
                     </div>
+                    <p class="hud-card-desc">Execute concurrent asynchronous probes across 112+ global developer, social, creator, crypto, and gaming networks in parallel.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-at"></i></div>
-                    <input type="text" id="input-username" class="super-input" placeholder="Enter target handle / username..." autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="username">
-                        <span>ENGAGE RECON</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ TARGET_HANDLE ]</div>
+                    <input type="text" id="input-username" class="hud-input" placeholder="e.g. shadow_recon, satoshi, root..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="username">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>EXECUTE SCAN</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-username"></div>
+                <div class="panel-results-stage" id="results-username"></div>
             </section>
 
-            <!-- Panel 2: Google Dorks (NEW) -->
-            <section class="recon-panel" id="panel-dorks">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box dorks-bg"><i class="fas fa-fire-flame-curved"></i></div>
-                    <div class="hero-details">
-                        <h2>Google Dork & Passive Recon Engine</h2>
-                        <p>Generates targeted search queries for exposed environment configs, database dumps, cloud buckets, admin gateways, and public documents.</p>
+            <!-- 2. Google Dorks Panel -->
+            <section class="ops-panel" id="panel-dorks">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-fire-flame-curved"></i>
+                            <h3>VECTOR // 02: GOOGLE DORKING & PASSIVE INTEL</h3>
+                        </div>
+                        <span class="hud-pill pink">TARGETED SEARCH INGESTION</span>
                     </div>
+                    <p class="hud-card-desc">Generate advanced precision dorks to discover exposed `.env` files, SQL database backups, public cloud buckets, and administrative portals.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-magnifying-glass"></i></div>
-                    <input type="text" id="input-dorks" class="super-input" placeholder="Enter domain or organization name (e.g. example.com)..." autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="dorks">
-                        <span>GENERATE DORKS</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ DOMAIN_OR_NAME ]</div>
+                    <input type="text" id="input-dorks" class="hud-input" placeholder="e.g. target.com or organization name..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="dorks">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>BUILD DORKS</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-dorks"></div>
+                <div class="panel-results-stage" id="results-dorks"></div>
             </section>
 
-            <!-- Panel 3: Discord Snowflake -->
-            <section class="recon-panel" id="panel-discord">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box discord-bg"><i class="fa-brands fa-discord"></i></div>
-                    <div class="hero-details">
-                        <h2>Discord Snowflake Intelligence</h2>
-                        <p>Reverse-engineers Discord 64-bit Snowflake IDs to calculate exact millisecond account registration date, worker/process metadata, and public avatar.</p>
+            <!-- 3. Discord Snowflake Panel -->
+            <section class="ops-panel" id="panel-discord">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fa-brands fa-discord"></i>
+                            <h3>VECTOR // 03: DISCORD SNOWFLAKE DECODER</h3>
+                        </div>
+                        <span class="hud-pill purple">64-BIT TIMESTAMP MATH</span>
                     </div>
+                    <p class="hud-card-desc">Extract exact millisecond registration timestamps, calculate account age, resolve Discord avatar assets, and decode internal worker/process IDs.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fa-solid fa-id-badge"></i></div>
-                    <input type="text" id="input-discord" class="super-input" placeholder="Enter Discord Snowflake ID (e.g. 155149108183695360)..." autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="discord">
-                        <span>DECODE ID</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ DISCORD_SNOWFLAKE ]</div>
+                    <input type="text" id="input-discord" class="hud-input" placeholder="e.g. 155149108183695360..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="discord">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>DECODE SNOWFLAKE</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-discord"></div>
+                <div class="panel-results-stage" id="results-discord"></div>
             </section>
 
-            <!-- Panel 4: IP -->
-            <section class="recon-panel" id="panel-ip">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box"><i class="fas fa-network-wired"></i></div>
-                    <div class="hero-details">
-                        <h2>IP Geolocation, ASN & Proxy Analysis</h2>
-                        <p>Calculates precise geolocation, ASN routing, reverse DNS, and flags VPN / hosting / datacenter infrastructure.</p>
+            <!-- 4. IP Intelligence Panel -->
+            <section class="ops-panel" id="panel-ip">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-network-wired"></i>
+                            <h3>VECTOR // 04: IP GEOLOCATION & ASN ROUTING</h3>
+                        </div>
+                        <span class="hud-pill cyan">IPV4 / IPV6 DUAL-STACK</span>
                     </div>
+                    <p class="hud-card-desc">Resolve real-time GPS coordinates, Autonomous System Number, reverse DNS PTR hostnames, and flag VPN / Hosting / Datacenter IPs.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-globe"></i></div>
-                    <input type="text" id="input-ip" class="super-input" placeholder="e.g. 1.1.1.1 or 8.8.8.8" autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="ip">
-                        <span>SCAN IP</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ TARGET_IP_ADDRESS ]</div>
+                    <input type="text" id="input-ip" class="hud-input" placeholder="e.g. 1.1.1.1 or 8.8.8.8..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="ip">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>TRACE IP</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-ip"></div>
+                <div class="panel-results-stage" id="results-ip"></div>
             </section>
 
-            <!-- Panel 5: BGP Routing (NEW) -->
-            <section class="recon-panel" id="panel-bgp">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box bgp-bg"><i class="fas fa-diagram-project"></i></div>
-                    <div class="hero-details">
-                        <h2>Autonomous System (BGP) Routing Intel</h2>
-                        <p>Inspects Autonomous System Numbers (ASNs), announced IPv4/IPv6 CIDR prefixes, and upstream network routing from RIPE Stat.</p>
+            <!-- 5. BGP Routing Panel -->
+            <section class="ops-panel" id="panel-bgp">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-diagram-project"></i>
+                            <h3>VECTOR // 05: BGP ROUTING & PREFIX DISCOVERY</h3>
+                        </div>
+                        <span class="hud-pill blue">RIPE STAT INFRASTRUCTURE</span>
                     </div>
+                    <p class="hud-card-desc">Query live global BGP routing tables to extract announced IPv4/IPv6 CIDR network blocks and Autonomous System ownership.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-route"></i></div>
-                    <input type="text" id="input-bgp" class="super-input" placeholder="Enter ASN (e.g. AS15169 for Google, AS13335 for Cloudflare)..." autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="bgp">
-                        <span>ANALYZE BGP</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ TARGET_ASN ]</div>
+                    <input type="text" id="input-bgp" class="hud-input" placeholder="e.g. AS15169 (Google), AS13335 (Cloudflare)..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="bgp">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>QUERY BGP</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-bgp"></div>
+                <div class="panel-results-stage" id="results-bgp"></div>
             </section>
 
-            <!-- Panel 6: Email -->
-            <section class="recon-panel" id="panel-email">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box"><i class="fas fa-envelope-open-text"></i></div>
-                    <div class="hero-details">
-                        <h2>Email Intel & DNS Mail Security</h2>
-                        <p>Inspects mail exchange priority servers, SPF/DMARC authentication, mail provider fingerprints, and Gravatar accounts.</p>
+            <!-- 6. Email Intel Panel -->
+            <section class="ops-panel" id="panel-email">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-envelope-open-text"></i>
+                            <h3>VECTOR // 06: EMAIL FOOTPRINT & SPF/DMARC</h3>
+                        </div>
+                        <span class="hud-pill yellow">MAIL INFRASTRUCTURE</span>
                     </div>
+                    <p class="hud-card-desc">Enumerate priority Mail Exchange (MX) nodes, detect mail providers, extract SPF/DMARC authentication policies, and verify Gravatar accounts.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-envelope"></i></div>
-                    <input type="text" id="input-email" class="super-input" placeholder="target@example.com" autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="email">
-                        <span>SCAN EMAIL</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ TARGET_EMAIL ]</div>
+                    <input type="text" id="input-email" class="hud-input" placeholder="e.g. target@domain.com..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="email">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>INSPECT EMAIL</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-email"></div>
+                <div class="panel-results-stage" id="results-email"></div>
             </section>
 
-            <!-- Panel 7: Domain -->
-            <section class="recon-panel" id="panel-domain">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box"><i class="fas fa-globe-americas"></i></div>
-                    <div class="hero-details">
-                        <h2>Domain WHOIS, DNS & Subdomain Enumeration</h2>
-                        <p>Discovers domain registration history, nameservers, complete DNS zone records, SSL parameters, and Certificate Transparency subdomains.</p>
+            <!-- 7. Domain & DNS Panel -->
+            <section class="ops-panel" id="panel-domain">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-globe-americas"></i>
+                            <h3>VECTOR // 07: DOMAIN WHOIS & SUBDOMAIN MAP</h3>
+                        </div>
+                        <span class="hud-pill green">CERTIFICATE TRANSPARENCY</span>
                     </div>
+                    <p class="hud-card-desc">Query registry WHOIS dates, full DNS record zones (A, AAAA, MX, TXT, SOA), and parse crt.sh Certificate Transparency logs for subdomains.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-link"></i></div>
-                    <input type="text" id="input-domain" class="super-input" placeholder="e.g. targetdomain.com" autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="domain">
-                        <span>PROBE DOMAIN</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ DOMAIN_NAME ]</div>
+                    <input type="text" id="input-domain" class="hud-input" placeholder="e.g. example.com..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="domain">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>ENUMERATE DOMAIN</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-domain"></div>
+                <div class="panel-results-stage" id="results-domain"></div>
             </section>
 
-            <!-- Panel 8: Phone -->
-            <section class="recon-panel" id="panel-phone">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box"><i class="fas fa-mobile-screen-button"></i></div>
-                    <div class="hero-details">
-                        <h2>Phone Number & Telco Identification</h2>
-                        <p>Extracts carrier network, line category (Mobile / VOIP / Fixed Line), country location, timezone, and standardized E.164 formats.</p>
+            <!-- 8. Phone Intel Panel -->
+            <section class="ops-panel" id="panel-phone">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-mobile-screen-button"></i>
+                            <h3>VECTOR // 08: PHONE & TELCO VALIDATION</h3>
+                        </div>
+                        <span class="hud-pill cyan">GOOGLE LIBPHONENUMBER</span>
                     </div>
+                    <p class="hud-card-desc">Identify carrier networks, classify line types (Mobile / VOIP / Fixed Line), resolve regional timezones, and standardize E.164 formats.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-hashtag"></i></div>
-                    <input type="text" id="input-phone" class="super-input" placeholder="+14155552671" autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="phone">
-                        <span>ANALYZE PHONE</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ PHONE_E164 ]</div>
+                    <input type="text" id="input-phone" class="hud-input" placeholder="e.g. +14155552671..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="phone">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>VALIDATE PHONE</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-phone"></div>
+                <div class="panel-results-stage" id="results-phone"></div>
             </section>
 
-            <!-- Panel 9: Headers -->
-            <section class="recon-panel" id="panel-headers">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box"><i class="fas fa-shield-halved"></i></div>
-                    <div class="hero-details">
-                        <h2>HTTP Security Headers Compliance Audit</h2>
-                        <p>Verifies HSTS, CSP, X-Frame headers, web server signatures, redirect traces, and session cookie security flags.</p>
+            <!-- 9. HTTP Security Panel -->
+            <section class="ops-panel" id="panel-headers">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-shield-halved"></i>
+                            <h3>VECTOR // 09: HTTP SECURITY HEADERS AUDIT</h3>
+                        </div>
+                        <span class="hud-pill yellow">DEFENSE COMPLIANCE</span>
                     </div>
+                    <p class="hud-card-desc">Audit HSTS, CSP, X-Frame-Options, server banner signatures, cookie attributes (HttpOnly / Secure / SameSite), and HTTP redirect chains.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-server"></i></div>
-                    <input type="text" id="input-headers" class="super-input" placeholder="https://example.com" autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="headers">
-                        <span>AUDIT URL</span>
-                        <i class="fas fa-bolt"></i>
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ TARGET_ENDPOINT ]</div>
+                    <input type="text" id="input-headers" class="hud-input" placeholder="e.g. https://example.com..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="headers">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>AUDIT SECURITY</span>
                     </button>
                 </div>
-                <div class="panel-results" id="results-headers"></div>
+                <div class="panel-results-stage" id="results-headers"></div>
             </section>
 
-            <!-- Panel 10: Hash -->
-            <section class="recon-panel" id="panel-hash">
-                <div class="stage-hero-card">
-                    <div class="hero-icon-box"><i class="fas fa-key"></i></div>
-                    <div class="hero-details">
-                        <h2>Cryptographic Hash Identifier & Analysis</h2>
-                        <p>Identifies hash algorithms (MD5, SHA-1, SHA-256, NTLM, bcrypt, Argon2, etc.), computes Shannon entropy, and analyzes bit lengths.</p>
+            <!-- 10. Hash Identifier Panel -->
+            <section class="ops-panel" id="panel-hash">
+                <div class="tactical-hud-card">
+                    <div class="hud-card-corners"></div>
+                    <div class="hud-card-header">
+                        <div class="card-title-line">
+                            <i class="fas fa-key"></i>
+                            <h3>VECTOR // 10: CRYPTOGRAPHIC HASH IDENTIFIER</h3>
+                        </div>
+                        <span class="hud-pill pink">ENTROPY & ALGO FINGERPRINT</span>
                     </div>
+                    <p class="hud-card-desc">Fingerprint cryptographic hash digests against MD5, SHA-1, SHA-256, NTLM, bcrypt, Argon2, and calculate bit-length and Shannon entropy.</p>
                 </div>
-                <div class="super-search-box">
-                    <div class="search-lead-icon"><i class="fas fa-fingerprint"></i></div>
-                    <input type="text" id="input-hash" class="super-input" placeholder="Enter raw hash string (e.g. 5d41402abc4b2a76b9719d911017c592)..." autocomplete="off" spellcheck="false">
-                    <button class="super-btn" data-module="hash">
+
+                <div class="tactical-search-box">
+                    <div class="search-lead-bracket">[ RAW_HASH_STRING ]</div>
+                    <input type="text" id="input-hash" class="hud-input" placeholder="e.g. 5d41402abc4b2a76b9719d911017c592..." autocomplete="off" spellcheck="false">
+                    <button class="hud-scan-btn" data-module="hash">
+                        <i class="fas fa-crosshairs"></i>
                         <span>IDENTIFY HASH</span>
-                        <i class="fas fa-bolt"></i>
                     </button>
                 </div>
-                <div class="panel-results" id="results-hash"></div>
+                <div class="panel-results-stage" id="results-hash"></div>
             </section>
+
+            <!-- Bottom Live Telemetry Stream Ticker -->
+            <div class="hud-terminal-feed">
+                <div class="feed-header">
+                    <span class="feed-title"><i class="fas fa-terminal"></i> RECON_TELEMETRY_LOG</span>
+                    <span class="feed-status">LIVE STREAM</span>
+                </div>
+                <div class="feed-body" id="telemetry-log">
+                    <div class="log-line"><span class="log-ts">[00:00:01]</span> <span class="log-ok">[SYS_INIT]</span> SPECTRE OSINT v5.0 Kernel loaded. 10 vector modules operational.</div>
+                    <div class="log-line"><span class="log-ts">[00:00:02]</span> <span class="log-info">[NET_POOL]</span> ThreadPoolExecutor configured for 50 concurrent worker threads.</div>
+                </div>
+            </div>
 
         </main>
     </div>
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container"></div>
+    <!-- HUD Toast Notification Container -->
+    <div id="hud-toast-container"></div>
 
-    <script src="/static/js/app.js?v=6"></script>
+    <script src="/static/js/app.js?v=8"></script>
 </body>
 </html>
