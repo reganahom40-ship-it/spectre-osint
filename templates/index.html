@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_overflow_fix_v34">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_spatial_v35">
 </head>
 <body>
 
@@ -30,71 +30,50 @@
     <div class="mesh-orb orb-2"></div>
     <div class="mesh-orb orb-3"></div>
 
-    <!-- Live Global Ticker Bar -->
-    <div class="global-ticker-bar">
-        <div class="ticker-inner">
-            <span class="ticker-badge"><span class="pulse-dot"></span> LIVE SIGNAL</span>
-            <span class="ticker-item"><i class="fas fa-satellite"></i> 10/10 Recon Vectors Primed</span>
-            <span class="ticker-sep">•</span>
-            <span class="ticker-item"><i class="fas fa-network-wired"></i> 50 Multi-Threaded Async Sockets</span>
-            <span class="ticker-sep">•</span>
-            <span class="ticker-item"><i class="fas fa-bolt"></i> Average Latency: ~120ms</span>
-            <span class="ticker-sep">•</span>
-            <span class="ticker-item"><i class="fas fa-shield-halved"></i> 112+ Social & Dev Platforms</span>
-            <span class="ticker-sep">•</span>
-            <span class="ticker-item"><i class="fas fa-layer-group"></i> RIPE BGP & CT Logs Stream Active</span>
-            <span class="ticker-sep">•</span>
-            <span class="ticker-item"><i class="fas fa-keyboard"></i> Press <kbd>Ctrl+K</kbd> for Command Palette</span>
-        </div>
-    </div>
-
     <div class="app-container">
         <!-- ==============================================
-             TOP NAVIGATION BAR
+             TOP NAVIGATION BAR (MINIMAL & INTEGRATED)
              ============================================== -->
         <header class="app-navbar">
             <div class="nav-brand">
                 <div class="brand-logo">
-                    <i class="fas fa-fingerprint"></i>
+                    <i class="fas fa-layer-group"></i>
                 </div>
                 <div class="brand-info">
                     <div class="brand-title">
-                        SPECTRE <span class="brand-badge-pro">PRO v17.0</span>
+                        SPECTRE <span class="brand-badge-pro">INTELLIGENCE</span>
                     </div>
-                    <div class="brand-desc">Autonomous Reconnaissance & OSINT Apparatus</div>
                 </div>
             </div>
 
-            <!-- Modern Animated Mode Switcher -->
+            <!-- Sleek Integrated Mode Switcher -->
             <nav class="nav-modes-wrapper">
                 <div class="nav-modes" id="nav-modes">
                     <button class="mode-pill active" data-mode="omni">
-                        <i class="fas fa-bolt"></i> <span>Universal Recon</span>
-                    </button>
-                    <button class="mode-pill" data-mode="vectors">
-                        <i class="fas fa-layer-group"></i> <span>10 Modular Studio</span>
+                        <span>Investigate</span>
                     </button>
                     <button class="mode-pill" data-mode="graph">
-                        <i class="fas fa-diagram-project"></i> <span>Topology Graph</span>
+                        <span>Graph</span>
+                    </button>
+                    <button class="mode-pill" data-mode="vectors">
+                        <span>Studio</span>
                     </button>
                     <button class="mode-pill" data-mode="feed">
-                        <i class="fas fa-satellite-dish"></i> <span>Live Threat Radar</span>
+                        <span>Threat Radar</span>
                     </button>
                 </div>
             </nav>
 
-            <!-- Navigation Controls & Customizer Buttons -->
+            <!-- Navigation Controls -->
             <div class="nav-controls">
                 <button class="cmd-palette-btn" id="btn-open-palette" title="Quick Command Launcher (Ctrl+K)">
                     <i class="fas fa-terminal"></i>
-                    <span>Palette</span>
-                    <kbd>Ctrl+K</kbd>
+                    <span>⌘K</span>
                 </button>
                 <button class="customizer-btn" id="btn-toggle-customizer" title="Customize Themes, Glow & Effects">
                     <i class="fas fa-palette"></i>
-                    <span>Customize</span>
                 </button>
-                <button class="sound-toggle-btn" id="btn-sound-toggle" title="Toggle UI Audio Synthesis">
+                <button class="sound-toggle-btn" id="btn-sound-toggle" title="Toggle Audio Synthesis">
                     <i class="fas fa-volume-high" id="sound-icon"></i>
                 </button>
                 <div class="clock-badge" id="utc-clock">00:00:00 UTC</div>
@@ -107,126 +86,71 @@
         <main class="main-content">
             
             <!-- ==============================================
-                 MODE 1: UNIVERSAL OMNI RECON
+                 MODE 1: UNIVERSAL INVESTIGATION & SPATIAL ENVIRONMENT
                  ============================================== -->
             <section class="mode-view active" id="view-omni">
                 <div class="hero-section">
-                    <h1 class="hero-heading">
-                        Investigate a Target
-                    </h1>
-
+                    <div class="hero-subline-tag">AUTONOMOUS OSINT RECONNAISSANCE</div>
+                    <h1 class="hero-heading">INVESTIGATE</h1>
                     <p class="hero-subheading">
-                        Enter an IP, domain, username, email, phone, Discord ID, or hash.
+                        Enter an IP, domain, username, email, phone, Discord ID, or hash to synthesize intelligence.
                     </p>
 
-                    <!-- Spotlight Search Chassis -->
-                    <div class="spotlight-wrapper tilt-box">
+                    <!-- Large Floating Investigation Command Bar -->
+                    <div class="spotlight-wrapper">
                         <div class="spotlight-box">
                             <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
                                 <i class="fas fa-magnifying-glass"></i>
                             </div>
-                            <input type="text" id="omni-input" placeholder="Enter target identifier..." autocomplete="off" spellcheck="false">
+                            <input type="text" id="omni-input" placeholder="Search IP, domain, username, email, phone, Discord ID, hash..." autocomplete="off" spellcheck="false">
                             <button class="btn-spotlight-exec" id="btn-omni-exec">
-                                <span class="btn-shine"></span>
-                                <i class="fas fa-bolt"></i>
                                 <span>Investigate</span>
-                                <kbd>↵</kbd>
+                                <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
 
-                        <!-- Real-Time Live Target Detective HUD -->
-                        <div class="target-inspector-card" id="target-inspector">
+                        <!-- Real-Time Target Detective HUD (Kept contextually in DOM for JS handlers) -->
+                        <div class="target-inspector-card" id="target-inspector" style="display: none;">
                             <div class="tinspect-header">
                                 <div class="tinspect-badge" id="tinspect-type-badge">
-                                    <i class="fas fa-satellite-dish"></i>
                                     <span id="tinspect-type-text">Ready</span>
                                 </div>
-                                <div class="tinspect-live-signal">
-                                    <span class="live-signal-bar bar-1"></span>
-                                    <span class="live-signal-bar bar-2"></span>
-                                    <span class="live-signal-bar bar-3"></span>
-                                    <span class="live-signal-bar bar-4"></span>
-                                    <span class="tinspect-confidence" id="tinspect-confidence-badge">Keystroke Detective Active</span>
-                                </div>
+                                <span class="tinspect-confidence" id="tinspect-confidence-badge">Active</span>
                             </div>
-                            
                             <div class="tinspect-body" id="tinspect-body">
-                                <div class="tinspect-info-col">
-                                    <span class="tinspect-label"><i class="fas fa-barcode"></i> Detected Schema</span>
-                                    <span class="tinspect-val" id="tinspect-schema-val">None (Input Empty)</span>
-                                </div>
-                                <div class="tinspect-info-col">
-                                    <span class="tinspect-label"><i class="fas fa-network-wired"></i> Vectors Assigned</span>
-                                    <span class="tinspect-val" id="tinspect-vectors-val">Standby Mode</span>
-                                </div>
-                                <div class="tinspect-info-col full-width">
-                                    <span class="tinspect-label"><i class="fas fa-bolt"></i> Instant Intelligence Extraction</span>
-                                    <span class="tinspect-val highlight" id="tinspect-intel-val">Type any IP, Discord ID, domain, email, hash, phone, or username to see instant schema and metadata extraction.</span>
-                                </div>
+                                <span class="tinspect-val" id="tinspect-schema-val">None</span>
+                                <span class="tinspect-val" id="tinspect-vectors-val">Standby</span>
+                                <span class="tinspect-val" id="tinspect-intel-val"></span>
                             </div>
                         </div>
 
-                        <!-- Instant Clickable Target Presets -->
+                        <!-- Subtle Contextual Examples -->
                         <div class="preset-chips-row">
-                            <span class="preset-label"><i class="fas fa-bolt-lightning text-amber"></i> Quick Targets:</span>
-                            <button class="preset-chip" data-val="8080"><i class="fas fa-ethernet text-orange"></i> 8080 (Port)</button>
-                            <button class="preset-chip" data-val="+14155552671"><i class="fas fa-phone-nodes text-teal"></i> +1 415 555 2671 (Phone)</button>
-                            <button class="preset-chip" data-val="1.1.1.1"><i class="fas fa-network-wired text-emerald"></i> 1.1.1.1 (IP Address)</button>
-                            <button class="preset-chip" data-val="155149108183695360"><i class="fa-brands fa-discord text-purple"></i> Discord Snowflake</button>
-                            <button class="preset-chip" data-val="AS15169"><i class="fas fa-diagram-project text-amber"></i> AS15169 (BGP ASN)</button>
-                            <button class="preset-chip" data-val="5d41402abc4b2a76b9719d911017c592"><i class="fas fa-key text-pink"></i> MD5 Hash</button>
-                            <button class="preset-chip" data-val="shadow"><i class="fas fa-user-astronaut text-cyan"></i> @shadow (Username)</button>
-                            <button class="preset-chip" data-val="github.com"><i class="fas fa-globe text-indigo"></i> github.com (Domain)</button>
-                        </div>
-
-                        <!-- Live Telemetry Stats Bar -->
-                        <div class="hero-live-stats-bar">
-                            <div class="hstat-item">
-                                <div class="hstat-icon icon-cyan"><i class="fas fa-user-astronaut"></i></div>
-                                <div class="hstat-text">
-                                    <span class="hstat-val">112+</span>
-                                    <span class="hstat-lbl">Global Platforms</span>
-                                </div>
-                            </div>
-                            <div class="hstat-item">
-                                <div class="hstat-icon icon-emerald"><i class="fas fa-network-wired"></i></div>
-                                <div class="hstat-text">
-                                    <span class="hstat-val">10 Vectors</span>
-                                    <span class="hstat-lbl">Parallel Sockets</span>
-                                </div>
-                            </div>
-                            <div class="hstat-icon-sep"></div>
-                            <div class="hstat-item">
-                                <div class="hstat-icon icon-amber"><i class="fas fa-bolt"></i></div>
-                                <div class="hstat-text">
-                                    <span class="hstat-val">&lt; 15ms</span>
-                                    <span class="hstat-lbl">Cascade Speed</span>
-                                </div>
-                            </div>
-                            <div class="hstat-item">
-                                <div class="hstat-icon icon-purple"><i class="fas fa-shield-halved"></i></div>
-                                <div class="hstat-text">
-                                    <span class="hstat-val">100%</span>
-                                    <span class="hstat-lbl">Passive Non-Intrusive</span>
-                                </div>
-                            </div>
+                            <span class="preset-label">Targets:</span>
+                            <button class="preset-chip" data-val="1.1.1.1">1.1.1.1</button>
+                            <button class="preset-chip" data-val="github.com">github.com</button>
+                            <button class="preset-chip" data-val="shadow">@shadow</button>
+                            <button class="preset-chip" data-val="155149108183695360">Discord Snowflake</button>
+                            <button class="preset-chip" data-val="+14155552671">+1 415 555 2671</button>
+                            <button class="preset-chip" data-val="AS15169">AS15169</button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- 3D Topology Investigation Stage (Hero Centerpiece) -->
-                    <div class="topology-stage-card">
-                        <div class="topology-bar">
-                            <div class="topology-title">
-                                <i class="fas fa-diagram-project"></i>
-                                <span>Entity Relationship Network</span>
-                            </div>
-                            <div class="topology-actions">
-                                <button class="btn-topo-tool" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit View</button>
-                                <button class="btn-topo-tool" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset Network</button>
-                            </div>
+                <!-- 3D Spatial Intelligence Environment (Expansive Hero) -->
+                <div class="spatial-graph-stage">
+                    <div class="graph-floating-header">
+                        <div class="graph-tagline">
+                            <span class="pulse-dot"></span>
+                            <span>3D INTELLIGENCE TOPOLOGY</span>
                         </div>
-                        <div id="vis-full-canvas"></div>
+                        <div class="graph-ghost-tools">
+                            <button class="btn-topo-tool" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit View</button>
+                            <button class="btn-topo-tool" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset Network</button>
+                        </div>
                     </div>
+                    <div id="vis-full-canvas"></div>
+                    <div class="graph-ambient-caption">interactive intelligence topology</div>
                 </div>
 
                 <!-- Omni Results Stage -->
@@ -764,6 +688,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_overflow_fix_v34"></script>
+    <script src="/static/js/app.js?v=20260910_spatial_v35"></script>
 </body>
 </html>

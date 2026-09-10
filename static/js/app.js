@@ -709,19 +709,17 @@
 
         const data = {
             nodes: new vis.DataSet([
-                { id: 'spectre', label: 'SPECTRE CORE', color: { background: '#4f46e5', border: '#6366f1', highlight: { background: '#6366f1', border: '#818cf8' } }, shape: 'dot', size: 24, font: { color: '#f8fafc', face: 'JetBrains Mono', size: 12 } },
-                { id: 'v_user', label: 'Social & Identity', color: { background: '#0e7490', border: '#06b6d4', highlight: { background: '#06b6d4', border: '#67e8f9' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
-                { id: 'v_ip', label: 'Network & BGP', color: { background: '#047857', border: '#10b981', highlight: { background: '#10b981', border: '#6ee7b7' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
-                { id: 'v_dns', label: 'DNS & CT Logs', color: { background: '#b45309', border: '#f59e0b', highlight: { background: '#f59e0b', border: '#fcd34d' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
-                { id: 'v_disc', label: 'Discord Epochs', color: { background: '#6d28d9', border: '#8b5cf6', highlight: { background: '#8b5cf6', border: '#c4b5fd' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } },
-                { id: 'v_phone', label: 'Carrier & Telco', color: { background: '#0f766e', border: '#14b8a6', highlight: { background: '#14b8a6', border: '#5eead4' } }, shape: 'dot', size: 14, font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 } }
+                { id: 'spectre', label: 'SPECTRE CORE', color: { background: '#312e81', border: '#6366f1', highlight: { background: '#4f46e5', border: '#818cf8' } }, shape: 'dot', size: 22, font: { color: '#e0e7ff', face: 'Plus Jakarta Sans', size: 12, weight: '600' } },
+                { id: 'coord_1', label: 'POINT-α', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
+                { id: 'coord_2', label: 'POINT-β', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
+                { id: 'coord_3', label: 'POINT-γ', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
+                { id: 'coord_4', label: 'POINT-δ', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } }
             ]),
             edges: new vis.DataSet([
-                { from: 'spectre', to: 'v_user', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(6,182,212,0.6)' }, width: 1.5 },
-                { from: 'spectre', to: 'v_ip', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(16,185,129,0.6)' }, width: 1.5 },
-                { from: 'spectre', to: 'v_dns', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(245,158,11,0.6)' }, width: 1.5 },
-                { from: 'spectre', to: 'v_disc', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(139,92,246,0.6)' }, width: 1.5 },
-                { from: 'spectre', to: 'v_phone', color: { color: 'rgba(99,102,241,0.22)', highlight: 'rgba(20,184,166,0.6)' }, width: 1.5 }
+                { from: 'spectre', to: 'coord_1', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true },
+                { from: 'spectre', to: 'coord_2', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true },
+                { from: 'spectre', to: 'coord_3', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true },
+                { from: 'spectre', to: 'coord_4', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true }
             ])
         };
 
