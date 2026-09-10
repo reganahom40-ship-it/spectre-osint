@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPECTRE — Modern OSINT & Threat Reconnaissance</title>
+    <title>SPECTRE — Next-Gen OSINT & Intelligence Apparatus</title>
     
-    <!-- Fonts: Inter & JetBrains Mono -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,16 +17,16 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=100">
+    <link rel="stylesheet" href="/static/css/style.css?v=200">
 </head>
 <body>
 
-    <!-- Subtle Ambient Glow -->
-    <div class="ambient-glow"></div>
+    <!-- Ambient Dynamic Lighting Canvas -->
+    <div class="ambient-glow" id="ambient-glow"></div>
 
     <div class="app-container">
         <!-- ==============================================
-             NAVIGATION BAR
+             TOP NAVBAR
              ============================================== -->
         <header class="app-navbar">
             <div class="nav-brand">
@@ -34,126 +34,360 @@
                     <i class="fas fa-fingerprint"></i>
                 </div>
                 <div class="brand-info">
-                    <div class="brand-title">SPECTRE <span class="brand-pill">OSINT</span></div>
-                    <div class="brand-desc">Intelligence Engine</div>
+                    <div class="brand-title">SPECTRE <span class="brand-pill">v8.0</span></div>
+                    <div class="brand-desc">Autonomous Reconnaissance Platform</div>
                 </div>
             </div>
 
-            <!-- Mode Selector -->
-            <div class="nav-modes">
+            <!-- Distinct Operational Mode Tabs -->
+            <nav class="nav-modes">
                 <button class="mode-pill active" data-mode="omni">
-                    <i class="fas fa-bolt"></i> Universal Recon
+                    <i class="fas fa-bolt"></i> <span>Universal Recon</span>
                 </button>
                 <button class="mode-pill" data-mode="vectors">
-                    <i class="fas fa-layer-group"></i> 10 Vectors
+                    <i class="fas fa-grid-2"></i> <span>10 Modular Vectors</span>
                 </button>
                 <button class="mode-pill" data-mode="graph">
-                    <i class="fas fa-diagram-project"></i> Topology Graph
+                    <i class="fas fa-diagram-project"></i> <span>Topology Graph</span>
                 </button>
-            </div>
+                <button class="mode-pill" data-mode="feed">
+                    <i class="fas fa-satellite-dish"></i> <span>Live Threat Radar</span>
+                </button>
+            </nav>
 
-            <!-- Status Indicator & Utilities -->
+            <!-- Status Indicator & Live Metrics -->
             <div class="nav-utils">
                 <div class="system-status-pill">
                     <span class="status-dot"></span>
-                    <span>10 Engines Online</span>
+                    <span id="socket-status">10 Engines Active</span>
                 </div>
                 <div class="clock-pill" id="utc-clock">00:00:00 UTC</div>
             </div>
         </header>
 
         <!-- ==============================================
-             HERO & SEARCH SECTION
+             MAIN DYNAMIC VIEWS WRAPPER
              ============================================== -->
         <main class="main-content">
             
-            <section class="hero-section">
-                <div class="hero-badge">
-                    <i class="fas fa-shield-halved"></i> Passive Intelligence Apparatus
-                </div>
-                <h1 class="hero-heading">Open-Source Intelligence, <span class="text-gradient">Engineered Clean.</span></h1>
-                <p class="hero-subheading">Probe usernames across 112+ platforms, extract Discord snowflake metadata, map BGP routing prefixes, query WHOIS & Certificate Transparency logs, and audit HTTP security in milliseconds.</p>
-                
-                <!-- Main Search Chassis -->
-                <div class="search-box-wrapper">
-                    <div class="search-box">
-                        <div class="search-icon">
-                            <i class="fas fa-magnifying-glass"></i>
+            <!-- ==============================================
+                 MODE 1: UNIVERSAL OMNI RECON
+                 ============================================== -->
+            <section class="mode-view active" id="view-omni">
+                <div class="hero-section">
+                    <div class="hero-badge">
+                        <i class="fas fa-sparkles"></i> Autonomous Target Classification & Deep Scan
+                    </div>
+                    <h1 class="hero-heading">Intelligence Gathering, <span class="text-gradient">Elevated.</span></h1>
+                    <p class="hero-subheading">Enter any entity — Username, IP, Domain, Email, Discord Snowflake, Cryptographic Hash, or Phone. Engine auto-classifies the target and orchestrates parallel multi-threaded reconnaissance.</p>
+                    
+                    <!-- Main Spotlight Search Box -->
+                    <div class="search-box-wrapper">
+                        <div class="search-box">
+                            <div class="search-icon">
+                                <i class="fas fa-magnifying-glass"></i>
+                            </div>
+                            <input type="text" id="omni-input" placeholder="Enter target (e.g. shadow, 1.1.1.1, github.com, 155149108183695360)..." autocomplete="off" spellcheck="false">
+                            <button class="btn-search" id="btn-omni-search">
+                                <span>Execute Recon</span>
+                                <kbd>↵</kbd>
+                            </button>
                         </div>
-                        <input type="text" id="main-search-input" placeholder="Enter target (e.g. shadow, 1.1.1.1, github.com, 155149108183695360, admin@domain.com)..." autocomplete="off" spellcheck="false">
-                        <button class="btn-search" id="btn-search-exec">
-                            <span>Scan Target</span>
-                            <kbd>↵</kbd>
-                        </button>
-                    </div>
 
-                    <!-- Filter / Vector Selector Chips -->
-                    <div class="vector-chips-bar" id="vector-chips-bar">
-                        <button class="chip active" data-vector="omni"><i class="fas fa-wand-magic-sparkles"></i> Auto Detect</button>
-                        <button class="chip" data-vector="username"><i class="fas fa-user"></i> Username</button>
-                        <button class="chip" data-vector="ip"><i class="fas fa-network-wired"></i> IP & Geo</button>
-                        <button class="chip" data-vector="domain"><i class="fas fa-globe"></i> Domain / WHOIS</button>
-                        <button class="chip" data-vector="dorks"><i class="fas fa-search-nodes"></i> Google Dorks</button>
-                        <button class="chip" data-vector="discord"><i class="fa-brands fa-discord"></i> Discord</button>
-                        <button class="chip" data-vector="bgp"><i class="fas fa-diagram-project"></i> BGP Routing</button>
-                        <button class="chip" data-vector="email"><i class="fas fa-envelope"></i> Email</button>
-                        <button class="chip" data-vector="phone"><i class="fas fa-phone"></i> Phone</button>
-                        <button class="chip" data-vector="headers"><i class="fas fa-shield"></i> Headers</button>
-                        <button class="chip" data-vector="hash"><i class="fas fa-key"></i> Hash</button>
+                        <!-- Sample Presets -->
+                        <div class="sample-presets-bar">
+                            <span class="sample-lbl">Instant Samples:</span>
+                            <button class="sample-btn" data-val="shadow">@shadow (Username)</button>
+                            <button class="sample-btn" data-val="1.1.1.1">1.1.1.1 (Cloudflare IP)</button>
+                            <button class="sample-btn" data-val="github.com">github.com (Domain)</button>
+                            <button class="sample-btn" data-val="155149108183695360">155149108183695360 (Discord)</button>
+                            <button class="sample-btn" data-val="5d41402abc4b2a76b9719d911017c592">5d41402... (MD5 Hash)</button>
+                        </div>
                     </div>
+                </div>
 
-                    <!-- Preset Target Suggestions -->
-                    <div class="sample-presets-bar">
-                        <span class="sample-lbl">Try Sample:</span>
-                        <button class="sample-btn" data-val="shadow" data-vec="username">@shadow</button>
-                        <button class="sample-btn" data-val="1.1.1.1" data-vec="ip">1.1.1.1 (Cloudflare)</button>
-                        <button class="sample-btn" data-val="github.com" data-vec="domain">github.com</button>
-                        <button class="sample-btn" data-val="155149108183695360" data-vec="discord">Discord ID</button>
-                        <button class="sample-btn" data-val="5d41402abc4b2a76b9719d911017c592" data-vec="hash">MD5 Hash</button>
+                <!-- Omni Results Container -->
+                <div class="omni-results-deck" id="omni-results-deck">
+                    <div class="empty-state-card" id="omni-empty-state">
+                        <div class="empty-icon-wrap">
+                            <i class="fas fa-radar"></i>
+                        </div>
+                        <h3>Awaiting Target Input</h3>
+                        <p>Type any target identifier or click one of the instant samples above to generate a comprehensive intelligence dossier.</p>
                     </div>
+                    <div class="results-content-box" id="omni-results-content" style="display: none;"></div>
                 </div>
             </section>
 
             <!-- ==============================================
-                 DYNAMIC RESULTS VIEWPORT
+                 MODE 2: 10 MODULAR VECTORS STUDIO
                  ============================================== -->
-            <section class="results-stage" id="results-stage">
-                
-                <!-- Initial Empty State -->
-                <div class="empty-state-card" id="empty-state">
-                    <div class="empty-icon-wrap">
-                        <i class="fas fa-radar"></i>
+            <section class="mode-view" id="view-vectors">
+                <div class="vectors-header">
+                    <div class="vectors-header-left">
+                        <h2>Dedicated Intelligence Vectors</h2>
+                        <p>Specialized modular tools for isolated forensic inspections, zone queries, and algorithmic decoding.</p>
                     </div>
-                    <h3>Ready for Target Input</h3>
-                    <p>Enter any username, IP address, root domain, email, hash, or Discord ID above to execute multi-threaded passive reconnaissance.</p>
+                    <div class="vectors-filter-search">
+                        <i class="fas fa-filter"></i>
+                        <input type="text" id="vector-search-filter" placeholder="Filter vector modules..." autocomplete="off">
+                    </div>
                 </div>
 
-                <!-- Live Results Container -->
-                <div class="results-content" id="results-content" style="display: none;"></div>
-
-                <!-- Force Topology Graph Viewport -->
-                <div class="graph-viewport-card" id="graph-viewport-card" style="display: none;">
-                    <div class="graph-card-header">
-                        <div class="graph-title-block">
-                            <i class="fas fa-diagram-project"></i>
-                            <span>Entity Relationship Topology</span>
+                <!-- 10 Vectors Interactive Studio Grid -->
+                <div class="vectors-grid" id="vectors-grid">
+                    
+                    <!-- 1. Username Card -->
+                    <div class="vcard" data-v="username" data-tags="username social handle dev">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1);">
+                                <i class="fas fa-user-astronaut"></i>
+                            </div>
+                            <span class="vcard-badge">112+ PLATFORMS</span>
                         </div>
-                        <div class="graph-actions">
-                            <button class="btn-graph-tool" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit Graph</button>
-                            <button class="btn-graph-tool" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset</button>
+                        <h3 class="vcard-title">Username Enumerator</h3>
+                        <p class="vcard-desc">Probes public account existence across 112+ social networks, developer hubs, and gaming ecosystems.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-username" placeholder="Target username..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="username"><i class="fas fa-play"></i></button>
+                            </div>
                         </div>
+                        <div class="vcard-result-drawer" id="vdrawer-username"></div>
                     </div>
-                    <div id="vis-graph-canvas"></div>
-                </div>
 
+                    <!-- 2. Google Dorks Card -->
+                    <div class="vcard" data-v="dorks" data-tags="dorks google search config portal database">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: var(--accent-primary); background: rgba(99, 102, 241, 0.1);">
+                                <i class="fas fa-search-nodes"></i>
+                            </div>
+                            <span class="vcard-badge">PASSIVE RECON</span>
+                        </div>
+                        <h3 class="vcard-title">Google Dork Engine</h3>
+                        <p class="vcard-desc">Generates precision search queries for exposed cloud storage buckets, SQL backups, and admin portals.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-dorks" placeholder="Target domain or keyword..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="dorks"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-dorks"></div>
+                    </div>
+
+                    <!-- 3. Discord Snowflake Card -->
+                    <div class="vcard" data-v="discord" data-tags="discord snowflake timestamp epoch avatar">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: var(--accent-purple); background: rgba(139, 92, 246, 0.1);">
+                                <i class="fa-brands fa-discord"></i>
+                            </div>
+                            <span class="vcard-badge">64-BIT BITSHIFT</span>
+                        </div>
+                        <h3 class="vcard-title">Discord Snowflake Decoder</h3>
+                        <p class="vcard-desc">Reverse-engineers Discord 64-bit ID timestamps, calculates account age in days, and extracts public avatars.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-discord" placeholder="64-bit Discord ID..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="discord"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-discord"></div>
+                    </div>
+
+                    <!-- 4. IP Intelligence Card -->
+                    <div class="vcard" data-v="ip" data-tags="ip geo map location isp asn routing">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1);">
+                                <i class="fas fa-network-wired"></i>
+                            </div>
+                            <span class="vcard-badge">GEOLOCATION + MAP</span>
+                        </div>
+                        <h3 class="vcard-title">IP Intelligence & Dark Map</h3>
+                        <p class="vcard-desc">Resolves geographic coordinates, ISP, Autonomous System routing, and datacenter/proxy classifications.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-ip" placeholder="IPv4 or IPv6 address..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="ip"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-ip"></div>
+                    </div>
+
+                    <!-- 5. BGP Routing Card -->
+                    <div class="vcard" data-v="bgp" data-tags="bgp asn routing ripe prefix peering">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: var(--accent-amber); background: rgba(245, 158, 11, 0.1);">
+                                <i class="fas fa-diagram-project"></i>
+                            </div>
+                            <span class="vcard-badge">RIPE STAT GLOBAL</span>
+                        </div>
+                        <h3 class="vcard-title">BGP Routing & ASN Tables</h3>
+                        <p class="vcard-desc">Queries global RIPE Stat routing tables to identify announced IPv4/IPv6 CIDR prefix ranges.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-bgp" placeholder="ASN (e.g. AS15169)..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="bgp"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-bgp"></div>
+                    </div>
+
+                    <!-- 6. Email Intel Card -->
+                    <div class="vcard" data-v="email" data-tags="email mx spf dmarc mail dns gravatar">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: #ec4899; background: rgba(236, 72, 153, 0.1);">
+                                <i class="fas fa-envelope-shield"></i>
+                            </div>
+                            <span class="vcard-badge">DNS MAIL AUDIT</span>
+                        </div>
+                        <h3 class="vcard-title">Email & Mail Host Security</h3>
+                        <p class="vcard-desc">Resolves priority MX servers, audits SPF & DMARC compliance records, and checks Gravatar presence.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-email" placeholder="Email address..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="email"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-email"></div>
+                    </div>
+
+                    <!-- 7. Domain WHOIS Card -->
+                    <div class="vcard" data-v="domain" data-tags="domain whois ct certificate subdomains dns">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1);">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <span class="vcard-badge">WHOIS + CT LOGS</span>
+                        </div>
+                        <h3 class="vcard-title">Domain & CT Subdomain Map</h3>
+                        <p class="vcard-desc">Parses authoritative WHOIS registry data, DNS zone queries, and crt.sh Certificate Transparency logs.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-domain" placeholder="Domain name (e.g. apple.com)..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="domain"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-domain"></div>
+                    </div>
+
+                    <!-- 8. Phone Telco Card -->
+                    <div class="vcard" data-v="phone" data-tags="phone telco carrier mobile e164">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: #14b8a6; background: rgba(20, 184, 166, 0.1);">
+                                <i class="fas fa-phone-nodes"></i>
+                            </div>
+                            <span class="vcard-badge">E.164 VALIDATION</span>
+                        </div>
+                        <h3 class="vcard-title">Phone & Carrier Telco</h3>
+                        <p class="vcard-desc">Identifies mobile carrier network, line classification (Mobile, Fixed, VOIP), and geographic timezones.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-phone" placeholder="International phone (+14155552671)..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="phone"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-phone"></div>
+                    </div>
+
+                    <!-- 9. HTTP Security Card -->
+                    <div class="vcard" data-v="headers" data-tags="http headers security hsts csp xframe">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: var(--accent-rose); background: rgba(244, 63, 94, 0.1);">
+                                <i class="fas fa-shield-halved"></i>
+                            </div>
+                            <span class="vcard-badge">HEADERS COMPLIANCE</span>
+                        </div>
+                        <h3 class="vcard-title">HTTP Response Security Audit</h3>
+                        <p class="vcard-desc">Audits web server response headers for HSTS, Content-Security-Policy, X-Frame-Options, and server leaks.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-headers" placeholder="https://example.com..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="headers"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-headers"></div>
+                    </div>
+
+                    <!-- 10. Hash Classifier Card -->
+                    <div class="vcard" data-v="hash" data-tags="hash md5 sha ntlm entropy crypto">
+                        <div class="vcard-top">
+                            <div class="vcard-icon-wrap" style="color: #a855f7; background: rgba(168, 85, 247, 0.1);">
+                                <i class="fas fa-fingerprint"></i>
+                            </div>
+                            <span class="vcard-badge">SHANNON ENTROPY</span>
+                        </div>
+                        <h3 class="vcard-title">Cryptographic Hash Classifier</h3>
+                        <p class="vcard-desc">Fingerprints hash algorithms against MD5, SHA-1, SHA-256, NTLM, and calculates bitwise Shannon entropy.</p>
+                        <div class="vcard-interactive">
+                            <div class="vcard-input-row">
+                                <input type="text" class="vcard-input" id="vinput-hash" placeholder="Enter hash string..." autocomplete="off">
+                                <button class="vcard-run-btn" data-mod="hash"><i class="fas fa-play"></i></button>
+                            </div>
+                        </div>
+                        <div class="vcard-result-drawer" id="vdrawer-hash"></div>
+                    </div>
+
+                </div>
             </section>
+
+            <!-- ==============================================
+                 MODE 3: TOPOLOGY GRAPH WORKSPACE
+                 ============================================== -->
+            <section class="mode-view" id="view-graph">
+                <div class="graph-card-wrapper">
+                    <div class="graph-toolbar">
+                        <div class="graph-toolbar-title">
+                            <i class="fas fa-diagram-project"></i>
+                            <span>Entity Relationship Network Graph</span>
+                        </div>
+                        <div class="graph-toolbar-actions">
+                            <button class="btn-graph-action" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit View</button>
+                            <button class="btn-graph-action" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset Topology</button>
+                        </div>
+                    </div>
+                    <div id="vis-full-canvas"></div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 MODE 4: LIVE THREAT RADAR FEED
+                 ============================================== -->
+            <section class="mode-view" id="view-feed">
+                <div class="feed-layout">
+                    <div class="feed-main-col">
+                        <div class="feed-header-bar">
+                            <div class="feed-title"><i class="fas fa-satellite-dish"></i> Live OSINT Intelligence Stream</div>
+                            <span class="feed-live-badge"><span class="pulse-emerald"></span> STREAM ACTIVE</span>
+                        </div>
+                        <div class="live-stream-box" id="live-stream-box">
+                            <!-- Dynamically injected stream events -->
+                        </div>
+                    </div>
+
+                    <div class="feed-side-col">
+                        <div class="feed-stat-card">
+                            <span class="fstat-label">Global Probes Monitored</span>
+                            <span class="fstat-val text-cyan" id="counter-probes">1,248</span>
+                        </div>
+                        <div class="feed-stat-card">
+                            <span class="fstat-label">Active Async Workers</span>
+                            <span class="fstat-val text-green">50 POOL</span>
+                        </div>
+                        <div class="feed-stat-card">
+                            <span class="fstat-label">Average API Latency</span>
+                            <span class="fstat-val">142ms</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
-    <!-- Toast Notifications Container -->
+    <!-- Toast Notifications -->
     <div id="toast-container"></div>
 
-    <!-- JavaScript Application Logic -->
-    <script src="/static/js/app.js?v=100"></script>
+    <!-- Application Script -->
+    <script src="/static/js/app.js?v=200"></script>
 </body>
 </html>

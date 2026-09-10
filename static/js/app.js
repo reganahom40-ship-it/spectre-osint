@@ -1,208 +1,162 @@
 /* ==========================================================================
-   SPECTRE — MODERN OSINT & THREAT INTELLIGENCE APPARATUS JS (V100.0)
+   SPECTRE — 4-MODE MODERN OSINT PLATFORM JAVASCRIPT (V200.0)
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
     // ---- State ----
     let activeMode = 'omni';
-    let activeVector = 'omni';
-    let currentData = null;
+    let currentDossier = null;
     let leafletMap = null;
     let visNetwork = null;
+    let globalProbeCount = 1248;
 
     // ---- DOM Elements ----
     const modePills = document.querySelectorAll('.mode-pill');
-    const vectorChips = document.querySelectorAll('.chip');
-    const sampleBtns = document.querySelectorAll('.sample-btn');
-    const mainSearchInput = document.getElementById('main-search-input');
-    const btnSearchExec = document.getElementById('btn-search-exec');
-    const emptyState = document.getElementById('empty-state');
-    const resultsContent = document.getElementById('results-content');
-    const graphViewportCard = document.getElementById('graph-viewport-card');
+    const modeViews = document.querySelectorAll('.mode-view');
     const utcClock = document.getElementById('utc-clock');
     const toastContainer = document.getElementById('toast-container');
+
+    // Mode 1: Omni
+    const omniInput = document.getElementById('omni-input');
+    const btnOmniSearch = document.getElementById('btn-omni-search');
+    const omniEmptyState = document.getElementById('omni-empty-state');
+    const omniResultsContent = document.getElementById('omni-results-content');
+    const sampleBtns = document.querySelectorAll('.sample-btn');
+
+    // Mode 2: Vectors Studio
+    const vectorSearchFilter = document.getElementById('vector-search-filter');
+    const vectorCards = document.querySelectorAll('.vcard');
+    const vcardRunBtns = document.querySelectorAll('.vcard-run-btn');
+
+    // Mode 3: Graph
     const btnGraphFit = document.getElementById('btn-graph-fit');
     const btnGraphReset = document.getElementById('btn-graph-reset');
 
-    const PLACEHOLDERS = {
-        omni: 'Enter target (e.g. shadow, 1.1.1.1, github.com, 155149108183695360, admin@domain.com)...',
-        username: 'Enter username to probe (e.g. shadow, neo, alex)...',
-        ip: 'Enter IPv4 or IPv6 address (e.g. 1.1.1.1, 8.8.8.8)...',
-        domain: 'Enter domain name (e.g. github.com, cloudflare.com)...',
-        dorks: 'Enter domain or organization keyword (e.g. tesla.com)...',
-        discord: 'Enter 64-bit Discord Snowflake ID (e.g. 155149108183695360)...',
-        bgp: 'Enter Autonomous System Number (e.g. AS15169, AS13335)...',
-        email: 'Enter email address (e.g. target@domain.com)...',
-        phone: 'Enter phone number in international format (+14155552671)...',
-        headers: 'Enter full URL (e.g. https://example.com)...',
-        hash: 'Enter MD5, SHA-1, SHA-256, or NTLM hash string...'
-    };
+    // Mode 4: Feed
+    const liveStreamBox = document.getElementById('live-stream-box');
+    const counterProbes = document.getElementById('counter-probes');
 
-    // ---- Clock ----
-    function updateClock() {
-        if (!utcClock) return;
-        const now = new Date();
-        utcClock.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    // ---- Live Clock ----
+    function initClock() {
+        const update = () => {
+            if (utcClock) {
+                const now = new Date();
+                utcClock.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+            }
+        };
+        setInterval(update, 1000);
+        update();
     }
-    setInterval(updateClock, 1000);
-    updateClock();
+    initClock();
 
-    // ---- Mode Switching ----
+    // ---- Mode Navigation Switching ----
     modePills.forEach(pill => {
         pill.addEventListener('click', () => {
             const mode = pill.getAttribute('data-mode');
-            setMode(mode);
+            switchMode(mode);
         });
     });
 
-    function setMode(mode) {
+    function switchMode(mode) {
         activeMode = mode;
         modePills.forEach(p => p.classList.toggle('active', p.getAttribute('data-mode') === mode));
+        modeViews.forEach(v => v.classList.toggle('active', v.id === `view-${mode}`));
 
-        if (mode === 'graph') {
-            if (resultsContent) resultsContent.style.display = 'none';
-            if (emptyState) emptyState.style.display = 'none';
-            if (graphViewportCard) {
-                graphViewportCard.style.display = 'block';
-                if (visNetwork) setTimeout(() => visNetwork.fit(), 80);
-            }
-        } else {
-            if (graphViewportCard) graphViewportCard.style.display = 'none';
-            if (currentData) {
-                if (resultsContent) resultsContent.style.display = 'flex';
-                if (emptyState) emptyState.style.display = 'none';
-            } else {
-                if (emptyState) emptyState.style.display = 'flex';
-                if (resultsContent) resultsContent.style.display = 'none';
-            }
+        if (mode === 'graph' && visNetwork) {
+            setTimeout(() => visNetwork.fit(), 80);
+        } else if (mode === 'omni' && omniInput) {
+            omniInput.focus();
         }
     }
 
-    // ---- Vector Chip Filter Switching ----
-    vectorChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            const vec = chip.getAttribute('data-vector');
-            setVector(vec);
+    // ==========================================================================
+    // MODE 1: UNIVERSAL OMNI RECONNAISSANCE
+    // ==========================================================================
+    if (omniInput) {
+        omniInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnOmniSearch.click();
+            }
         });
-    });
-
-    function setVector(vec) {
-        activeVector = vec;
-        vectorChips.forEach(c => c.classList.toggle('active', c.getAttribute('data-vector') === vec));
-        if (mainSearchInput) {
-            mainSearchInput.placeholder = PLACEHOLDERS[vec] || PLACEHOLDERS.omni;
-            mainSearchInput.focus();
-        }
     }
 
-    // ---- Sample Presets ----
     sampleBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const val = btn.getAttribute('data-val');
-            const vec = btn.getAttribute('data-vec') || 'omni';
-            setVector(vec);
-            if (mainSearchInput) {
-                mainSearchInput.value = val;
-                executeSearch(val);
+            if (omniInput) {
+                omniInput.value = val;
+                executeOmniSearch(val);
             }
         });
     });
 
-    // ---- Search Engagement Trigger ----
-    if (mainSearchInput) {
-        mainSearchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnSearchExec.click();
-            }
-        });
-    }
-
-    if (btnSearchExec) {
-        btnSearchExec.addEventListener('click', () => {
-            const val = mainSearchInput.value.trim();
+    if (btnOmniSearch) {
+        btnOmniSearch.addEventListener('click', () => {
+            const val = omniInput.value.trim();
             if (!val) {
-                showToast('Please enter a target query', 'error');
-                mainSearchInput.focus();
+                showToast('Please enter a target entity', 'error');
+                omniInput.focus();
                 return;
             }
-            executeSearch(val);
+            executeOmniSearch(val);
         });
     }
 
-    // ---- Execution Engine ----
-    async function executeSearch(target) {
-        setLoading(true);
-        if (emptyState) emptyState.style.display = 'none';
-        if (graphViewportCard) graphViewportCard.style.display = 'none';
-        if (resultsContent) {
-            resultsContent.style.display = 'flex';
-            resultsContent.innerHTML = `
+    async function executeOmniSearch(target) {
+        setOmniLoading(true);
+        if (omniEmptyState) omniEmptyState.style.display = 'none';
+        if (omniResultsContent) {
+            omniResultsContent.style.display = 'flex';
+            omniResultsContent.innerHTML = `
                 <div class="loading-box">
                     <div class="loading-spinner"></div>
-                    <div class="loading-title">Executing Passive Reconnaissance Pipeline...</div>
-                    <div class="loading-sub">Querying live socket pools, WHOIS registries, DNS zones, and platform endpoints.</div>
+                    <div class="loading-title">Executing Multi-Threaded Reconnaissance Pipeline...</div>
+                    <div class="loading-sub">Auto-classifying entity, querying live socket pools, and compiling intelligence dossier.</div>
                 </div>
             `;
         }
 
         const startTime = performance.now();
-        let endpoint = `/api/omni?target=${encodeURIComponent(target)}`;
-        if (activeVector !== 'omni') {
-            const paramMap = {
-                username: 'username', ip: 'ip', domain: 'domain', dorks: 'target',
-                discord: 'id', bgp: 'asn', email: 'email', phone: 'phone',
-                headers: 'url', hash: 'hash'
-            };
-            endpoint = `/api/${activeVector}?${paramMap[activeVector] || 'target'}=${encodeURIComponent(target)}`;
-        }
-
         try {
-            const res = await fetch(endpoint);
+            const res = await fetch(`/api/omni?target=${encodeURIComponent(target)}`);
             const json = await res.json();
             const elapsed = Math.round(performance.now() - startTime);
 
             if (!res.ok || json.error) {
-                renderError(json.error || 'Reconnaissance query failed.', elapsed);
+                renderOmniError(json.error || 'Reconnaissance pipeline failed.', elapsed);
                 showToast(`Scan Failed: ${json.error || 'Error'}`, 'error');
             } else {
-                currentData = json;
-                if (activeVector === 'omni') {
-                    const data = json.data || {};
-                    renderOmniResults(target, data.detected_type || 'entity', data.dossier || {}, elapsed);
-                    buildGraph(target, data.dossier || {});
-                } else {
-                    const payload = (json && json.data !== undefined) ? json.data : json;
-                    renderVectorResults(activeVector, target, payload, elapsed);
-                    const mock = {};
-                    mock[activeVector] = payload;
-                    buildGraph(target, mock);
-                }
-                showToast(`Scan Complete in ${elapsed}ms`, 'success');
+                currentDossier = json;
+                const data = json.data || {};
+                renderOmniDossier(target, data.detected_type || 'entity', data.dossier || {}, elapsed);
+                buildGraphTopology(target, data.dossier || {});
+                showToast(`Intelligence Dossier Compiled (${elapsed}ms)`, 'success');
+                addLiveStreamEvent('hit', `Omni Recon completed for: ${target} [${data.detected_type?.toUpperCase()}]`);
             }
         } catch (err) {
             const elapsed = Math.round(performance.now() - startTime);
-            renderError(`Network error: ${err.message}`, elapsed);
-            showToast('Network request timed out', 'error');
+            renderOmniError(`Network timeout: ${err.message}`, elapsed);
+            showToast('Request timed out or failed', 'error');
         } finally {
-            setLoading(false);
+            setOmniLoading(false);
         }
     }
 
-    function setLoading(isLoading) {
-        if (!btnSearchExec) return;
+    function setOmniLoading(isLoading) {
+        if (!btnOmniSearch) return;
         if (isLoading) {
-            btnSearchExec.disabled = true;
-            btnSearchExec.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Scanning...</span>`;
+            btnOmniSearch.disabled = true;
+            btnOmniSearch.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Scanning...</span>`;
         } else {
-            btnSearchExec.disabled = false;
-            btnSearchExec.innerHTML = `<span>Scan Target</span><kbd>↵</kbd>`;
+            btnOmniSearch.disabled = false;
+            btnOmniSearch.innerHTML = `<span>Execute Recon</span><kbd>↵</kbd>`;
         }
     }
 
-    function renderError(msg, elapsed) {
-        if (!resultsContent) return;
-        resultsContent.innerHTML = `
+    function renderOmniError(msg, elapsed) {
+        if (!omniResultsContent) return;
+        omniResultsContent.innerHTML = `
             <div class="intel-card-wrapper" style="border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.04);">
                 <div class="intel-card-header">
                     <span class="intel-card-title" style="color: var(--accent-rose);">
@@ -217,13 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // ==========================================================================
-    // MODERN RESULTS RENDERERS
-    // ==========================================================================
-    function renderOmniResults(target, detectedType, dossier, elapsed) {
-        if (!resultsContent) return;
-        let cardsHtml = `
-            <!-- Target Header Banner -->
+    function renderOmniDossier(target, detectedType, dossier, elapsed) {
+        if (!omniResultsContent) return;
+        let html = `
             <div class="target-hero-card">
                 <div class="target-title-group">
                     <div class="target-entity-name">${escapeHtml(target)}</div>
@@ -232,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="target-actions">
                     <span class="latency-badge">${elapsed}ms</span>
                     <button class="btn-action-tool" id="btn-export-dossier"><i class="fas fa-download"></i> Export JSON</button>
-                    <button class="btn-action-tool" id="btn-view-graph-mode"><i class="fas fa-diagram-project"></i> Topology</button>
+                    <button class="btn-action-tool" id="btn-switch-graph"><i class="fas fa-diagram-project"></i> Topology</button>
                 </div>
             </div>
         `;
@@ -240,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. IP Module Section
         if (dossier.ip) {
             const ip = dossier.ip;
-            cardsHtml += `
+            html += `
                 <div class="intel-card-wrapper">
                     <div class="intel-card-header">
                         <span class="intel-card-title"><i class="fas fa-network-wired"></i> IP Intelligence & Geolocation</span>
@@ -278,11 +228,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // 2. Domain & CT Subdomains
+        // 2. Domain & Subdomains Section
         if (dossier.domain) {
             const dom = dossier.domain;
             const subs = dom.subdomains || [];
-            cardsHtml += `
+            html += `
                 <div class="intel-card-wrapper">
                     <div class="intel-card-header">
                         <span class="intel-card-title"><i class="fas fa-globe"></i> Domain WHOIS & CT Subdomains</span>
@@ -302,10 +252,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         ${subs.length > 0 ? `
                             <div style="overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
-                                <table class="clean-table">
-                                    <thead><tr><th>Subdomain Endpoint</th><th>Intelligence Source</th></tr></thead>
+                                <table class="clean-table" style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.78rem;">
+                                    <thead><tr><th style="padding: 9px 12px; background: var(--bg-surface); text-align: left; color: var(--text-dim); border-bottom: 1px solid var(--border-subtle);">Subdomain Endpoint</th><th style="padding: 9px 12px; background: var(--bg-surface); text-align: left; color: var(--text-dim); border-bottom: 1px solid var(--border-subtle);">Intelligence Source</th></tr></thead>
                                     <tbody>
-                                        ${subs.slice(0, 15).map(s => `<tr><td><code>${escapeHtml(s)}</code></td><td><span style="color: var(--accent-emerald); font-weight: 600;">Certificate Transparency</span></td></tr>`).join('')}
+                                        ${subs.slice(0, 15).map(s => `<tr><td style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.02);"><code>${escapeHtml(s)}</code></td><td style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.02); color: var(--accent-emerald);">Certificate Transparency</td></tr>`).join('')}
                                     </tbody>
                                 </table>
                             </div>
@@ -315,11 +265,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // 3. Usernames
+        // 3. Username Section
         if (dossier.username) {
             const u = dossier.username;
             const found = u.found || [];
-            cardsHtml += `
+            html += `
                 <div class="intel-card-wrapper">
                     <div class="intel-card-header">
                         <span class="intel-card-title"><i class="fas fa-user"></i> Username Discovery (112+ Platforms)</span>
@@ -342,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // 4. Google Dorks
+        // 4. Google Dorks Section
         if (dossier.dorks) {
             const cats = dossier.dorks.categories || {};
             let dorkRows = '';
@@ -362,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 });
             }
-            cardsHtml += `
+            html += `
                 <div class="intel-card-wrapper">
                     <div class="intel-card-header">
                         <span class="intel-card-title"><i class="fas fa-search-nodes"></i> Passive Google Dorks</span>
@@ -374,10 +324,10 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // 5. Discord Snowflake
+        // 5. Discord Snowflake Section
         if (dossier.discord) {
             const dc = dossier.discord;
-            cardsHtml += `
+            html += `
                 <div class="intel-card-wrapper">
                     <div class="intel-card-header">
                         <span class="intel-card-title"><i class="fa-brands fa-discord"></i> Discord Snowflake Telemetry</span>
@@ -385,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="intel-card-body">
                         <div class="stat-metric-grid">
                             <div class="stat-metric-card">
-                                <span class="stat-label">Created Timestamp</span>
+                                <span class="stat-label">Created Epoch (UTC)</span>
                                 <span class="stat-value" style="font-size: 0.95rem; color: var(--accent-cyan);">${escapeHtml(dc.created_at || 'N/A')}</span>
                             </div>
                             <div class="stat-metric-card">
@@ -398,90 +348,13 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        resultsContent.innerHTML = cardsHtml;
-        bindActions(target, dossier);
+        omniResultsContent.innerHTML = html;
 
-        if (dossier.ip && dossier.ip.lat && dossier.ip.lon) {
-            setTimeout(() => mountMap(dossier.ip.lat, dossier.ip.lon, dossier.ip.city, dossier.ip.country, dossier.ip.query || target), 50);
-        }
-    }
-
-    function renderVectorResults(vector, target, payload, elapsed) {
-        if (!resultsContent) return;
-        let html = `
-            <div class="target-hero-card">
-                <div class="target-title-group">
-                    <div class="target-entity-name">${escapeHtml(target)}</div>
-                    <span class="target-type-badge">${escapeHtml(vector)}</span>
-                </div>
-                <div class="target-actions">
-                    <span class="latency-badge">${elapsed}ms</span>
-                    <button class="btn-action-tool" id="btn-export-dossier"><i class="fas fa-download"></i> Export JSON</button>
-                </div>
-            </div>
-        `;
-
-        if (vector === 'username') {
-            const found = payload.found || [];
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header">
-                        <span class="intel-card-title"><i class="fas fa-user"></i> Detected Profiles (${found.length})</span>
-                    </div>
-                    <div class="intel-card-body">
-                        <div class="platform-hit-grid">
-                            ${found.map(f => `
-                                <div class="platform-hit-card">
-                                    <div>
-                                        <div class="platform-name">${escapeHtml(f.platform)}</div>
-                                        <a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer" class="platform-link">${escapeHtml(f.url)}</a>
-                                    </div>
-                                    <span style="font-size: 0.65rem; font-family: var(--font-mono); font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 2px 6px; border-radius: 4px;">FOUND</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        } else if (vector === 'ip') {
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header"><span class="intel-card-title"><i class="fas fa-network-wired"></i> IP Telemetry</span></div>
-                    <div class="intel-card-body">
-                        <div class="stat-metric-grid">
-                            <div class="stat-metric-card"><span class="stat-label">City</span><span class="stat-value">${escapeHtml(payload.city || 'N/A')}</span></div>
-                            <div class="stat-metric-card"><span class="stat-label">Country</span><span class="stat-value">${escapeHtml(payload.country || 'N/A')}</span></div>
-                            <div class="stat-metric-card"><span class="stat-label">ASN</span><span class="stat-value" style="font-size: 0.85rem; color: var(--accent-primary);">${escapeHtml(payload.as || payload.asn || 'N/A')}</span></div>
-                            <div class="stat-metric-card"><span class="stat-label">ISP</span><span class="stat-value" style="font-size: 0.85rem;">${escapeHtml(payload.isp || 'N/A')}</span></div>
-                        </div>
-                        ${payload.lat && payload.lon ? `<div class="map-container-box"><div id="result-leaflet-map"></div></div>` : ''}
-                    </div>
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header"><span class="intel-card-title"><i class="fas fa-code"></i> Raw Intel Payload</span></div>
-                    <div class="intel-card-body">
-                        <pre style="background: var(--bg-surface); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 0.8rem; overflow: auto; max-height: 450px;">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
-                    </div>
-                </div>
-            `;
-        }
-
-        resultsContent.innerHTML = html;
-        bindActions(target, payload);
-
-        if (vector === 'ip' && payload.lat && payload.lon) {
-            setTimeout(() => mountMap(payload.lat, payload.lon, payload.city, payload.country, payload.query || target), 50);
-        }
-    }
-
-    function bindActions(target, payload) {
+        // Bind actions
         const exportBtn = document.getElementById('btn-export-dossier');
         if (exportBtn) {
             exportBtn.addEventListener('click', () => {
-                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                const blob = new Blob([JSON.stringify(dossier, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -490,51 +363,104 @@ document.addEventListener('DOMContentLoaded', () => {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                showToast('JSON Export Downloaded', 'success');
+                showToast('Intelligence JSON Exported', 'success');
             });
         }
 
-        const viewGraphBtn = document.getElementById('btn-view-graph-mode');
-        if (viewGraphBtn) {
-            viewGraphBtn.addEventListener('click', () => {
-                setMode('graph');
-            });
+        const switchGraphBtn = document.getElementById('btn-switch-graph');
+        if (switchGraphBtn) {
+            switchGraphBtn.addEventListener('click', () => switchMode('graph'));
+        }
+
+        // Mount Map if coordinates exist
+        if (dossier.ip && dossier.ip.lat && dossier.ip.lon) {
+            setTimeout(() => mountLeafletMap(dossier.ip.lat, dossier.ip.lon, dossier.ip.city, dossier.ip.country, dossier.ip.query || target), 50);
         }
     }
 
     // ==========================================================================
-    // MAP & GRAPH ENGINES
+    // MODE 2: 10 MODULAR VECTORS STUDIO
     // ==========================================================================
-    function mountMap(lat, lon, city, country, ip) {
-        const mapEl = document.getElementById('result-leaflet-map');
-        if (!mapEl) return;
-
-        if (leafletMap) {
-            leafletMap.remove();
-            leafletMap = null;
-        }
-
-        leafletMap = L.map('result-leaflet-map', {
-            zoomControl: false,
-            attributionControl: false
-        }).setView([lat, lon], 9);
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19
-        }).addTo(leafletMap);
-
-        const customIcon = L.divIcon({
-            className: 'map-custom-pin',
-            html: `<div style="width: 14px; height: 14px; background: #06b6d4; border-radius: 50%; box-shadow: 0 0 15px #06b6d4, 0 0 25px #06b6d4;"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
+    if (vectorSearchFilter) {
+        vectorSearchFilter.addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase().trim();
+            vectorCards.forEach(card => {
+                const title = card.querySelector('.vcard-title').textContent.toLowerCase();
+                const tags = card.getAttribute('data-tags') || '';
+                if (title.includes(q) || tags.includes(q)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
         });
-
-        L.marker([lat, lon], { icon: customIcon }).addTo(leafletMap);
     }
 
-    function buildGraph(target, dossier) {
-        const container = document.getElementById('vis-graph-canvas');
+    vcardRunBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mod = btn.getAttribute('data-mod');
+            const input = document.getElementById(`vinput-${mod}`);
+            const drawer = document.getElementById(`vdrawer-${mod}`);
+            if (!input || !drawer) return;
+
+            const val = input.value.trim();
+            if (!val) {
+                showToast(`Please enter target for ${mod.toUpperCase()}`, 'error');
+                input.focus();
+                return;
+            }
+
+            executeVectorStudioScan(mod, val, drawer, btn);
+        });
+    });
+
+    document.querySelectorAll('.vcard-input').forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const btn = input.closest('.vcard-interactive').querySelector('.vcard-run-btn');
+                if (btn) btn.click();
+            }
+        });
+    });
+
+    async function executeVectorStudioScan(mod, val, drawer, btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+        drawer.style.display = 'block';
+        drawer.innerHTML = `<div style="color: var(--accent-cyan); padding: 8px 0;"><i class="fas fa-spinner fa-spin"></i> Probing ${mod}...</div>`;
+
+        const paramMap = {
+            username: 'username', dorks: 'target', discord: 'id', ip: 'ip',
+            bgp: 'asn', email: 'email', domain: 'domain', phone: 'phone',
+            headers: 'url', hash: 'hash'
+        };
+
+        try {
+            const res = await fetch(`/api/${mod}?${paramMap[mod] || 'target'}=${encodeURIComponent(val)}`);
+            const json = await res.json();
+
+            if (!res.ok || json.error) {
+                drawer.innerHTML = `<div style="color: var(--accent-rose);">${escapeHtml(json.error || 'Query failed')}</div>`;
+            } else {
+                const data = json.data || json;
+                drawer.innerHTML = `<pre style="background: var(--bg-surface); padding: 10px; border-radius: 4px; border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-main); max-height: 220px; overflow-y: auto;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+                showToast(`Vector [${mod}] Scanned`, 'success');
+                addLiveStreamEvent('probe', `Vector [${mod.toUpperCase()}] executed for ${val}`);
+            }
+        } catch (err) {
+            drawer.innerHTML = `<div style="color: var(--accent-rose);">${escapeHtml(err.message)}</div>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-play"></i>`;
+        }
+    }
+
+    // ==========================================================================
+    // MODE 3: TOPOLOGY GRAPH
+    // ==========================================================================
+    function buildGraphTopology(target, dossier) {
+        const container = document.getElementById('vis-full-canvas');
         if (!container) return;
 
         const nodes = [
@@ -546,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nodes.push({ id: 'node_ip', label: `IP: ${dossier.ip.query || target}`, color: '#10b981', font: { color: '#ffffff', size: 12 }, shape: 'ellipse' });
             edges.push({ from: 'target', to: 'node_ip', color: { color: '#10b981' } });
             if (dossier.ip.isp) {
-                nodes.push({ id: 'node_isp', label: dossier.ip.isp, color: '#06b6d4', font: { color: '#ffffff', size: 10 }, shape: 'dot', size: 8 });
+                nodes.push({ id: 'node_isp', label: `ISP: ${dossier.ip.isp}`, color: '#06b6d4', font: { color: '#ffffff', size: 10 }, shape: 'dot', size: 8 });
                 edges.push({ from: 'node_ip', to: 'node_isp', color: { color: '#06b6d4' } });
             }
         }
@@ -585,9 +511,82 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnGraphFit) btnGraphFit.addEventListener('click', () => visNetwork && visNetwork.fit());
-    if (btnGraphReset) btnGraphReset.addEventListener('click', () => buildGraph('SPECTRE', {}));
+    if (btnGraphReset) btnGraphReset.addEventListener('click', () => buildGraphTopology('SPECTRE', {}));
 
-    // Toast
+    // ==========================================================================
+    // MODE 4: LIVE THREAT RADAR FEED SIMULATION
+    // ==========================================================================
+    function addLiveStreamEvent(type, text) {
+        if (!liveStreamBox) return;
+        const now = new Date().toISOString().slice(11, 19);
+        const div = document.createElement('div');
+        div.className = 'stream-event';
+        div.innerHTML = `
+            <span class="stream-tag ${type}">${type.toUpperCase()}</span>
+            <span class="stream-text">${escapeHtml(text)}</span>
+            <span class="stream-time">${now}</span>
+        `;
+        liveStreamBox.insertBefore(div, liveStreamBox.firstChild);
+        if (liveStreamBox.children.length > 50) {
+            liveStreamBox.removeChild(liveStreamBox.lastChild);
+        }
+
+        globalProbeCount += Math.floor(Math.random() * 3) + 1;
+        if (counterProbes) counterProbes.textContent = globalProbeCount.toLocaleString();
+    }
+
+    // Periodic live feed generation
+    const sampleStreamEvents = [
+        { type: 'probe', text: 'Passive WHOIS query dispatched -> .io TLD zone' },
+        { type: 'dns', text: 'Certificate Transparency leaf parsed -> *.internal.corp' },
+        { type: 'hit', text: 'BGP Prefix announced AS13335 (Cloudflare) -> 172.64.0.0/13' },
+        { type: 'probe', text: 'Asynchronous socket check -> GitHub API profile' },
+        { type: 'dns', text: 'MX mail exchange resolved -> priority 10 googlemail.com' },
+        { type: 'hit', text: 'Shannon entropy verified -> MD5 cryptographic hash format' }
+    ];
+
+    setInterval(() => {
+        const rand = sampleStreamEvents[Math.floor(Math.random() * sampleStreamEvents.length)];
+        addLiveStreamEvent(rand.type, rand.text);
+    }, 4500);
+
+    // Initial feed seeds
+    sampleStreamEvents.forEach(e => addLiveStreamEvent(e.type, e.text));
+
+    // ==========================================================================
+    // LEAFLET MAP
+    // ==========================================================================
+    function mountLeafletMap(lat, lon, city, country, ip) {
+        const mapEl = document.getElementById('result-leaflet-map');
+        if (!mapEl) return;
+
+        if (leafletMap) {
+            leafletMap.remove();
+            leafletMap = null;
+        }
+
+        leafletMap = L.map('result-leaflet-map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([lat, lon], 9);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(leafletMap);
+
+        const customIcon = L.divIcon({
+            className: 'map-custom-pin',
+            html: `<div style="width: 14px; height: 14px; background: #06b6d4; border-radius: 50%; box-shadow: 0 0 15px #06b6d4, 0 0 25px #06b6d4;"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+
+        L.marker([lat, lon], { icon: customIcon }).addTo(leafletMap);
+    }
+
+    // ==========================================================================
+    // TOAST NOTIFICATIONS
+    // ==========================================================================
     function showToast(message, type = 'info') {
         if (!toastContainer) return;
         const toast = document.createElement('div');
