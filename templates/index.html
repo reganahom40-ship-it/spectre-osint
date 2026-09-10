@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_restore_v29">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_workspace_v32">
 </head>
 <body>
 
@@ -113,15 +113,15 @@
                 <div class="hero-section">
                     <div class="hero-tag-glow">
                         <span class="hero-sparkle"><i class="fas fa-sparkles"></i></span>
-                        <span>Autonomous Multi-Vector Target Classifier</span>
+                        <span>Autonomous Intelligence Investigation Gateway</span>
                     </div>
 
                     <h1 class="hero-heading">
-                        Intelligence Gathering, <span class="text-gradient">Redefined.</span>
+                        Investigate Any <span class="text-gradient">Entity or Indicator.</span>
                     </h1>
 
                     <p class="hero-subheading">
-                        Probe usernames across 112+ platforms, extract 64-bit Discord snowflake timestamps, map BGP routing CIDRs, and audit DNS CT logs in sub-second parallel streams.
+                        Correlate identities across 112+ platforms, decode Discord snowflake epochs, map BGP routing CIDRs, and inspect Certificate Transparency logs in sub-second parallel streams.
                     </p>
 
                     <!-- Spotlight Search Chassis with Animated Glow & 3D Tilt -->
@@ -130,7 +130,7 @@
                             <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
                                 <i class="fas fa-magnifying-glass"></i>
                             </div>
-                            <input type="text" id="omni-input" placeholder="Search any port (8080), phone (+1...), IP (1.1.1.1), Discord ID, handle, hash..." autocomplete="off" spellcheck="false">
+                            <input type="text" id="omni-input" placeholder="Enter IP, domain, username, email, phone, Discord ID, or hash..." autocomplete="off" spellcheck="false">
                             <button class="btn-spotlight-exec" id="btn-omni-exec">
                                 <span class="btn-shine"></span>
                                 <i class="fas fa-bolt"></i>
@@ -144,7 +144,7 @@
                             <div class="tinspect-header">
                                 <div class="tinspect-badge" id="tinspect-type-badge">
                                     <i class="fas fa-satellite-dish"></i>
-                                    <span id="tinspect-type-text">STANDBY • AWAITING TARGET</span>
+                                    <span id="tinspect-type-text">READY • AWAITING TARGET</span>
                                 </div>
                                 <div class="tinspect-live-signal">
                                     <span class="live-signal-bar bar-1"></span>
@@ -216,6 +216,21 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- 3D Topology Investigation Stage (Hero Centerpiece) -->
+                    <div class="topology-stage-card">
+                        <div class="topology-bar">
+                            <div class="topology-title">
+                                <i class="fas fa-diagram-project"></i>
+                                <span>Entity Relationship Network</span>
+                            </div>
+                            <div class="topology-actions">
+                                <button class="btn-topo-tool" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit View</button>
+                                <button class="btn-topo-tool" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset Network</button>
+                            </div>
+                        </div>
+                        <div id="vis-full-canvas"></div>
                     </div>
                 </div>
 
@@ -591,11 +606,10 @@
                             <span>Entity Relationship Network Graph</span>
                         </div>
                         <div class="topology-actions">
-                            <button class="btn-topo-tool" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit View</button>
-                            <button class="btn-topo-tool" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset Network</button>
+                            <button class="btn-topo-tool" id="btn-graph-fit-dedicated"><i class="fas fa-expand"></i> Fit View</button>
                         </div>
                     </div>
-                    <div id="vis-full-canvas"></div>
+                    <div id="vis-dedicated-canvas" style="width: 100%; height: 580px; background: radial-gradient(circle at center, rgba(17, 22, 34, 0.85) 0%, rgba(6, 8, 13, 0.98) 100%);"></div>
                 </div>
             </section>
 
@@ -755,6 +769,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_restore_v29"></script>
+    <script src="/static/js/app.js?v=20260910_workspace_v32"></script>
 </body>
 </html>
