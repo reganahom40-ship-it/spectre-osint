@@ -1,16 +1,64 @@
-﻿/**
- * SPECTRE OSINT Platform — Modern Client Apparatus (v300001)
+/**
+ * SPECTRE OSINT Platform — Next-Gen Client Apparatus (v400001)
  */
 
 (function () {
     'use strict';
 
-    // --- State & Sound ---
+    // --- State & Sound Configuration ---
     let soundEnabled = true;
     let audioCtx = null;
     let networkGraph = null;
     let currentOmniTarget = null;
     let totalProbesCounter = 1248;
+    let streamPaused = false;
+    let streamInterval = null;
+
+    // --- User Preferences Configuration ---
+    const prefs = {
+        theme: localStorage.getItem('spectre_theme') || 'indigo',
+        glow: localStorage.getItem('spectre_glow') || 'high',
+        particles: localStorage.getItem('spectre_particles') !== 'false',
+        tilt: localStorage.getItem('spectre_tilt') !== 'false'
+    };
+
+    function applyPreferences() {
+        document.documentElement.setAttribute('data-theme', prefs.theme);
+        document.documentElement.setAttribute('data-glow', prefs.glow);
+        document.documentElement.setAttribute('data-particles', prefs.particles.toString());
+
+        // Update Theme picker UI
+        document.querySelectorAll('.theme-choice').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.t === prefs.theme);
+        });
+
+        // Update Glow UI
+        document.querySelectorAll('#glow-segmented .seg-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.glow === prefs.glow);
+        });
+
+        // Update Particles UI
+        document.querySelectorAll('#particles-segmented .seg-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.particles === prefs.particles.toString());
+        });
+
+        // Update Tilt UI
+        document.querySelectorAll('#tilt-segmented .seg-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tilt === prefs.tilt.toString());
+        });
+
+        // Update HUD label
+        const hudTheme = document.getElementById('stat-active-theme');
+        if (hudTheme) {
+            hudTheme.textContent = prefs.theme.toUpperCase() + ' THEME';
+        }
+    }
+
+    function savePref(key, val) {
+        prefs[key] = val;
+        localStorage.setItem(`spectre_${key}`, val);
+        applyPreferences();
+    }
 
     // --- Audio Synthesizer ---
     function initAudio() {
@@ -46,7 +94,121 @@
         }
     }
 
-    // --- Cursor Follower Glow ---
+    // --- Interactive Particle Mesh Canvas Background ---
+    function initParticles() {
+        const canvas = document.getElementById('bg-particles-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        const count = Math.min(Math.floor(width / 28), 55);
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.6,
+                vy: (Math.random() - 0.5) * 0.6,
+                size: Math.random() * 2 + 1
+            });
+        }
+
+        let mouseX = -1000;
+        let mouseY = -1000;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        function animate() {
+            if (!prefs.particles) {
+                ctx.clearRect(0, 0, width, height);
+                requestAnimationFrame(animate);
+                return;
+            }
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.4)';
+            ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)';
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
+                if (p.y < 0) p.y = height;
+                if (p.y > height) p.y = 0;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Connect nearby particles
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 110) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+
+                // Connect to mouse
+                const mdx = p.x - mouseX;
+                const mdy = p.y - mouseY;
+                const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                if (mdist < 140) {
+                    ctx.strokeStyle = `rgba(6, 182, 212, ${0.35 * (1 - mdist / 140)})`;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(mouseX, mouseY);
+                    ctx.stroke();
+                    ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)';
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    // --- 3D Tilt Card Physics ---
+    function init3DTilt() {
+        document.addEventListener('mousemove', (e) => {
+            if (!prefs.tilt) return;
+            const tiltElements = document.querySelectorAll('.tilt-box');
+            tiltElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const isHovered = e.clientX >= rect.left && e.clientX <= rect.right &&
+                                  e.clientY >= rect.top && e.clientY <= rect.bottom;
+                if (isHovered) {
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const cx = rect.width / 2;
+                    const cy = rect.height / 2;
+                    const rotateX = ((y - cy) / cy) * -6;
+                    const rotateY = ((x - cx) / cx) * 6;
+                    el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                } else {
+                    el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+                }
+            });
+        });
+    }
+
+    // --- Dynamic Cursor Glow Follower ---
     function initCursorGlow() {
         const glow = document.getElementById('cursor-glow');
         if (!glow) return;
@@ -129,7 +291,7 @@
         }, 3500);
     }
 
-    // --- Tab Navigation Modes ---
+    // --- Navigation & Sound Toggle ---
     function initNavigation() {
         const pills = document.querySelectorAll('.mode-pill');
         const views = document.querySelectorAll('.mode-view');
@@ -152,26 +314,191 @@
             });
         });
 
-        // Sound toggle
+        // Sound Toggle
         const soundBtn = document.getElementById('btn-sound-toggle');
         const soundIcon = document.getElementById('sound-icon');
-        const soundLabel = document.getElementById('sound-label');
-
         if (soundBtn) {
             soundBtn.addEventListener('click', () => {
                 soundEnabled = !soundEnabled;
                 if (soundEnabled) {
                     soundIcon.className = 'fas fa-volume-high';
-                    soundLabel.textContent = 'Audio: ON';
                     playTone(600, 'sine', 0.1);
                     showToast('Audio Synthesis Activated', 'fas fa-volume-high');
                 } else {
                     soundIcon.className = 'fas fa-volume-xmark';
-                    soundLabel.textContent = 'Audio: OFF';
                     showToast('Audio Synthesis Muted', 'fas fa-volume-xmark');
                 }
             });
         }
+    }
+
+    // --- Customizer Drawer Logic ---
+    function initCustomizer() {
+        const btnToggle = document.getElementById('btn-toggle-customizer');
+        const btnClose = document.getElementById('btn-close-customizer');
+        const drawer = document.getElementById('customizer-drawer');
+        const backdrop = document.getElementById('customizer-backdrop');
+
+        function openDrawer() {
+            drawer.classList.add('active');
+            backdrop.classList.add('active');
+            playTone(550, 'sine', 0.06);
+        }
+
+        function closeDrawer() {
+            drawer.classList.remove('active');
+            backdrop.classList.remove('active');
+        }
+
+        if (btnToggle) btnToggle.addEventListener('click', openDrawer);
+        if (btnClose) btnClose.addEventListener('click', closeDrawer);
+        if (backdrop) backdrop.addEventListener('click', closeDrawer);
+
+        // Theme choices
+        document.querySelectorAll('.theme-choice').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const t = btn.dataset.t;
+                savePref('theme', t);
+                playTone(620, 'sine', 0.08);
+                showToast(`Applied Theme: ${t.toUpperCase()}`, 'fas fa-palette');
+            });
+        });
+
+        // Glow segment
+        document.querySelectorAll('#glow-segmented .seg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const g = btn.dataset.glow;
+                savePref('glow', g);
+                playTone(650, 'sine', 0.06);
+            });
+        });
+
+        // Particles segment
+        document.querySelectorAll('#particles-segmented .seg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const p = btn.dataset.particles === 'true';
+                savePref('particles', p);
+                playTone(650, 'sine', 0.06);
+            });
+        });
+
+        // Tilt segment
+        document.querySelectorAll('#tilt-segmented .seg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const t = btn.dataset.tilt === 'true';
+                savePref('tilt', t);
+                playTone(650, 'sine', 0.06);
+            });
+        });
+
+        // Reset prefs
+        const btnReset = document.getElementById('btn-reset-prefs');
+        if (btnReset) {
+            btnReset.addEventListener('click', () => {
+                localStorage.clear();
+                prefs.theme = 'indigo';
+                prefs.glow = 'high';
+                prefs.particles = true;
+                prefs.tilt = true;
+                applyPreferences();
+                playTone(400, 'sine', 0.12);
+                showToast('Reset to Factory Defaults', 'fas fa-arrow-rotate-left');
+            });
+        }
+    }
+
+    // --- Command Palette (Ctrl+K / Cmd+K) ---
+    function initCommandPalette() {
+        const btnOpen = document.getElementById('btn-open-palette');
+        const backdrop = document.getElementById('palette-backdrop');
+        const input = document.getElementById('palette-input');
+        const list = document.getElementById('palette-list');
+
+        const commands = [
+            { id: 'mode_omni', title: 'Universal Recon Workspace', badge: 'MODE', icon: 'fas fa-bolt', action: () => switchMode('omni') },
+            { id: 'mode_vectors', title: '10 Modular Vectors Studio', badge: 'MODE', icon: 'fas fa-layer-group', action: () => switchMode('vectors') },
+            { id: 'mode_graph', title: 'Entity Topology Graph', badge: 'MODE', icon: 'fas fa-diagram-project', action: () => switchMode('graph') },
+            { id: 'mode_feed', title: 'Live Threat Radar Feed', badge: 'MODE', icon: 'fas fa-satellite-dish', action: () => switchMode('feed') },
+            { id: 'th_indigo', title: 'Theme: Cyber Indigo', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'indigo') },
+            { id: 'th_emerald', title: 'Theme: Matrix Emerald', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'emerald') },
+            { id: 'th_amethyst', title: 'Theme: Amethyst Neon', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'amethyst') },
+            { id: 'th_amber', title: 'Theme: Solar Amber', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'amber') },
+            { id: 'th_crimson', title: 'Theme: Crimson Red', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'crimson') },
+            { id: 'th_stealth', title: 'Theme: OLED Stealth', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'stealth') },
+            { id: 'p_shadow', title: 'Run Target: @shadow', badge: 'PRESET', icon: 'fas fa-play', action: () => runPreset('shadow') },
+            { id: 'p_ip', title: 'Run Target: 1.1.1.1 (Cloudflare)', badge: 'PRESET', icon: 'fas fa-play', action: () => runPreset('1.1.1.1') },
+            { id: 'p_git', title: 'Run Target: github.com', badge: 'PRESET', icon: 'fas fa-play', action: () => runPreset('github.com') }
+        ];
+
+        function switchMode(m) {
+            const pill = document.querySelector(`.mode-pill[data-mode="${m}"]`);
+            if (pill) pill.click();
+        }
+
+        function runPreset(val) {
+            switchMode('omni');
+            const omniInput = document.getElementById('omni-input');
+            if (omniInput) omniInput.value = val;
+            executeOmniRecon(val);
+        }
+
+        function renderList(query = '') {
+            list.innerHTML = '';
+            const filtered = commands.filter(c => c.title.toLowerCase().includes(query.toLowerCase()));
+            if (filtered.length === 0) {
+                list.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-dim); font-size: 0.85rem;">No matching commands found.</div>`;
+                return;
+            }
+
+            filtered.forEach((c, idx) => {
+                const item = document.createElement('div');
+                item.className = `palette-item ${idx === 0 ? 'selected' : ''}`;
+                item.innerHTML = `
+                    <div class="pitem-left">
+                        <i class="${c.icon}"></i>
+                        <span>${c.title}</span>
+                    </div>
+                    <span class="pitem-badge">${c.badge}</span>
+                `;
+                item.addEventListener('click', () => {
+                    closePalette();
+                    c.action();
+                });
+                list.appendChild(item);
+            });
+        }
+
+        function openPalette() {
+            backdrop.classList.add('active');
+            input.value = '';
+            renderList();
+            setTimeout(() => input.focus(), 50);
+            playTone(600, 'sine', 0.06);
+        }
+
+        function closePalette() {
+            backdrop.classList.remove('active');
+        }
+
+        if (btnOpen) btnOpen.addEventListener('click', openPalette);
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) closePalette();
+        });
+
+        input.addEventListener('input', (e) => renderList(e.target.value));
+
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                if (backdrop.classList.contains('active')) closePalette();
+                else openPalette();
+            } else if (e.key === 'Escape' && backdrop.classList.contains('active')) {
+                closePalette();
+            } else if (e.key === 'Enter' && backdrop.classList.contains('active')) {
+                const sel = list.querySelector('.palette-item.selected') || list.querySelector('.palette-item');
+                if (sel) sel.click();
+            }
+        });
     }
 
     // --- Vis.js Topology Graph ---
@@ -287,7 +614,7 @@
                         <i class="fas fa-satellite fa-spin radar-center-icon"></i>
                     </div>
                     <h3>Autonomous Cascade Engaged</h3>
-                    <p>Executing parallel queries across all 10 intelligence vectors for <strong style="color:var(--accent-cyan)">${target}</strong>...</p>
+                    <p>Executing parallel queries across all 10 intelligence vectors for <strong style="color:var(--accent-secondary)">${escapeHtml(target)}</strong>...</p>
                 </div>
             `;
         }
@@ -310,7 +637,7 @@
             if (resultsDeck) {
                 resultsDeck.innerHTML = `
                     <div class="empty-state-container" style="border-color: var(--accent-rose);">
-                        <i class="fas fa-circle-xmark text-rose" style="font-size: 2.5rem; margin-bottom: 16px;"></i>
+                        <i class="fas fa-circle-xmark" style="font-size: 2.5rem; margin-bottom: 16px; color: var(--accent-rose);"></i>
                         <h3>Cascade Failed</h3>
                         <p>${err.message || 'Connection or upstream error'}</p>
                     </div>
@@ -345,6 +672,7 @@
                 </div>
                 <div class="dossier-actions">
                     <button class="btn-dossier-action" id="btn-copy-dossier"><i class="fas fa-copy"></i> Copy JSON</button>
+                    <button class="btn-dossier-action" id="btn-copy-md"><i class="fas fa-file-lines"></i> Copy Report</button>
                 </div>
             </div>
 
@@ -500,6 +828,29 @@
                 showToast('Dossier JSON Copied to Clipboard', 'fas fa-copy');
             });
         }
+
+        // Copy Markdown Report
+        const btnCopyMd = document.getElementById('btn-copy-md');
+        if (btnCopyMd) {
+            btnCopyMd.addEventListener('click', () => {
+                const mdReport = generateMarkdownReport(target, data);
+                navigator.clipboard.writeText(mdReport);
+                showToast('Markdown Intelligence Report Copied', 'fas fa-file-lines');
+            });
+        }
+    }
+
+    function generateMarkdownReport(target, data) {
+        let md = `# SPECTRE OSINT INTELLIGENCE REPORT\n`;
+        md += `**Target:** ${target}\n`;
+        md += `**Timestamp:** ${new Date().toUTCString()}\n\n`;
+        md += `## Findings Overview\n`;
+        const res = data.results || {};
+        Object.keys(res).forEach(k => {
+            md += `### Vector: ${k.toUpperCase()}\n`;
+            md += `\`\`\`json\n${JSON.stringify(res[k], null, 2)}\n\`\`\`\n\n`;
+        });
+        return md;
     }
 
     // --- Studio Grid Interactive Cards ---
@@ -535,7 +886,7 @@
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
                 if (drawer) {
                     drawer.style.display = 'block';
-                    drawer.innerHTML = `<span style="font-size:0.8rem;color:var(--accent-cyan);font-family:var(--font-mono);"><i class="fas fa-circle-notch fa-spin"></i> Querying vector...</span>`;
+                    drawer.innerHTML = `<span style="font-size:0.8rem;color:var(--accent-secondary);font-family:var(--font-mono);"><i class="fas fa-circle-notch fa-spin"></i> Querying vector...</span>`;
                 }
 
                 try {
@@ -580,7 +931,7 @@
         if (mod === 'username' && data.found) {
             content += `<div style="margin-bottom:6px;color:var(--accent-emerald);">Found ${data.found.length} profiles:</div>`;
             data.found.forEach(f => {
-                content += `<div><a href="${f.url}" target="_blank" style="color:var(--accent-cyan);text-decoration:none;">• ${f.platform}</a></div>`;
+                content += `<div><a href="${f.url}" target="_blank" style="color:var(--accent-secondary);text-decoration:none;">• ${f.platform}</a></div>`;
             });
         } else if (mod === 'dorks' && data.dorks) {
             content += `<div style="margin-bottom:6px;color:var(--accent-primary);">Generated Dorks:</div>`;
@@ -598,6 +949,7 @@
     // --- Live Stream Generator (Threat Radar) ---
     function initLiveStream() {
         const streamBox = document.getElementById('live-stream-box');
+        const btnToggle = document.getElementById('btn-feed-toggle');
         if (!streamBox) return;
 
         const simulatedEvents = [
@@ -610,6 +962,7 @@
         ];
 
         function addEvent() {
+            if (streamPaused) return;
             const ev = simulatedEvents[Math.floor(Math.random() * simulatedEvents.length)];
             const timeStr = new Date().toTimeString().split(' ')[0];
             const div = document.createElement('div');
@@ -633,9 +986,22 @@
             }
         }
 
-        // Add 4 initial items
+        // Add initial 4 items
         for (let i = 0; i < 4; i++) addEvent();
-        setInterval(addEvent, 3500);
+        streamInterval = setInterval(addEvent, 3500);
+
+        if (btnToggle) {
+            btnToggle.addEventListener('click', () => {
+                streamPaused = !streamPaused;
+                if (streamPaused) {
+                    btnToggle.innerHTML = `<i class="fas fa-play"></i> Resume Feed`;
+                    showToast('Threat Radar Stream Paused', 'fas fa-pause');
+                } else {
+                    btnToggle.innerHTML = `<i class="fas fa-pause"></i> Pause Feed`;
+                    showToast('Threat Radar Stream Resumed', 'fas fa-play');
+                }
+            });
+        }
     }
 
     // --- Presets & Omni Input Wiring ---
@@ -650,7 +1016,6 @@
             });
         }
 
-        // Preset Chips
         const chips = document.querySelectorAll('.preset-chip');
         chips.forEach(chip => {
             chip.addEventListener('click', () => {
@@ -673,9 +1038,14 @@
 
     // --- DOM Ready Boot ---
     document.addEventListener('DOMContentLoaded', () => {
+        applyPreferences();
+        initParticles();
+        init3DTilt();
         initCursorGlow();
         initClock();
         initNavigation();
+        initCustomizer();
+        initCommandPalette();
         initDynamicTyping();
         initPresetsAndInput();
         initStudio();
