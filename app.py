@@ -17,9 +17,18 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS'
     return response
+
+def get_param(key):
+    if request.method == 'GET':
+        return str(request.args.get(key, '')).strip()
+    json_data = request.get_json(silent=True) or {}
+    val = json_data.get(key)
+    if val is None:
+        val = request.form.get(key, '')
+    return str(val).strip()
 
 def make_response_json(success, module, query, data=None, error=None):
     return jsonify({
@@ -35,12 +44,15 @@ def make_response_json(success, module, query, data=None, error=None):
 def index():
     return render_template('index.html')
 
-@app.route('/api/username', methods=['POST', 'OPTIONS'])
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'operational', 'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'}), 200
+
+@app.route('/api/username', methods=['GET', 'POST', 'OPTIONS'])
 def api_username():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    username = str(data.get('username', '')).strip()
+    username = get_param('username')
     if not username:
         return make_response_json(False, 'username', '', error='Missing username'), 400
     try:
@@ -51,12 +63,11 @@ def api_username():
     except Exception:
         return make_response_json(False, 'username', username, error='Internal server error'), 500
 
-@app.route('/api/discord', methods=['POST', 'OPTIONS'])
+@app.route('/api/discord', methods=['GET', 'POST', 'OPTIONS'])
 def api_discord():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    discord_id = str(data.get('id', '')).strip()
+    discord_id = get_param('id')
     if not discord_id:
         return make_response_json(False, 'discord', '', error='Missing Discord ID'), 400
     try:
@@ -67,12 +78,11 @@ def api_discord():
     except Exception:
         return make_response_json(False, 'discord', discord_id, error='Failed to query Discord ID'), 500
 
-@app.route('/api/ip', methods=['POST', 'OPTIONS'])
+@app.route('/api/ip', methods=['GET', 'POST', 'OPTIONS'])
 def api_ip():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    ip = str(data.get('ip', '')).strip()
+    ip = get_param('ip')
     if not ip:
         return make_response_json(False, 'ip', '', error='Missing IP address'), 400
     try:
@@ -83,12 +93,11 @@ def api_ip():
     except Exception:
         return make_response_json(False, 'ip', ip, error='Failed to resolve IP intelligence'), 500
 
-@app.route('/api/email', methods=['POST', 'OPTIONS'])
+@app.route('/api/email', methods=['GET', 'POST', 'OPTIONS'])
 def api_email():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    email = str(data.get('email', '')).strip()
+    email = get_param('email')
     if not email:
         return make_response_json(False, 'email', '', error='Missing email'), 400
     try:
@@ -99,12 +108,11 @@ def api_email():
     except Exception:
         return make_response_json(False, 'email', email, error='Failed to process email intelligence'), 500
 
-@app.route('/api/domain', methods=['POST', 'OPTIONS'])
+@app.route('/api/domain', methods=['GET', 'POST', 'OPTIONS'])
 def api_domain():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    domain = str(data.get('domain', '')).strip()
+    domain = get_param('domain')
     if not domain:
         return make_response_json(False, 'domain', '', error='Missing domain'), 400
     try:
@@ -115,12 +123,11 @@ def api_domain():
     except Exception:
         return make_response_json(False, 'domain', domain, error='Failed to execute domain recon'), 500
 
-@app.route('/api/phone', methods=['POST', 'OPTIONS'])
+@app.route('/api/phone', methods=['GET', 'POST', 'OPTIONS'])
 def api_phone():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    phone = str(data.get('phone', '')).strip()
+    phone = get_param('phone')
     if not phone:
         return make_response_json(False, 'phone', '', error='Missing phone number'), 400
     try:
@@ -131,12 +138,11 @@ def api_phone():
     except Exception:
         return make_response_json(False, 'phone', phone, error='Failed to analyze phone number'), 500
 
-@app.route('/api/headers', methods=['POST', 'OPTIONS'])
+@app.route('/api/headers', methods=['GET', 'POST', 'OPTIONS'])
 def api_headers():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    url = str(data.get('url', '')).strip()
+    url = get_param('url')
     if not url:
         return make_response_json(False, 'headers', '', error='Missing URL'), 400
     try:
@@ -147,12 +153,11 @@ def api_headers():
     except Exception:
         return make_response_json(False, 'headers', url, error='Failed to fetch HTTP headers'), 500
 
-@app.route('/api/hash', methods=['POST', 'OPTIONS'])
+@app.route('/api/hash', methods=['GET', 'POST', 'OPTIONS'])
 def api_hash():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    hash_val = str(data.get('hash', '')).strip()
+    hash_val = get_param('hash')
     if not hash_val:
         return make_response_json(False, 'hash', '', error='Missing hash string'), 400
     try:
@@ -163,12 +168,11 @@ def api_hash():
     except Exception:
         return make_response_json(False, 'hash', hash_val, error='Failed to analyze hash'), 500
 
-@app.route('/api/dorks', methods=['POST', 'OPTIONS'])
+@app.route('/api/dorks', methods=['GET', 'POST', 'OPTIONS'])
 def api_dorks():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    target = str(data.get('target', '')).strip()
+    target = get_param('target')
     if not target:
         return make_response_json(False, 'dorks', '', error='Missing target domain / keyword'), 400
     try:
@@ -179,12 +183,11 @@ def api_dorks():
     except Exception:
         return make_response_json(False, 'dorks', target, error='Failed to generate dorks'), 500
 
-@app.route('/api/bgp', methods=['POST', 'OPTIONS'])
+@app.route('/api/bgp', methods=['GET', 'POST', 'OPTIONS'])
 def api_bgp():
     if request.method == 'OPTIONS':
         return '', 204
-    data = request.get_json(silent=True) or {}
-    asn_query = str(data.get('asn', '')).strip()
+    asn_query = get_param('asn')
     if not asn_query:
         return make_response_json(False, 'bgp', '', error='Missing ASN number'), 400
     try:

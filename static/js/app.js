@@ -186,44 +186,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Render Dispatcher ----
     function renderResults(moduleName, data, container, elapsed, target) {
+        const payload = (data && data.data !== undefined) ? data.data : data;
         let html = '';
         switch (moduleName) {
             case 'username':
-                html = renderUsernameModule(data, elapsed, target);
+                html = renderUsernameModule(payload, elapsed, target);
                 break;
             case 'dorks':
-                html = renderDorksModule(data, elapsed, target);
+                html = renderDorksModule(payload, elapsed, target);
                 break;
             case 'discord':
-                html = renderDiscordModule(data, elapsed, target);
+                html = renderDiscordModule(payload, elapsed, target);
                 break;
             case 'ip':
-                html = renderIpModule(data, elapsed, target);
+                html = renderIpModule(payload, elapsed, target);
                 break;
             case 'bgp':
-                html = renderBgpModule(data, elapsed, target);
+                html = renderBgpModule(payload, elapsed, target);
                 break;
             case 'email':
-                html = renderEmailModule(data, elapsed, target);
+                html = renderEmailModule(payload, elapsed, target);
                 break;
             case 'domain':
-                html = renderDomainModule(data, elapsed, target);
+                html = renderDomainModule(payload, elapsed, target);
                 break;
             case 'phone':
-                html = renderPhoneModule(data, elapsed, target);
+                html = renderPhoneModule(payload, elapsed, target);
                 break;
             case 'headers':
-                html = renderHeadersModule(data, elapsed, target);
+                html = renderHeadersModule(payload, elapsed, target);
                 break;
             case 'hash':
-                html = renderHashModule(data, elapsed, target);
+                html = renderHashModule(payload, elapsed, target);
                 break;
             default:
-                html = `<pre class="code-block">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+                html = `<pre class="code-block">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`;
         }
 
         container.innerHTML = html;
-        bindResultActions(container, data, target, moduleName);
+        bindResultActions(container, payload, target, moduleName);
     }
 
     // =========================================================
