@@ -1,618 +1,686 @@
-/* ==========================================================================
-   SPECTRE — 4-MODE MODERN OSINT PLATFORM JAVASCRIPT (V200.0)
-   ========================================================================== */
+﻿/**
+ * SPECTRE OSINT Platform — Modern Client Apparatus (v300001)
+ */
 
-document.addEventListener('DOMContentLoaded', () => {
-    // ---- State ----
-    let activeMode = 'omni';
-    let currentDossier = null;
-    let leafletMap = null;
-    let visNetwork = null;
-    let globalProbeCount = 1248;
+(function () {
+    'use strict';
 
-    // ---- DOM Elements ----
-    const modePills = document.querySelectorAll('.mode-pill');
-    const modeViews = document.querySelectorAll('.mode-view');
-    const utcClock = document.getElementById('utc-clock');
-    const toastContainer = document.getElementById('toast-container');
+    // --- State & Sound ---
+    let soundEnabled = true;
+    let audioCtx = null;
+    let networkGraph = null;
+    let currentOmniTarget = null;
+    let totalProbesCounter = 1248;
 
-    // Mode 1: Omni
-    const omniInput = document.getElementById('omni-input');
-    const btnOmniSearch = document.getElementById('btn-omni-search');
-    const omniEmptyState = document.getElementById('omni-empty-state');
-    const omniResultsContent = document.getElementById('omni-results-content');
-    const sampleBtns = document.querySelectorAll('.sample-btn');
-
-    // Mode 2: Vectors Studio
-    const vectorSearchFilter = document.getElementById('vector-search-filter');
-    const vectorCards = document.querySelectorAll('.vcard');
-    const vcardRunBtns = document.querySelectorAll('.vcard-run-btn');
-
-    // Mode 3: Graph
-    const btnGraphFit = document.getElementById('btn-graph-fit');
-    const btnGraphReset = document.getElementById('btn-graph-reset');
-
-    // Mode 4: Feed
-    const liveStreamBox = document.getElementById('live-stream-box');
-    const counterProbes = document.getElementById('counter-probes');
-
-    // ---- Live Clock ----
-    function initClock() {
-        const update = () => {
-            if (utcClock) {
-                const now = new Date();
-                utcClock.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-            }
-        };
-        setInterval(update, 1000);
-        update();
-    }
-    initClock();
-
-    // ---- Mode Navigation Switching ----
-    modePills.forEach(pill => {
-        pill.addEventListener('click', () => {
-            const mode = pill.getAttribute('data-mode');
-            switchMode(mode);
-        });
-    });
-
-    function switchMode(mode) {
-        activeMode = mode;
-        modePills.forEach(p => p.classList.toggle('active', p.getAttribute('data-mode') === mode));
-        modeViews.forEach(v => v.classList.toggle('active', v.id === `view-${mode}`));
-
-        if (mode === 'graph' && visNetwork) {
-            setTimeout(() => visNetwork.fit(), 80);
-        } else if (mode === 'omni' && omniInput) {
-            omniInput.focus();
+    // --- Audio Synthesizer ---
+    function initAudio() {
+        if (!audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) audioCtx = new AudioContext();
         }
     }
 
-    // ==========================================================================
-    // MODE 1: UNIVERSAL OMNI RECONNAISSANCE
-    // ==========================================================================
-    if (omniInput) {
-        omniInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnOmniSearch.click();
-            }
+    function playTone(freq = 440, type = 'sine', duration = 0.08) {
+        if (!soundEnabled) return;
+        try {
+            initAudio();
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+            // Audio ignore
+        }
+    }
+
+    // --- Cursor Follower Glow ---
+    function initCursorGlow() {
+        const glow = document.getElementById('cursor-glow');
+        if (!glow) return;
+        window.addEventListener('mousemove', (e) => {
+            glow.style.left = e.clientX + 'px';
+            glow.style.top = e.clientY + 'px';
         });
     }
 
-    sampleBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const val = btn.getAttribute('data-val');
-            if (omniInput) {
-                omniInput.value = val;
-                executeOmniSearch(val);
+    // --- Live UTC Clock ---
+    function initClock() {
+        const clockEl = document.getElementById('utc-clock');
+        function tick() {
+            if (clockEl) {
+                const now = new Date();
+                clockEl.textContent = now.toUTCString().split(' ')[4] + ' UTC';
             }
-        });
-    });
+        }
+        tick();
+        setInterval(tick, 1000);
+    }
 
-    if (btnOmniSearch) {
-        btnOmniSearch.addEventListener('click', () => {
-            const val = omniInput.value.trim();
-            if (!val) {
-                showToast('Please enter a target entity', 'error');
-                omniInput.focus();
+    // --- Dynamic Search Placeholder Typing ---
+    function initDynamicTyping() {
+        const input = document.getElementById('omni-input');
+        if (!input) return;
+
+        const placeholders = [
+            'Search username: @shadow, @turing, @spectre...',
+            'Search IP: 1.1.1.1, 8.8.8.8, 93.184.216.34...',
+            'Search Domain: github.com, apple.com, openai.com...',
+            'Search Discord ID: 155149108183695360...',
+            'Search Hash: 5d41402abc4b2a76b9719d911017c592...',
+            'Search Email: contact@domain.com, root@target.org...'
+        ];
+
+        let pIdx = 0;
+        let charIdx = 0;
+        let isDeleting = false;
+
+        function typeLoop() {
+            if (document.activeElement === input) {
+                setTimeout(typeLoop, 500);
                 return;
             }
-            executeOmniSearch(val);
-        });
-    }
 
-    async function executeOmniSearch(target) {
-        setOmniLoading(true);
-        if (omniEmptyState) omniEmptyState.style.display = 'none';
-        if (omniResultsContent) {
-            omniResultsContent.style.display = 'flex';
-            omniResultsContent.innerHTML = `
-                <div class="loading-box">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-title">Executing Multi-Threaded Reconnaissance Pipeline...</div>
-                    <div class="loading-sub">Auto-classifying entity, querying live socket pools, and compiling intelligence dossier.</div>
-                </div>
-            `;
-        }
-
-        const startTime = performance.now();
-        try {
-            const res = await fetch(`/api/omni?target=${encodeURIComponent(target)}`);
-            const json = await res.json();
-            const elapsed = Math.round(performance.now() - startTime);
-
-            if (!res.ok || json.error) {
-                renderOmniError(json.error || 'Reconnaissance pipeline failed.', elapsed);
-                showToast(`Scan Failed: ${json.error || 'Error'}`, 'error');
+            const current = placeholders[pIdx];
+            if (!isDeleting) {
+                input.placeholder = current.substring(0, charIdx + 1);
+                charIdx++;
+                if (charIdx === current.length) {
+                    isDeleting = true;
+                    setTimeout(typeLoop, 2000);
+                    return;
+                }
             } else {
-                currentDossier = json;
-                const data = json.data || {};
-                renderOmniDossier(target, data.detected_type || 'entity', data.dossier || {}, elapsed);
-                buildGraphTopology(target, data.dossier || {});
-                showToast(`Intelligence Dossier Compiled (${elapsed}ms)`, 'success');
-                addLiveStreamEvent('hit', `Omni Recon completed for: ${target} [${data.detected_type?.toUpperCase()}]`);
+                input.placeholder = current.substring(0, charIdx - 1);
+                charIdx--;
+                if (charIdx === 0) {
+                    isDeleting = false;
+                    pIdx = (pIdx + 1) % placeholders.length;
+                }
             }
-        } catch (err) {
-            const elapsed = Math.round(performance.now() - startTime);
-            renderOmniError(`Network timeout: ${err.message}`, elapsed);
-            showToast('Request timed out or failed', 'error');
-        } finally {
-            setOmniLoading(false);
+            setTimeout(typeLoop, isDeleting ? 30 : 60);
+        }
+        typeLoop();
+    }
+
+    // --- Toast Notifications ---
+    function showToast(msg, icon = 'fas fa-info-circle') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<i class="${icon}"></i> <span>${msg}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
+
+    // --- Tab Navigation Modes ---
+    function initNavigation() {
+        const pills = document.querySelectorAll('.mode-pill');
+        const views = document.querySelectorAll('.mode-view');
+
+        pills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                playTone(520, 'sine', 0.05);
+                const targetMode = pill.dataset.mode;
+                
+                pills.forEach(p => p.classList.remove('active'));
+                views.forEach(v => v.classList.remove('active'));
+
+                pill.classList.add('active');
+                const targetView = document.getElementById(`view-${targetMode}`);
+                if (targetView) targetView.classList.add('active');
+
+                if (targetMode === 'graph' && networkGraph) {
+                    setTimeout(() => networkGraph.fit(), 200);
+                }
+            });
+        });
+
+        // Sound toggle
+        const soundBtn = document.getElementById('btn-sound-toggle');
+        const soundIcon = document.getElementById('sound-icon');
+        const soundLabel = document.getElementById('sound-label');
+
+        if (soundBtn) {
+            soundBtn.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                if (soundEnabled) {
+                    soundIcon.className = 'fas fa-volume-high';
+                    soundLabel.textContent = 'Audio: ON';
+                    playTone(600, 'sine', 0.1);
+                    showToast('Audio Synthesis Activated', 'fas fa-volume-high');
+                } else {
+                    soundIcon.className = 'fas fa-volume-xmark';
+                    soundLabel.textContent = 'Audio: OFF';
+                    showToast('Audio Synthesis Muted', 'fas fa-volume-xmark');
+                }
+            });
         }
     }
 
-    function setOmniLoading(isLoading) {
-        if (!btnOmniSearch) return;
-        if (isLoading) {
-            btnOmniSearch.disabled = true;
-            btnOmniSearch.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Scanning...</span>`;
-        } else {
-            btnOmniSearch.disabled = false;
-            btnOmniSearch.innerHTML = `<span>Execute Recon</span><kbd>↵</kbd>`;
+    // --- Vis.js Topology Graph ---
+    function initGraph(containerId = 'vis-full-canvas') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const data = {
+            nodes: new vis.DataSet([
+                { id: 'spectre', label: 'SPECTRE CORE', color: '#6366f1', shape: 'dot', size: 28, font: { color: '#fff', face: 'JetBrains Mono' } },
+                { id: 'v_user', label: 'Social Vectors (112+)', color: '#06b6d4', shape: 'dot', size: 16, font: { color: '#94a3b8' } },
+                { id: 'v_ip', label: 'GeoIP & BGP Sockets', color: '#10b981', shape: 'dot', size: 16, font: { color: '#94a3b8' } },
+                { id: 'v_dns', label: 'DNS & CT Certificate Stream', color: '#f59e0b', shape: 'dot', size: 16, font: { color: '#94a3b8' } },
+                { id: 'v_disc', label: 'Discord Bitshift Engine', color: '#a855f7', shape: 'dot', size: 16, font: { color: '#94a3b8' } }
+            ]),
+            edges: new vis.DataSet([
+                { from: 'spectre', to: 'v_user', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' },
+                { from: 'spectre', to: 'v_ip', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' },
+                { from: 'spectre', to: 'v_dns', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' },
+                { from: 'spectre', to: 'v_disc', color: { color: 'rgba(99,102,241,0.4)' }, arrows: 'to' }
+            ])
+        };
+
+        const options = {
+            physics: {
+                stabilization: false,
+                barnesHut: { gravitationalConstant: -3500, springLength: 120 }
+            },
+            interaction: { hover: true, tooltipDelay: 100 }
+        };
+
+        networkGraph = new vis.Network(container, data, options);
+
+        const btnFit = document.getElementById('btn-graph-fit');
+        if (btnFit) btnFit.addEventListener('click', () => networkGraph.fit());
+
+        const btnReset = document.getElementById('btn-graph-reset');
+        if (btnReset) {
+            btnReset.addEventListener('click', () => {
+                initGraph(containerId);
+                showToast('Topology Graph Reset', 'fas fa-rotate');
+            });
         }
     }
 
-    function renderOmniError(msg, elapsed) {
-        if (!omniResultsContent) return;
-        omniResultsContent.innerHTML = `
-            <div class="intel-card-wrapper" style="border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.04);">
-                <div class="intel-card-header">
-                    <span class="intel-card-title" style="color: var(--accent-rose);">
-                        <i class="fas fa-circle-exclamation"></i> Reconnaissance Anomaly
-                    </span>
-                    <span class="latency-badge">${elapsed}ms</span>
-                </div>
-                <div class="intel-card-body" style="color: var(--accent-rose); font-family: var(--font-mono); font-size: 0.85rem;">
-                    ${escapeHtml(msg)}
-                </div>
-            </div>
-        `;
-    }
+    function updateGraphWithTarget(target, data) {
+        if (!networkGraph) return;
+        try {
+            const nodes = networkGraph.body.data.nodes;
+            const edges = networkGraph.body.data.edges;
 
-    function renderOmniDossier(target, detectedType, dossier, elapsed) {
-        if (!omniResultsContent) return;
-        let html = `
-            <div class="target-hero-card">
-                <div class="target-title-group">
-                    <div class="target-entity-name">${escapeHtml(target)}</div>
-                    <span class="target-type-badge">${escapeHtml(detectedType)}</span>
-                </div>
-                <div class="target-actions">
-                    <span class="latency-badge">${elapsed}ms</span>
-                    <button class="btn-action-tool" id="btn-export-dossier"><i class="fas fa-download"></i> Export JSON</button>
-                    <button class="btn-action-tool" id="btn-switch-graph"><i class="fas fa-diagram-project"></i> Topology</button>
-                </div>
-            </div>
-        `;
+            const tNodeId = `target_${Date.now()}`;
+            nodes.add({
+                id: tNodeId,
+                label: `TARGET: ${target}`,
+                color: '#f43f5e',
+                shape: 'dot',
+                size: 24,
+                font: { color: '#fff', face: 'JetBrains Mono', strokeWidth: 2, strokeColor: '#000' }
+            });
+            edges.add({ from: 'spectre', to: tNodeId, color: { color: '#f43f5e' }, width: 2, arrows: 'to' });
 
-        // 1. IP Module Section
-        if (dossier.ip) {
-            const ip = dossier.ip;
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header">
-                        <span class="intel-card-title"><i class="fas fa-network-wired"></i> IP Intelligence & Geolocation</span>
-                        <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan);">${escapeHtml(ip.query || target)}</span>
-                    </div>
-                    <div class="intel-card-body">
-                        <div class="stat-metric-grid">
-                            <div class="stat-metric-card">
-                                <span class="stat-label">Location</span>
-                                <span class="stat-value" style="font-size: 1.05rem;">${escapeHtml(ip.city || '')}, ${escapeHtml(ip.country || '')}</span>
-                            </div>
-                            <div class="stat-metric-card">
-                                <span class="stat-label">ISP Network</span>
-                                <span class="stat-value" style="font-size: 0.9rem;">${escapeHtml(ip.isp || 'N/A')}</span>
-                            </div>
-                            <div class="stat-metric-card">
-                                <span class="stat-label">Routing ASN</span>
-                                <span class="stat-value" style="font-size: 0.85rem; color: var(--accent-primary);">${escapeHtml(ip.as || ip.asn || 'N/A')}</span>
-                            </div>
-                            <div class="stat-metric-card">
-                                <span class="stat-label">Classification</span>
-                                <span class="stat-value" style="font-size: 0.95rem; color: ${ip.hosting ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
-                                    ${ip.hosting ? 'DATACENTER' : (ip.proxy ? 'PROXY / VPN' : 'RESIDENTIAL')}
-                                </span>
-                            </div>
-                        </div>
-
-                        ${ip.lat && ip.lon ? `
-                            <div class="map-container-box">
-                                <div id="result-leaflet-map"></div>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        // 2. Domain & Subdomains Section
-        if (dossier.domain) {
-            const dom = dossier.domain;
-            const subs = dom.subdomains || [];
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header">
-                        <span class="intel-card-title"><i class="fas fa-globe"></i> Domain WHOIS & CT Subdomains</span>
-                        <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan);">${subs.length} Discovered</span>
-                    </div>
-                    <div class="intel-card-body">
-                        <div class="stat-metric-grid" style="margin-bottom: 16px;">
-                            <div class="stat-metric-card">
-                                <span class="stat-label">Registrar</span>
-                                <span class="stat-value" style="font-size: 0.9rem;">${escapeHtml(dom.registrar || dom.whois?.registrar || 'N/A')}</span>
-                            </div>
-                            <div class="stat-metric-card">
-                                <span class="stat-label">Discovered Subdomains</span>
-                                <span class="stat-value" style="color: var(--accent-cyan);">${subs.length}</span>
-                            </div>
-                        </div>
-
-                        ${subs.length > 0 ? `
-                            <div style="overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
-                                <table class="clean-table" style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.78rem;">
-                                    <thead><tr><th style="padding: 9px 12px; background: var(--bg-surface); text-align: left; color: var(--text-dim); border-bottom: 1px solid var(--border-subtle);">Subdomain Endpoint</th><th style="padding: 9px 12px; background: var(--bg-surface); text-align: left; color: var(--text-dim); border-bottom: 1px solid var(--border-subtle);">Intelligence Source</th></tr></thead>
-                                    <tbody>
-                                        ${subs.slice(0, 15).map(s => `<tr><td style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.02);"><code>${escapeHtml(s)}</code></td><td style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.02); color: var(--accent-emerald);">Certificate Transparency</td></tr>`).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        // 3. Username Section
-        if (dossier.username) {
-            const u = dossier.username;
-            const found = u.found || [];
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header">
-                        <span class="intel-card-title"><i class="fas fa-user"></i> Username Discovery (112+ Platforms)</span>
-                        <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-emerald); font-weight: 700;">${found.length} Profiles Confirmed</span>
-                    </div>
-                    <div class="intel-card-body">
-                        <div class="platform-hit-grid">
-                            ${found.map(f => `
-                                <div class="platform-hit-card">
-                                    <div>
-                                        <div class="platform-name">${escapeHtml(f.platform)}</div>
-                                        <a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer" class="platform-link">${escapeHtml(f.url)}</a>
-                                    </div>
-                                    <span style="font-size: 0.65rem; font-family: var(--font-mono); font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 2px 6px; border-radius: 4px;">FOUND</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 4. Google Dorks Section
-        if (dossier.dorks) {
-            const cats = dossier.dorks.categories || {};
-            let dorkRows = '';
-            for (const [k, v] of Object.entries(cats)) {
-                (v.queries || []).slice(0, 3).forEach(q => {
-                    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(q.dork)}`;
-                    dorkRows += `
-                        <div class="dork-query-row">
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 2px;">${escapeHtml(q.purpose || k)}</div>
-                                <div class="dork-query-text">${escapeHtml(q.dork)}</div>
-                            </div>
-                            <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="btn-action-tool" style="color: var(--accent-cyan); white-space: nowrap;">
-                                <i class="fas fa-arrow-up-right-from-square"></i> Launch
-                            </a>
-                        </div>
-                    `;
+            if (data.results) {
+                Object.keys(data.results).forEach((modKey) => {
+                    const modData = data.results[modKey];
+                    if (modData && !modData.error) {
+                        const modNodeId = `res_${modKey}_${Date.now()}`;
+                        nodes.add({
+                            id: modNodeId,
+                            label: `${modKey.toUpperCase()}`,
+                            color: '#06b6d4',
+                            shape: 'dot',
+                            size: 14,
+                            font: { color: '#cbd5e1' }
+                        });
+                        edges.add({ from: tNodeId, to: modNodeId, color: { color: 'rgba(6, 182, 212, 0.5)' } });
+                    }
                 });
             }
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header">
-                        <span class="intel-card-title"><i class="fas fa-search-nodes"></i> Passive Google Dorks</span>
+            networkGraph.fit();
+        } catch (e) {
+            console.error('Graph update err', e);
+        }
+    }
+
+    // --- Omni Recon Execution ---
+    async function executeOmniRecon(targetVal) {
+        const input = document.getElementById('omni-input');
+        const target = (targetVal || (input ? input.value : '')).trim();
+        if (!target) {
+            showToast('Please enter a target identifier', 'fas fa-triangle-exclamation');
+            return;
+        }
+
+        currentOmniTarget = target;
+        playTone(680, 'sine', 0.1);
+
+        const btnExec = document.getElementById('btn-omni-exec');
+        const emptyState = document.getElementById('omni-empty-state');
+        const resultsDeck = document.getElementById('omni-results-content');
+
+        if (btnExec) {
+            btnExec.disabled = true;
+            btnExec.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Cascading...</span>`;
+        }
+        if (emptyState) emptyState.style.display = 'none';
+        if (resultsDeck) {
+            resultsDeck.style.display = 'block';
+            resultsDeck.innerHTML = `
+                <div class="empty-state-container" style="border: 1px solid var(--border-glow); background: rgba(99,102,241,0.05);">
+                    <div class="radar-scan-graphic">
+                        <div class="radar-sweep-beam"></div>
+                        <i class="fas fa-satellite fa-spin radar-center-icon"></i>
                     </div>
-                    <div class="intel-card-body">
-                        <div class="dork-query-list">${dorkRows}</div>
-                    </div>
+                    <h3>Autonomous Cascade Engaged</h3>
+                    <p>Executing parallel queries across all 10 intelligence vectors for <strong style="color:var(--accent-cyan)">${target}</strong>...</p>
                 </div>
             `;
         }
 
-        // 5. Discord Snowflake Section
-        if (dossier.discord) {
-            const dc = dossier.discord;
-            html += `
-                <div class="intel-card-wrapper">
-                    <div class="intel-card-header">
-                        <span class="intel-card-title"><i class="fa-brands fa-discord"></i> Discord Snowflake Telemetry</span>
+        try {
+            const resp = await fetch(`/api/omni?target=${encodeURIComponent(target)}`, {
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            const data = await resp.json();
+
+            totalProbesCounter += 10;
+            const counterEl = document.getElementById('counter-probes');
+            if (counterEl) counterEl.textContent = totalProbesCounter.toLocaleString();
+
+            renderOmniDossier(target, data);
+            updateGraphWithTarget(target, data);
+            playTone(880, 'sine', 0.15);
+            showToast(`Recon Dossier Built for ${target}`, 'fas fa-check-circle');
+        } catch (err) {
+            if (resultsDeck) {
+                resultsDeck.innerHTML = `
+                    <div class="empty-state-container" style="border-color: var(--accent-rose);">
+                        <i class="fas fa-circle-xmark text-rose" style="font-size: 2.5rem; margin-bottom: 16px;"></i>
+                        <h3>Cascade Failed</h3>
+                        <p>${err.message || 'Connection or upstream error'}</p>
                     </div>
-                    <div class="intel-card-body">
-                        <div class="stat-metric-grid">
-                            <div class="stat-metric-card">
-                                <span class="stat-label">Created Epoch (UTC)</span>
-                                <span class="stat-value" style="font-size: 0.95rem; color: var(--accent-cyan);">${escapeHtml(dc.created_at || 'N/A')}</span>
-                            </div>
-                            <div class="stat-metric-card">
-                                <span class="stat-label">Account Age</span>
-                                <span class="stat-value" style="color: var(--accent-emerald);">${escapeHtml(String(dc.account_age_days ? dc.account_age_days + ' days' : 'N/A'))}</span>
+                `;
+            }
+        } finally {
+            if (btnExec) {
+                btnExec.disabled = false;
+                btnExec.innerHTML = `<span class="btn-shine"></span><i class="fas fa-bolt"></i><span>Execute Recon</span><kbd>↵</kbd>`;
+            }
+        }
+    }
+
+    // --- Render Omni Dossier ---
+    function renderOmniDossier(target, data) {
+        const deck = document.getElementById('omni-results-content');
+        if (!deck) return;
+
+        const res = data.results || {};
+        const classifications = data.classifications || [data.type || 'Generic'];
+
+        let html = `
+            <div class="dossier-summary-card">
+                <div class="dossier-target-info">
+                    <div class="dossier-avatar-badge">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <div class="dossier-target-meta">
+                        <h2>${escapeHtml(target)}</h2>
+                        <p>Classifications: ${classifications.map(c => `<span class="dcard-badge" style="margin-right:4px;">${c}</span>`).join('')}</p>
+                    </div>
+                </div>
+                <div class="dossier-actions">
+                    <button class="btn-dossier-action" id="btn-copy-dossier"><i class="fas fa-copy"></i> Copy JSON</button>
+                </div>
+            </div>
+
+            <div class="dossier-grid">
+        `;
+
+        // 1. IP Module Card
+        if (res.ip && !res.ip.error) {
+            const ipd = res.ip;
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-network-wired"></i><h4>IP Intelligence & Geo</h4></div>
+                        <span class="dcard-badge">GEOLOCATION</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">IP Address</td><td class="kv-val">${ipd.ip || target}</td></tr>
+                        <tr><td class="kv-key">Location</td><td class="kv-val">${ipd.city || '—'}, ${ipd.country || '—'}</td></tr>
+                        <tr><td class="kv-key">ISP / Org</td><td class="kv-val">${ipd.org || ipd.isp || '—'}</td></tr>
+                        <tr><td class="kv-key">ASN</td><td class="kv-val">${ipd.as || '—'}</td></tr>
+                    </table>
+                    ${ipd.lat && ipd.lon ? `<div id="dossier-map" class="map-canvas-container"></div>` : ''}
+                </div>
+            `;
+        }
+
+        // 2. Username Findings
+        if (res.username && !res.username.error) {
+            const hits = res.username.found || [];
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-user-astronaut"></i><h4>Username Discovery (${hits.length} Found)</h4></div>
+                        <span class="dcard-badge">${res.username.total_checked || 112}+ CHECKED</span>
+                    </div>
+                    ${hits.length > 0 ? `
+                        <div class="hit-tags-grid">
+                            ${hits.map(h => `<a href="${h.url}" target="_blank" rel="noopener" class="hit-badge"><i class="fas fa-arrow-up-right-from-square"></i> ${h.platform}</a>`).join('')}
+                        </div>
+                    ` : `<p style="color:var(--text-dim);font-size:0.85rem;">No public matches detected on checked platforms.</p>`}
+                </div>
+            `;
+        }
+
+        // 3. Discord Snowflake Card
+        if (res.discord && !res.discord.error && res.discord.valid) {
+            const d = res.discord;
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fa-brands fa-discord"></i><h4>Discord Snowflake</h4></div>
+                        <span class="dcard-badge">64-BIT TIMESTAMP</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">Snowflake ID</td><td class="kv-val">${d.snowflake}</td></tr>
+                        <tr><td class="kv-key">Created UTC</td><td class="kv-val">${d.timestamp_utc}</td></tr>
+                        <tr><td class="kv-key">Account Age</td><td class="kv-val">${d.age_days} days</td></tr>
+                        <tr><td class="kv-key">Unix Epoch</td><td class="kv-val">${d.unix_timestamp}</td></tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 4. Domain & WHOIS Card
+        if (res.domain && !res.domain.error) {
+            const d = res.domain;
+            const subs = d.subdomains_ct || [];
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-globe"></i><h4>Domain & CT Certificates</h4></div>
+                        <span class="dcard-badge">WHOIS + CT</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">Registrar</td><td class="kv-val">${d.registrar || '—'}</td></tr>
+                        <tr><td class="kv-key">Created</td><td class="kv-val">${d.creation_date || '—'}</td></tr>
+                        <tr><td class="kv-key">Expires</td><td class="kv-val">${d.expiration_date || '—'}</td></tr>
+                    </table>
+                    ${subs.length > 0 ? `
+                        <div style="margin-top:12px;">
+                            <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SUBDOMAINS (${subs.length}):</span>
+                            <div class="hit-tags-grid" style="margin-top:6px;max-height:120px;">
+                                ${subs.slice(0, 15).map(s => `<span class="hit-badge" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3);color:#a5b4fc;">${s}</span>`).join('')}
                             </div>
                         </div>
-                    </div>
+                    ` : ''}
                 </div>
             `;
         }
 
-        omniResultsContent.innerHTML = html;
+        // 5. Hash Classifier
+        if (res.hash && !res.hash.error) {
+            const h = res.hash;
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-key"></i><h4>Hash Classification</h4></div>
+                        <span class="dcard-badge">ENTROPY: ${h.entropy || '—'}</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">Possible Algos</td><td class="kv-val">${(h.possible_algorithms || []).join(', ') || 'Unknown'}</td></tr>
+                        <tr><td class="kv-key">Bit Length</td><td class="kv-val">${h.length ? h.length * 4 : '—'} bits</td></tr>
+                        <tr><td class="kv-key">Charset</td><td class="kv-val">${h.charset || '—'}</td></tr>
+                    </table>
+                </div>
+            `;
+        }
 
-        // Bind actions
-        const exportBtn = document.getElementById('btn-export-dossier');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                const blob = new Blob([JSON.stringify(dossier, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `spectre-${target}-${Date.now()}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast('Intelligence JSON Exported', 'success');
+        // 6. Security Headers
+        if (res.headers && !res.headers.error) {
+            const hd = res.headers;
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-shield-halved"></i><h4>HTTP Security Audit</h4></div>
+                        <span class="dcard-badge">STATUS: ${hd.status_code || '—'}</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">Server</td><td class="kv-val">${hd.server || 'Hidden / WAF'}</td></tr>
+                        <tr><td class="kv-key">HSTS</td><td class="kv-val">${hd.hsts ? 'Enforced' : 'Missing'}</td></tr>
+                        <tr><td class="kv-key">CSP</td><td class="kv-val">${hd.csp ? 'Present' : 'Missing'}</td></tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        html += `</div>`; // end grid
+        deck.innerHTML = html;
+
+        // Render leaflet map if coordinates exist
+        if (res.ip && res.ip.lat && res.ip.lon) {
+            setTimeout(() => {
+                const mapEl = document.getElementById('dossier-map');
+                if (mapEl) {
+                    const map = L.map(mapEl).setView([res.ip.lat, res.ip.lon], 9);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; OpenStreetMap & CARTO',
+                        subdomains: 'abcd',
+                        maxZoom: 19
+                    }).addTo(map);
+                    L.marker([res.ip.lat, res.ip.lon]).addTo(map)
+                        .bindPopup(`<b>${res.ip.city || 'Target'}</b><br>${res.ip.ip}`)
+                        .openPopup();
+                }
+            }, 100);
+        }
+
+        // Copy JSON Dossier
+        const btnCopy = document.getElementById('btn-copy-dossier');
+        if (btnCopy) {
+            btnCopy.addEventListener('click', () => {
+                navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                showToast('Dossier JSON Copied to Clipboard', 'fas fa-copy');
+            });
+        }
+    }
+
+    // --- Studio Grid Interactive Cards ---
+    function initStudio() {
+        const filterInput = document.getElementById('studio-filter-input');
+        const cards = document.querySelectorAll('.studio-card');
+
+        if (filterInput) {
+            filterInput.addEventListener('input', (e) => {
+                const q = e.target.value.toLowerCase().trim();
+                cards.forEach(card => {
+                    const tags = (card.dataset.tags || '') + ' ' + (card.querySelector('.scard-title')?.textContent || '');
+                    card.style.display = tags.toLowerCase().includes(q) ? 'flex' : 'none';
+                });
             });
         }
 
-        const switchGraphBtn = document.getElementById('btn-switch-graph');
-        if (switchGraphBtn) {
-            switchGraphBtn.addEventListener('click', () => switchMode('graph'));
-        }
+        // Run buttons inside studio cards
+        const execBtns = document.querySelectorAll('.scard-exec-btn');
+        execBtns.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const mod = btn.dataset.mod;
+                const input = document.getElementById(`vinput-${mod}`);
+                const drawer = document.getElementById(`vdrawer-${mod}`);
+                const val = (input ? input.value : '').trim();
 
-        // Mount Map if coordinates exist
-        if (dossier.ip && dossier.ip.lat && dossier.ip.lon) {
-            setTimeout(() => mountLeafletMap(dossier.ip.lat, dossier.ip.lon, dossier.ip.city, dossier.ip.country, dossier.ip.query || target), 50);
-        }
-    }
+                if (!val) {
+                    showToast(`Enter target for ${mod.toUpperCase()}`, 'fas fa-triangle-exclamation');
+                    return;
+                }
 
-    // ==========================================================================
-    // MODE 2: 10 MODULAR VECTORS STUDIO
-    // ==========================================================================
-    if (vectorSearchFilter) {
-        vectorSearchFilter.addEventListener('input', (e) => {
-            const q = e.target.value.toLowerCase().trim();
-            vectorCards.forEach(card => {
-                const title = card.querySelector('.vcard-title').textContent.toLowerCase();
-                const tags = card.getAttribute('data-tags') || '';
-                if (title.includes(q) || tags.includes(q)) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+                if (drawer) {
+                    drawer.style.display = 'block';
+                    drawer.innerHTML = `<span style="font-size:0.8rem;color:var(--accent-cyan);font-family:var(--font-mono);"><i class="fas fa-circle-notch fa-spin"></i> Querying vector...</span>`;
+                }
+
+                try {
+                    let endpoint = `/api/${mod}?`;
+                    if (mod === 'username') endpoint += `username=${encodeURIComponent(val)}`;
+                    else if (mod === 'ip') endpoint += `ip=${encodeURIComponent(val)}`;
+                    else if (mod === 'domain') endpoint += `domain=${encodeURIComponent(val)}`;
+                    else if (mod === 'dorks') endpoint += `target=${encodeURIComponent(val)}`;
+                    else if (mod === 'discord') endpoint += `id=${encodeURIComponent(val)}`;
+                    else if (mod === 'bgp') endpoint += `asn=${encodeURIComponent(val)}`;
+                    else if (mod === 'email') endpoint += `email=${encodeURIComponent(val)}`;
+                    else if (mod === 'phone') endpoint += `phone=${encodeURIComponent(val)}`;
+                    else if (mod === 'headers') endpoint += `url=${encodeURIComponent(val)}`;
+                    else if (mod === 'hash') endpoint += `hash=${encodeURIComponent(val)}`;
+
+                    const res = await fetch(endpoint);
+                    const json = await res.json();
+
+                    renderStudioDrawer(mod, json, drawer);
+                    playTone(720, 'sine', 0.08);
+                } catch (e) {
+                    if (drawer) {
+                        drawer.innerHTML = `<span style="font-size:0.8rem;color:var(--accent-rose);font-family:var(--font-mono);">Error: ${e.message}</span>`;
+                    }
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fas fa-play"></i>`;
                 }
             });
         });
     }
 
-    vcardRunBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const mod = btn.getAttribute('data-mod');
-            const input = document.getElementById(`vinput-${mod}`);
-            const drawer = document.getElementById(`vdrawer-${mod}`);
-            if (!input || !drawer) return;
-
-            const val = input.value.trim();
-            if (!val) {
-                showToast(`Please enter target for ${mod.toUpperCase()}`, 'error');
-                input.focus();
-                return;
-            }
-
-            executeVectorStudioScan(mod, val, drawer, btn);
-        });
-    });
-
-    document.querySelectorAll('.vcard-input').forEach(input => {
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const btn = input.closest('.vcard-interactive').querySelector('.vcard-run-btn');
-                if (btn) btn.click();
-            }
-        });
-    });
-
-    async function executeVectorStudioScan(mod, val, drawer, btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
-        drawer.style.display = 'block';
-        drawer.innerHTML = `<div style="color: var(--accent-cyan); padding: 8px 0;"><i class="fas fa-spinner fa-spin"></i> Probing ${mod}...</div>`;
-
-        const paramMap = {
-            username: 'username', dorks: 'target', discord: 'id', ip: 'ip',
-            bgp: 'asn', email: 'email', domain: 'domain', phone: 'phone',
-            headers: 'url', hash: 'hash'
-        };
-
-        try {
-            const res = await fetch(`/api/${mod}?${paramMap[mod] || 'target'}=${encodeURIComponent(val)}`);
-            const json = await res.json();
-
-            if (!res.ok || json.error) {
-                drawer.innerHTML = `<div style="color: var(--accent-rose);">${escapeHtml(json.error || 'Query failed')}</div>`;
-            } else {
-                const data = json.data || json;
-                drawer.innerHTML = `<pre style="background: var(--bg-surface); padding: 10px; border-radius: 4px; border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-main); max-height: 220px; overflow-y: auto;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
-                showToast(`Vector [${mod}] Scanned`, 'success');
-                addLiveStreamEvent('probe', `Vector [${mod.toUpperCase()}] executed for ${val}`);
-            }
-        } catch (err) {
-            drawer.innerHTML = `<div style="color: var(--accent-rose);">${escapeHtml(err.message)}</div>`;
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = `<i class="fas fa-play"></i>`;
+    function renderStudioDrawer(mod, data, drawer) {
+        if (!drawer) return;
+        if (data.error) {
+            drawer.innerHTML = `<span style="color:var(--accent-rose);font-size:0.8rem;font-family:var(--font-mono);">${data.error}</span>`;
+            return;
         }
+
+        let content = `<div style="background:var(--bg-input);padding:10px;border-radius:var(--radius-sm);font-size:0.8rem;font-family:var(--font-mono);max-height:180px;overflow-y:auto;border:1px solid var(--border-subtle);">`;
+
+        if (mod === 'username' && data.found) {
+            content += `<div style="margin-bottom:6px;color:var(--accent-emerald);">Found ${data.found.length} profiles:</div>`;
+            data.found.forEach(f => {
+                content += `<div><a href="${f.url}" target="_blank" style="color:var(--accent-cyan);text-decoration:none;">• ${f.platform}</a></div>`;
+            });
+        } else if (mod === 'dorks' && data.dorks) {
+            content += `<div style="margin-bottom:6px;color:var(--accent-primary);">Generated Dorks:</div>`;
+            data.dorks.forEach(d => {
+                content += `<div style="margin-bottom:4px;"><a href="${d.search_url}" target="_blank" style="color:#a5b4fc;text-decoration:none;">• ${d.name}</a></div>`;
+            });
+        } else {
+            content += `<pre style="white-space:pre-wrap;word-break:break-all;color:#e2e8f0;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+        }
+
+        content += `</div>`;
+        drawer.innerHTML = content;
     }
 
-    // ==========================================================================
-    // MODE 3: TOPOLOGY GRAPH
-    // ==========================================================================
-    function buildGraphTopology(target, dossier) {
-        const container = document.getElementById('vis-full-canvas');
-        if (!container) return;
+    // --- Live Stream Generator (Threat Radar) ---
+    function initLiveStream() {
+        const streamBox = document.getElementById('live-stream-box');
+        if (!streamBox) return;
 
-        const nodes = [
-            { id: 'target', label: target, color: '#6366f1', font: { color: '#ffffff', size: 16, face: 'Inter' }, shape: 'box' }
+        const simulatedEvents = [
+            { icon: 'fas fa-user-astronaut', color: '#06b6d4', title: 'Username Sweep', desc: 'Identified public profile on GitHub & GitLab' },
+            { icon: 'fas fa-network-wired', color: '#10b981', title: 'BGP Route Match', desc: 'Prefix announced by AS15169 (Google LLC)' },
+            { icon: 'fa-brands fa-discord', color: '#a855f7', title: 'Snowflake Bitshift', desc: 'Epoch decoded: Account created Oct 2017' },
+            { icon: 'fas fa-shield-halved', color: '#f43f5e', title: 'Security Header Audit', desc: 'Missing Content-Security-Policy header' },
+            { icon: 'fas fa-certificate', color: '#f59e0b', title: 'CT Certificate Found', desc: 'Wildcard *.domain.internal logged to crt.sh' },
+            { icon: 'fas fa-key', color: '#ec4899', title: 'Cryptographic Hash', desc: 'High entropy MD5 hash classified' }
         ];
-        const edges = [];
 
-        if (dossier.ip) {
-            nodes.push({ id: 'node_ip', label: `IP: ${dossier.ip.query || target}`, color: '#10b981', font: { color: '#ffffff', size: 12 }, shape: 'ellipse' });
-            edges.push({ from: 'target', to: 'node_ip', color: { color: '#10b981' } });
-            if (dossier.ip.isp) {
-                nodes.push({ id: 'node_isp', label: `ISP: ${dossier.ip.isp}`, color: '#06b6d4', font: { color: '#ffffff', size: 10 }, shape: 'dot', size: 8 });
-                edges.push({ from: 'node_ip', to: 'node_isp', color: { color: '#06b6d4' } });
+        function addEvent() {
+            const ev = simulatedEvents[Math.floor(Math.random() * simulatedEvents.length)];
+            const timeStr = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = 'stream-event-item';
+            div.innerHTML = `
+                <div class="sevent-left">
+                    <div class="sevent-icon" style="background:${ev.color}20; color:${ev.color};">
+                        <i class="${ev.icon}"></i>
+                    </div>
+                    <div class="sevent-meta">
+                        <h5>${ev.title}</h5>
+                        <p>${ev.desc}</p>
+                    </div>
+                </div>
+                <span class="sevent-time">${timeStr}</span>
+            `;
+
+            streamBox.insertBefore(div, streamBox.firstChild);
+            if (streamBox.children.length > 20) {
+                streamBox.removeChild(streamBox.lastChild);
             }
         }
 
-        if (dossier.domain && dossier.domain.subdomains) {
-            dossier.domain.subdomains.slice(0, 15).forEach((s, idx) => {
-                const subId = `sub_${idx}`;
-                nodes.push({ id: subId, label: s, color: '#06b6d4', font: { color: '#ffffff', size: 10 }, shape: 'dot', size: 8 });
-                edges.push({ from: 'target', to: subId, color: { color: '#06b6d4', opacity: 0.5 } });
+        // Add 4 initial items
+        for (let i = 0; i < 4; i++) addEvent();
+        setInterval(addEvent, 3500);
+    }
+
+    // --- Presets & Omni Input Wiring ---
+    function initPresetsAndInput() {
+        const input = document.getElementById('omni-input');
+        const btnExec = document.getElementById('btn-omni-exec');
+
+        if (input && btnExec) {
+            btnExec.addEventListener('click', () => executeOmniRecon());
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') executeOmniRecon();
             });
         }
 
-        if (dossier.username && dossier.username.found) {
-            dossier.username.found.slice(0, 20).forEach((f, idx) => {
-                const uId = `usr_${idx}`;
-                nodes.push({ id: uId, label: f.platform, color: '#10b981', font: { color: '#ffffff', size: 11 }, shape: 'dot', size: 10 });
-                edges.push({ from: 'target', to: uId, color: { color: '#10b981', opacity: 0.6 } });
+        // Preset Chips
+        const chips = document.querySelectorAll('.preset-chip');
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const val = chip.dataset.val;
+                if (input) input.value = val;
+                executeOmniRecon(val);
             });
-        }
-
-        const data = {
-            nodes: new vis.DataSet(nodes),
-            edges: new vis.DataSet(edges)
-        };
-
-        const options = {
-            nodes: { borderWidth: 1, shadow: true },
-            edges: { width: 1.5, smooth: { type: 'continuous' } },
-            physics: {
-                solver: 'forceAtlas2Based',
-                forceAtlas2Based: { gravitationalConstant: -35, centralGravity: 0.01, springLength: 90 }
-            }
-        };
-
-        visNetwork = new vis.Network(container, data, options);
-    }
-
-    if (btnGraphFit) btnGraphFit.addEventListener('click', () => visNetwork && visNetwork.fit());
-    if (btnGraphReset) btnGraphReset.addEventListener('click', () => buildGraphTopology('SPECTRE', {}));
-
-    // ==========================================================================
-    // MODE 4: LIVE THREAT RADAR FEED SIMULATION
-    // ==========================================================================
-    function addLiveStreamEvent(type, text) {
-        if (!liveStreamBox) return;
-        const now = new Date().toISOString().slice(11, 19);
-        const div = document.createElement('div');
-        div.className = 'stream-event';
-        div.innerHTML = `
-            <span class="stream-tag ${type}">${type.toUpperCase()}</span>
-            <span class="stream-text">${escapeHtml(text)}</span>
-            <span class="stream-time">${now}</span>
-        `;
-        liveStreamBox.insertBefore(div, liveStreamBox.firstChild);
-        if (liveStreamBox.children.length > 50) {
-            liveStreamBox.removeChild(liveStreamBox.lastChild);
-        }
-
-        globalProbeCount += Math.floor(Math.random() * 3) + 1;
-        if (counterProbes) counterProbes.textContent = globalProbeCount.toLocaleString();
-    }
-
-    // Periodic live feed generation
-    const sampleStreamEvents = [
-        { type: 'probe', text: 'Passive WHOIS query dispatched -> .io TLD zone' },
-        { type: 'dns', text: 'Certificate Transparency leaf parsed -> *.internal.corp' },
-        { type: 'hit', text: 'BGP Prefix announced AS13335 (Cloudflare) -> 172.64.0.0/13' },
-        { type: 'probe', text: 'Asynchronous socket check -> GitHub API profile' },
-        { type: 'dns', text: 'MX mail exchange resolved -> priority 10 googlemail.com' },
-        { type: 'hit', text: 'Shannon entropy verified -> MD5 cryptographic hash format' }
-    ];
-
-    setInterval(() => {
-        const rand = sampleStreamEvents[Math.floor(Math.random() * sampleStreamEvents.length)];
-        addLiveStreamEvent(rand.type, rand.text);
-    }, 4500);
-
-    // Initial feed seeds
-    sampleStreamEvents.forEach(e => addLiveStreamEvent(e.type, e.text));
-
-    // ==========================================================================
-    // LEAFLET MAP
-    // ==========================================================================
-    function mountLeafletMap(lat, lon, city, country, ip) {
-        const mapEl = document.getElementById('result-leaflet-map');
-        if (!mapEl) return;
-
-        if (leafletMap) {
-            leafletMap.remove();
-            leafletMap = null;
-        }
-
-        leafletMap = L.map('result-leaflet-map', {
-            zoomControl: false,
-            attributionControl: false
-        }).setView([lat, lon], 9);
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19
-        }).addTo(leafletMap);
-
-        const customIcon = L.divIcon({
-            className: 'map-custom-pin',
-            html: `<div style="width: 14px; height: 14px; background: #06b6d4; border-radius: 50%; box-shadow: 0 0 15px #06b6d4, 0 0 25px #06b6d4;"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
         });
-
-        L.marker([lat, lon], { icon: customIcon }).addTo(leafletMap);
     }
 
-    // ==========================================================================
-    // TOAST NOTIFICATIONS
-    // ==========================================================================
-    function showToast(message, type = 'info') {
-        if (!toastContainer) return;
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        let icon = 'fa-circle-info';
-        if (type === 'success') icon = 'fa-circle-check';
-        if (type === 'error') icon = 'fa-circle-exclamation';
-
-        toast.innerHTML = `<i class="fas ${icon}"></i><span>${escapeHtml(message)}</span>`;
-        toastContainer.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(6px)';
-            toast.style.transition = 'all 0.2s ease';
-            setTimeout(() => toast.remove(), 200);
-        }, 2800);
-    }
-
+    // --- Helper Utilities ---
     function escapeHtml(str) {
-        if (str === null || str === undefined) return '';
+        if (!str) return '';
         return String(str)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+            .replace(/"/g, '&quot;');
     }
-});
+
+    // --- DOM Ready Boot ---
+    document.addEventListener('DOMContentLoaded', () => {
+        initCursorGlow();
+        initClock();
+        initNavigation();
+        initDynamicTyping();
+        initPresetsAndInput();
+        initStudio();
+        initGraph();
+        initLiveStream();
+    });
+
+})();
