@@ -1,315 +1,342 @@
-/* =========================================================
-   SPECTRE — LINEAR / VERCEL MODERN RECON ENGINE JS (V5.5)
-   ========================================================= */
+/* ==========================================================================
+   SPECTRE OSINT ENGINE — INTERACTIVE RECON JAVASCRIPT (V5.8)
+   ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ---- Navigation & Active State ----
-    const navLinks = document.querySelectorAll('.nav-link');
+    // ---- Global State ----
+    let currentTab = 'username';
+    let visNetwork = null;
+    let visNodes = null;
+    let visEdges = null;
+    let currentMap = null;
+
+    // ---- DOM Elements ----
+    const navItems = document.querySelectorAll('.nav-item');
     const tabPanels = document.querySelectorAll('.tab-panel');
     const vectorTitle = document.getElementById('current-vector-title');
     const clockEl = document.getElementById('utc-clock');
     const toastContainer = document.getElementById('toast-container');
+    const terminalDrawer = document.getElementById('terminal-drawer');
+    const terminalLogs = document.getElementById('terminal-logs');
+    const btnToggleTerm = document.getElementById('btn-toggle-terminal');
+    const btnClearTerm = document.getElementById('btn-clear-terminal');
+    const btnCloseTerm = document.getElementById('btn-close-terminal');
+    
+    // View Toggles
+    const btnViewData = document.getElementById('btn-view-data');
+    const btnViewGraph = document.getElementById('btn-view-graph');
+    const graphContainer = document.getElementById('graph-visualizer-container');
+    const panelsContainer = document.getElementById('panels-container');
+    const btnGraphFit = document.getElementById('btn-graph-fit');
+    const btnGraphReset = document.getElementById('btn-graph-reset');
 
-    const VECTOR_NAMES = {
-        username: 'Username Reconnaissance',
-        dorks: 'Google Dork Engine',
-        discord: 'Discord Snowflake Intelligence',
-        ip: 'IP Intelligence & Routing',
-        bgp: 'BGP Routing & Peering',
-        email: 'Email & Mail Server Analysis',
-        domain: 'Domain WHOIS & Subdomains',
-        phone: 'Phone & Carrier Intelligence',
-        headers: 'HTTP Security Headers Audit',
-        hash: 'Cryptographic Hash Identifier'
+    // Command Palette
+    const cmdPaletteTrigger = document.getElementById('cmd-palette-trigger');
+    const cmdPaletteModal = document.getElementById('cmd-palette-modal');
+    const cmdPaletteInput = document.getElementById('cmd-palette-input');
+    const cmdResultsList = document.getElementById('cmd-results-list');
+
+    const VECTOR_META = {
+        username: { title: 'Username Matrix', icon: 'fa-user-astronaut', color: '#06b6d4', endpoint: '/api/username', param: 'username' },
+        dorks:    { title: 'Google Dork Engine', icon: 'fa-brain', color: '#3b82f6', endpoint: '/api/dorks', param: 'target' },
+        discord:  { title: 'Discord Snowflake', icon: 'fa-discord', color: '#8b5cf6', endpoint: '/api/discord', param: 'id' },
+        ip:       { title: 'IP Telemetry & Geo', icon: 'fa-satellite-dish', color: '#10b981', endpoint: '/api/ip', param: 'ip' },
+        bgp:      { title: 'BGP Routing & ASN', icon: 'fa-diagram-project', color: '#f59e0b', endpoint: '/api/bgp', param: 'asn' },
+        email:    { title: 'Email & DNS Intel', icon: 'fa-envelope-shield', color: '#ec4899', endpoint: '/api/email', param: 'email' },
+        domain:   { title: 'Domain & CT Map', icon: 'fa-globe', color: '#06b6d4', endpoint: '/api/domain', param: 'domain' },
+        phone:    { title: 'Phone & Carrier', icon: 'fa-phone-nodes', color: '#14b8a6', endpoint: '/api/phone', param: 'phone' },
+        headers:  { title: 'HTTP Security Audit', icon: 'fa-shield-halved', color: '#f43f5e', endpoint: '/api/headers', param: 'url' },
+        hash:     { title: 'Hash Classifier', icon: 'fa-fingerprint', color: '#a855f7', endpoint: '/api/hash', param: 'hash' }
     };
 
-    const API_ROUTES = {
-        username: { endpoint: '/api/username', param: 'username' },
-        dorks:    { endpoint: '/api/dorks',    param: 'target' },
-        discord:  { endpoint: '/api/discord',  param: 'id' },
-        ip:       { endpoint: '/api/ip',       param: 'ip' },
-        bgp:      { endpoint: '/api/bgp',      param: 'asn' },
-        email:    { endpoint: '/api/email',    param: 'email' },
-        domain:   { endpoint: '/api/domain',   param: 'domain' },
-        phone:    { endpoint: '/api/phone',    param: 'phone' },
-        headers:  { endpoint: '/api/headers',  param: 'url' },
-        hash:     { endpoint: '/api/hash',     param: 'hash' }
-    };
-
-    // Initialize UTC Clock
-    function updateClock() {
-        if (!clockEl) return;
-        const now = new Date();
-        clockEl.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    // Initialize Clock
+    function initClock() {
+        const update = () => {
+            if (clockEl) {
+                const now = new Date();
+                clockEl.textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+            }
+        };
+        setInterval(update, 1000);
+        update();
     }
-    setInterval(updateClock, 1000);
-    updateClock();
+    initClock();
 
-    // Tab Navigation
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            const tabId = link.getAttribute('data-tab');
-            switchTab(tabId);
+    // ---- Logging Utility ----
+    function appendLog(text, level = 'info') {
+        if (!terminalLogs) return;
+        const now = new Date().toISOString().slice(11, 19);
+        const div = document.createElement('div');
+        div.className = 'log-line';
+        div.innerHTML = `<span class="log-ts">[${now}]</span> <span class="log-${level}">${escapeHtml(text)}</span>`;
+        terminalLogs.appendChild(div);
+        terminalLogs.scrollTop = terminalLogs.scrollHeight;
+    }
+
+    // Terminal Toggles
+    if (btnToggleTerm) {
+        btnToggleTerm.addEventListener('click', () => {
+            terminalDrawer.classList.toggle('collapsed');
+        });
+    }
+    if (btnCloseTerm) {
+        btnCloseTerm.addEventListener('click', () => {
+            terminalDrawer.classList.add('collapsed');
+        });
+    }
+    if (btnClearTerm) {
+        btnClearTerm.addEventListener('click', () => {
+            terminalLogs.innerHTML = '';
+            appendLog('Log buffer cleared.', 'info');
+        });
+    }
+
+    // ---- Tab Switching ----
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const tab = item.getAttribute('data-tab');
+            switchTab(tab);
         });
     });
 
     function switchTab(tabId) {
-        navLinks.forEach(l => {
-            if (l.getAttribute('data-tab') === tabId) {
-                l.classList.add('active');
-            } else {
-                l.classList.remove('active');
-            }
+        currentTab = tabId;
+        navItems.forEach(item => {
+            item.classList.toggle('active', item.getAttribute('data-tab') === tabId);
         });
-
         tabPanels.forEach(panel => {
-            if (panel.id === `panel-${tabId}`) {
-                panel.classList.add('active');
-            } else {
-                panel.classList.remove('active');
-            }
+            panel.classList.toggle('active', panel.id === `panel-${tabId}`);
         });
-
-        if (vectorTitle && VECTOR_NAMES[tabId]) {
-            vectorTitle.textContent = VECTOR_NAMES[tabId];
+        if (vectorTitle && VECTOR_META[tabId]) {
+            vectorTitle.textContent = VECTOR_META[tabId].title;
         }
+        
+        // Return to data view if in graph view
+        setDataViewActive(true);
 
-        // Focus input of active panel
         const activeInput = document.getElementById(`input-${tabId}`);
         if (activeInput) activeInput.focus();
+        appendLog(`Switched active vector to: [${tabId.toUpperCase()}]`, 'info');
     }
 
-    // Enter Key Trigger
-    document.querySelectorAll('.action-input').forEach(input => {
+    // ---- View Mode Toggle (Data vs Interactive Graph) ----
+    function setDataViewActive(isData) {
+        if (isData) {
+            btnViewData.classList.add('active');
+            btnViewGraph.classList.remove('active');
+            graphContainer.style.display = 'none';
+            panelsContainer.style.display = 'block';
+        } else {
+            btnViewGraph.classList.add('active');
+            btnViewData.classList.remove('active');
+            panelsContainer.style.display = 'none';
+            graphContainer.style.display = 'block';
+            if (visNetwork) {
+                setTimeout(() => visNetwork.fit(), 50);
+            }
+        }
+    }
+
+    if (btnViewData) btnViewData.addEventListener('click', () => setDataViewActive(true));
+    if (btnViewGraph) btnViewGraph.addEventListener('click', () => setDataViewActive(false));
+
+    // ---- Input & Scan Triggers ----
+    document.querySelectorAll('.target-input').forEach(input => {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const panel = input.closest('.tab-panel');
-                const btn = panel.querySelector('.btn-primary');
+                const btn = panel.querySelector('.btn-launch-scan');
                 if (btn) btn.click();
             }
         });
     });
 
-    // Button Click Handlers
-    document.querySelectorAll('.btn-primary').forEach(btn => {
+    document.querySelectorAll('.btn-launch-scan').forEach(btn => {
         btn.addEventListener('click', () => {
-            const moduleName = btn.getAttribute('data-module');
-            executeModule(moduleName, btn);
+            const mod = btn.getAttribute('data-module');
+            executeRecon(mod, btn);
         });
     });
 
     // ---- Execution Engine ----
-    async function executeModule(moduleName, triggerBtn) {
+    async function executeRecon(moduleName, triggerBtn) {
         const inputEl = document.getElementById(`input-${moduleName}`);
         const resultsEl = document.getElementById(`results-${moduleName}`);
         if (!inputEl || !resultsEl) return;
 
         const rawValue = inputEl.value.trim();
         if (!rawValue) {
-            showToast('Input required for query execution', 'error');
+            showToast('Enter a target value to begin scanning', 'error');
             inputEl.focus();
             return;
         }
 
-        const route = API_ROUTES[moduleName];
-        if (!route) return;
+        const meta = VECTOR_META[moduleName];
+        if (!meta) return;
 
-        // UI Loading State
-        setLoading(triggerBtn, true);
+        setBtnLoading(triggerBtn, true);
+        appendLog(`Initiating passive query on [${moduleName.toUpperCase()}]: ${rawValue}`, 'info');
+
         resultsEl.innerHTML = `
-            <div class="result-card loading-card">
-                <div class="spinner-linear"></div>
-                <div class="loading-text">
-                    <strong>Executing passive reconnaissance query...</strong>
-                    <span>Aggregating endpoints, querying live zone data, parsing response feeds.</span>
-                </div>
+            <div class="loading-stage-box">
+                <div class="quantum-spinner"></div>
+                <div class="loading-label">Executing Reconnaissance Pipeline...</div>
+                <div class="loading-sub">Connecting to live endpoints and aggregating security intelligence.</div>
             </div>
         `;
 
         const startTime = performance.now();
-        const url = `${route.endpoint}?${encodeURIComponent(route.param)}=${encodeURIComponent(rawValue)}`;
+        const url = `${meta.endpoint}?${encodeURIComponent(meta.param)}=${encodeURIComponent(rawValue)}`;
 
         try {
-            const response = await fetch(url);
-            const data = await response.json();
+            const res = await fetch(url);
+            const data = await res.json();
             const elapsed = Math.round(performance.now() - startTime);
 
-            if (!response.ok || data.error) {
-                renderError(resultsEl, data.error || 'Server responded with an anomalous error code.', elapsed);
-                showToast(`Query failed: ${data.error || 'Unknown error'}`, 'error');
+            if (!res.ok || data.error) {
+                const errText = data.error || 'Endpoint responded with an error.';
+                renderError(resultsEl, errText, elapsed);
+                appendLog(`[ERROR] ${moduleName}: ${errText}`, 'error');
+                showToast(`Scan Failed: ${errText}`, 'error');
             } else {
-                renderResults(moduleName, data, resultsEl, elapsed, rawValue);
-                showToast(`Scan complete (${elapsed}ms)`, 'success');
+                const payload = (data && data.data !== undefined) ? data.data : data;
+                renderModuleResult(moduleName, payload, resultsEl, elapsed, rawValue);
+                buildTopologyGraph(moduleName, rawValue, payload);
+                appendLog(`[SUCCESS] ${moduleName} completed in ${elapsed}ms for target: ${rawValue}`, 'success');
+                showToast(`Scan Completed in ${elapsed}ms`, 'success');
             }
         } catch (err) {
             const elapsed = Math.round(performance.now() - startTime);
-            renderError(resultsEl, `Network or timeout exception: ${err.message}`, elapsed);
-            showToast('Connection failed or timed out', 'error');
+            renderError(resultsEl, `Network timeout or connection error: ${err.message}`, elapsed);
+            appendLog(`[EXCEPTION] ${err.message}`, 'error');
+            showToast('Network request timed out', 'error');
         } finally {
-            setLoading(triggerBtn, false);
+            setBtnLoading(triggerBtn, false);
         }
     }
 
-    function setLoading(btn, isLoading) {
+    function setBtnLoading(btn, isLoading) {
         if (!btn) return;
         if (isLoading) {
             btn.disabled = true;
-            btn.classList.add('loading');
-            btn.dataset.originalText = btn.innerHTML;
+            btn.dataset.origHtml = btn.innerHTML;
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Scanning...</span>`;
         } else {
             btn.disabled = false;
-            btn.classList.remove('loading');
-            if (btn.dataset.originalText) {
-                btn.innerHTML = btn.dataset.originalText;
-            }
+            if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
         }
     }
 
     function renderError(container, message, elapsed) {
         container.innerHTML = `
-            <div class="result-card error-card">
-                <div class="card-header">
-                    <div class="card-title text-red">
-                        <i class="fas fa-circle-exclamation"></i>
-                        <span>Reconnaissance Query Failed</span>
+            <div class="intel-card" style="border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.03);">
+                <div class="intel-card-header">
+                    <div class="intel-card-title" style="color: var(--accent-rose);">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        <span>Scan Execution Failed</span>
                     </div>
-                    <span class="latency-tag">${elapsed}ms</span>
+                    <span class="tag-latency">${elapsed}ms</span>
                 </div>
-                <div class="card-body">
-                    <p class="error-msg">${escapeHtml(message)}</p>
+                <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-rose);">
+                    ${escapeHtml(message)}
                 </div>
             </div>
         `;
     }
 
-    // ---- Render Dispatcher ----
-    function renderResults(moduleName, data, container, elapsed, target) {
-        const payload = (data && data.data !== undefined) ? data.data : data;
+    // ==========================================================================
+    // RESULT RENDERERS
+    // ==========================================================================
+    function renderModuleResult(moduleName, payload, container, elapsed, target) {
         let html = '';
         switch (moduleName) {
-            case 'username':
-                html = renderUsernameModule(payload, elapsed, target);
-                break;
-            case 'dorks':
-                html = renderDorksModule(payload, elapsed, target);
-                break;
-            case 'discord':
-                html = renderDiscordModule(payload, elapsed, target);
-                break;
-            case 'ip':
-                html = renderIpModule(payload, elapsed, target);
-                break;
-            case 'bgp':
-                html = renderBgpModule(payload, elapsed, target);
-                break;
-            case 'email':
-                html = renderEmailModule(payload, elapsed, target);
-                break;
-            case 'domain':
-                html = renderDomainModule(payload, elapsed, target);
-                break;
-            case 'phone':
-                html = renderPhoneModule(payload, elapsed, target);
-                break;
-            case 'headers':
-                html = renderHeadersModule(payload, elapsed, target);
-                break;
-            case 'hash':
-                html = renderHashModule(payload, elapsed, target);
-                break;
-            default:
-                html = `<pre class="code-block">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`;
+            case 'username': html = renderUsername(payload, elapsed, target); break;
+            case 'dorks':    html = renderDorks(payload, elapsed, target); break;
+            case 'discord':  html = renderDiscord(payload, elapsed, target); break;
+            case 'ip':       html = renderIp(payload, elapsed, target); break;
+            case 'bgp':      html = renderBgp(payload, elapsed, target); break;
+            case 'email':    html = renderEmail(payload, elapsed, target); break;
+            case 'domain':   html = renderDomain(payload, elapsed, target); break;
+            case 'phone':    html = renderPhone(payload, elapsed, target); break;
+            case 'headers':  html = renderHeaders(payload, elapsed, target); break;
+            case 'hash':     html = renderHash(payload, elapsed, target); break;
+            default:         html = `<pre style="font-family:var(--font-mono); font-size:0.8rem;">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`;
         }
-
         container.innerHTML = html;
-        bindResultActions(container, payload, target, moduleName);
+        bindInteractions(container, payload, target, moduleName);
+
+        // If IP module, mount interactive Leaflet map
+        if (moduleName === 'ip' && payload.lat && payload.lon) {
+            setTimeout(() => mountLeafletMap(payload.lat, payload.lon, payload.city, payload.country, payload.ip || target), 50);
+        }
     }
 
-    // =========================================================
-    // 1. USERNAME MODULE
-    // =========================================================
-    function renderUsernameModule(data, elapsed, target) {
+    // 1. Username
+    function renderUsername(data, elapsed, target) {
         const found = data.found || [];
         const notFound = data.not_found || [];
         const total = data.total_checked || (found.length + notFound.length);
         const rate = total > 0 ? Math.round((found.length / total) * 100) : 0;
 
-        let rowsHtml = '';
+        let rows = '';
         found.forEach(item => {
-            rowsHtml += `
-                <tr class="row-found" data-name="${escapeHtml(item.platform.toLowerCase())}">
+            rows += `
+                <tr class="user-row" data-name="${escapeHtml(item.platform.toLowerCase())}">
+                    <td><span class="platform-name-tag">${escapeHtml(item.platform)}</span></td>
                     <td>
-                        <span class="platform-badge">${escapeHtml(item.platform)}</span>
-                    </td>
-                    <td>
-                        <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="link-target">
+                        <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="target-url-link">
                             ${escapeHtml(item.url)} <i class="fas fa-arrow-up-right-from-square"></i>
                         </a>
                     </td>
-                    <td><span class="badge-status status-active">FOUND</span></td>
+                    <td><span class="badge-tag-status badge-found">CONFIRMED</span></td>
                     <td class="text-right">
-                        <button class="btn-sm-action copy-btn" data-copy="${escapeHtml(item.url)}" title="Copy URL">
-                            <i class="fas fa-copy"></i>
-                        </button>
+                        <button class="btn-card-action copy-action" data-copy="${escapeHtml(item.url)}"><i class="fas fa-copy"></i></button>
                     </td>
                 </tr>
             `;
         });
 
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-user-check"></i>
-                        <span>Username Reconnaissance — @${escapeHtml(target)}</span>
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
+                        <i class="fas fa-user-astronaut"></i>
+                        <span>Username Intelligence // @${escapeHtml(target)}</span>
                     </div>
-                    <div class="header-actions">
-                        <span class="latency-tag">${elapsed}ms</span>
-                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
-                    </div>
-                </div>
-
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Platforms Scanned</span>
-                        <span class="metric-value">${total}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Confirmed Profiles</span>
-                        <span class="metric-value text-green">${found.length}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Unregistered</span>
-                        <span class="metric-value text-muted">${notFound.length}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Hit Rate</span>
-                        <span class="metric-value">${rate}%</span>
+                    <div class="intel-card-actions">
+                        <span class="tag-latency">${elapsed}ms</span>
+                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
                     </div>
                 </div>
 
-                <div class="table-filter-bar">
-                    <div class="input-filter-wrapper">
-                        <i class="fas fa-filter"></i>
-                        <input type="text" id="username-filter-input" placeholder="Filter detected platforms..." autocomplete="off">
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Probed Platforms</span>
+                        <span class="stat-pill-value">${total}</span>
                     </div>
-                    <span class="table-counter" id="username-filter-count">Showing ${found.length} profiles</span>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Detected Profiles</span>
+                        <span class="stat-pill-value" style="color: var(--accent-emerald);">${found.length}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Hit Rate</span>
+                        <span class="stat-pill-value" style="color: var(--accent-cyan);">${rate}%</span>
+                    </div>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="data-table" id="username-table">
+                <div class="table-scroll">
+                    <table class="table-modern">
                         <thead>
                             <tr>
                                 <th>Platform</th>
-                                <th>Profile Endpoint</th>
-                                <th>Status</th>
+                                <th>Profile URL</th>
+                                <th>Detection Status</th>
                                 <th class="text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${found.length > 0 ? rowsHtml : `<tr><td colspan="4" class="text-center text-muted">No public profiles detected across the 112 probing platforms.</td></tr>`}
+                            ${found.length > 0 ? rows : `<tr><td colspan="4" style="text-align:center; padding:24px; color:var(--text-dim);">No public profiles discovered.</td></tr>`}
                         </tbody>
                     </table>
                 </div>
@@ -317,29 +344,24 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // =========================================================
-    // 2. GOOGLE DORKS MODULE
-    // =========================================================
-    function renderDorksModule(data, elapsed, target) {
-        const categories = data.categories || {};
-        let catSections = '';
-
-        for (const [catKey, catData] of Object.entries(categories)) {
-            const queries = catData.queries || [];
-            let itemsHtml = '';
+    // 2. Google Dorks
+    function renderDorks(data, elapsed, target) {
+        const cats = data.categories || {};
+        let sections = '';
+        for (const [key, val] of Object.entries(cats)) {
+            const queries = val.queries || [];
+            let qRows = '';
             queries.forEach(q => {
                 const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(q.dork)}`;
-                itemsHtml += `
-                    <div class="dork-row">
-                        <div class="dork-meta">
-                            <span class="dork-purpose">${escapeHtml(q.purpose || q.name || 'Security Query')}</span>
-                            <code class="dork-query">${escapeHtml(q.dork)}</code>
+                qRows += `
+                    <div class="dork-item-row">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:0.8rem; font-weight:600; color:#fff; margin-bottom:4px;">${escapeHtml(q.purpose || q.name || 'Dork')}</div>
+                            <div class="dork-query-box">${escapeHtml(q.dork)}</div>
                         </div>
-                        <div class="dork-actions">
-                            <button class="btn-sm-action copy-btn" data-copy="${escapeHtml(q.dork)}" title="Copy Dork">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                            <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="btn-sm-action btn-link" title="Open Google Search">
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-card-action copy-action" data-copy="${escapeHtml(q.dork)}"><i class="fas fa-copy"></i></button>
+                            <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="btn-card-action" style="color:var(--accent-cyan);">
                                 <i class="fas fa-external-link"></i> Launch
                             </a>
                         </div>
@@ -347,92 +369,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             });
 
-            catSections += `
-                <div class="dork-category-block">
-                    <div class="category-header">
-                        <span class="category-title">${escapeHtml(catData.title || catKey.toUpperCase())}</span>
-                        <span class="category-badge">${queries.length} queries</span>
+            sections += `
+                <div class="dork-section">
+                    <div class="dork-section-header">
+                        <span>${escapeHtml(val.title || key.toUpperCase())}</span>
+                        <span style="color:var(--accent-cyan); font-family:var(--font-mono); font-size:0.7rem;">${queries.length} QUERIES</span>
                     </div>
-                    <div class="dork-list">
-                        ${itemsHtml}
-                    </div>
+                    <div>${qRows}</div>
                 </div>
             `;
         }
 
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-search-nodes"></i>
-                        <span>Passive Google Dorks — ${escapeHtml(target)}</span>
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
+                        <i class="fas fa-brain"></i>
+                        <span>Passive Google Dork Matrix // ${escapeHtml(target)}</span>
                     </div>
-                    <div class="header-actions">
-                        <span class="latency-tag">${elapsed}ms</span>
-                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    <div class="intel-card-actions">
+                        <span class="tag-latency">${elapsed}ms</span>
+                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
                     </div>
                 </div>
-
-                <div class="dork-matrix">
-                    ${catSections}
-                </div>
+                ${sections}
             </div>
         `;
     }
 
-    // =========================================================
-    // 3. DISCORD MODULE
-    // =========================================================
-    function renderDiscordModule(data, elapsed, target) {
+    // 3. Discord Snowflake
+    function renderDiscord(data, elapsed, target) {
         const user = data.user || data;
-        const avatarUrl = data.avatar_url || (user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256` : null);
+        const avatarUrl = data.avatar_url || (user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256` : 'https://cdn.discordapp.com/embed/avatars/0.png');
 
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
                         <i class="fa-brands fa-discord"></i>
-                        <span>Discord Snowflake Telemetry</span>
+                        <span>Discord Snowflake Telemetry // ${escapeHtml(target)}</span>
                     </div>
-                    <span class="latency-tag">${elapsed}ms</span>
+                    <span class="tag-latency">${elapsed}ms</span>
                 </div>
 
-                <div class="discord-profile-layout">
-                    <div class="discord-avatar-col">
-                        ${avatarUrl ? `
-                            <img src="${escapeHtml(avatarUrl)}" alt="Avatar" class="discord-avatar" onerror="this.src='/static/img/default-avatar.png'">
-                        ` : `
-                            <div class="discord-avatar-placeholder"><i class="fa-brands fa-discord"></i></div>
-                        `}
-                        <div class="discord-tag">${escapeHtml(user.username || 'Snowflake Target')}</div>
-                        <div class="discord-id">ID: ${escapeHtml(target)}</div>
+                <div class="discord-card-flex">
+                    <div class="discord-avatar-panel">
+                        <img src="${escapeHtml(avatarUrl)}" alt="Avatar" class="discord-avatar-img">
+                        <div class="discord-name-tag">${escapeHtml(data.username || user.username || 'Snowflake Target')}</div>
+                        <div style="font-family:var(--font-mono); font-size:0.7rem; color:var(--text-dim);">${escapeHtml(target)}</div>
                     </div>
 
-                    <div class="discord-details-col">
-                        <div class="property-grid">
-                            <div class="property-item">
-                                <span class="prop-key">Account Created (UTC)</span>
-                                <span class="prop-val">${escapeHtml(data.created_at_utc || data.timestamp || 'N/A')}</span>
+                    <div style="flex:1;">
+                        <div class="prop-grid-container">
+                            <div class="prop-box">
+                                <span class="prop-box-key">Created Timestamp</span>
+                                <span class="prop-box-val" style="color:var(--accent-cyan);">${escapeHtml(data.created_at || data.created_at_utc || 'N/A')}</span>
                             </div>
-                            <div class="property-item">
-                                <span class="prop-key">Account Age</span>
-                                <span class="prop-val text-green">${escapeHtml(data.account_age || data.age || 'N/A')}</span>
+                            <div class="prop-box">
+                                <span class="prop-box-key">Account Age</span>
+                                <span class="prop-box-val" style="color:var(--accent-emerald);">${escapeHtml(String(data.account_age_days ? data.account_age_days + ' days' : (data.account_age || 'N/A')))}</span>
                             </div>
-                            <div class="property-item">
-                                <span class="prop-key">Worker ID</span>
-                                <span class="prop-val"><code>${escapeHtml(String(data.worker_id !== undefined ? data.worker_id : 'N/A'))}</code></span>
+                            <div class="prop-box">
+                                <span class="prop-box-key">Worker Thread ID</span>
+                                <span class="prop-box-val"><code>${escapeHtml(String(data.snowflake_metadata?.worker_id ?? data.worker_id ?? '0'))}</code></span>
                             </div>
-                            <div class="property-item">
-                                <span class="prop-key">Process ID</span>
-                                <span class="prop-val"><code>${escapeHtml(String(data.process_id !== undefined ? data.process_id : 'N/A'))}</code></span>
-                            </div>
-                            <div class="property-item">
-                                <span class="prop-key">Increment ID</span>
-                                <span class="prop-val"><code>${escapeHtml(String(data.increment !== undefined ? data.increment : 'N/A'))}</code></span>
-                            </div>
-                            <div class="property-item">
-                                <span class="prop-key">Binary Snowflake</span>
-                                <span class="prop-val mono-xs">${escapeHtml(data.binary || 'N/A')}</span>
+                            <div class="prop-box">
+                                <span class="prop-box-key">Process Thread ID</span>
+                                <span class="prop-box-val"><code>${escapeHtml(String(data.snowflake_metadata?.process_id ?? data.process_id ?? '0'))}</code></span>
                             </div>
                         </div>
                     </div>
@@ -441,86 +444,218 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // =========================================================
-    // 4. IP INTELLIGENCE MODULE
-    // =========================================================
-    function renderIpModule(data, elapsed, target) {
+    // 4. IP Intelligence & Live Dark Map
+    function renderIp(data, elapsed, target) {
+        const asn = data.asn || data.as || '';
+        const asnClean = asn.split(' ')[0];
+
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-network-wired"></i>
-                        <span>IP Intelligence — ${escapeHtml(data.ip || target)}</span>
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
+                        <i class="fas fa-satellite-dish"></i>
+                        <span>IP Intelligence & Dark Telemetry // ${escapeHtml(data.query || data.ip || target)}</span>
                     </div>
-                    <div class="header-actions">
-                        <span class="latency-tag">${elapsed}ms</span>
-                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    <div class="intel-card-actions">
+                        <span class="tag-latency">${elapsed}ms</span>
+                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
                     </div>
                 </div>
 
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Country</span>
-                        <span class="metric-value">${escapeHtml(data.country || 'N/A')} (${escapeHtml(data.country_code || '--')})</span>
+                <!-- Multi-Vector Pivot Option -->
+                ${asnClean ? `
+                    <div class="pivot-box">
+                        <span class="pivot-title"><i class="fas fa-bolt"></i> Quick Pivot:</span>
+                        <button class="pivot-link-btn" data-pivot-mod="bgp" data-pivot-val="${escapeHtml(asnClean)}">
+                            Inspect BGP Routing for ${escapeHtml(asnClean)} <i class="fas fa-arrow-right"></i>
+                        </button>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">City / Region</span>
-                        <span class="metric-value">${escapeHtml(data.city || 'N/A')}, ${escapeHtml(data.region || 'N/A')}</span>
+                ` : ''}
+
+                <!-- Leaflet Interactive Map -->
+                ${data.lat && data.lon ? `
+                    <div class="map-embed-wrapper">
+                        <div id="leaflet-ip-map"></div>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Autonomous System</span>
-                        <span class="metric-value text-blue">${escapeHtml(data.asn || data.as || 'N/A')}</span>
+                ` : ''}
+
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Country / Region</span>
+                        <span class="stat-pill-value">${escapeHtml(data.country || 'N/A')} (${escapeHtml(data.countryCode || '--')})</span>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Hosting / Proxy Flag</span>
-                        <span class="metric-value ${data.is_hosting || data.is_proxy ? 'text-yellow' : 'text-green'}">
-                            ${data.is_hosting ? 'DATACENTER' : (data.is_proxy ? 'PROXY' : 'RESIDENTIAL / DIRECT')}
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">City</span>
+                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${escapeHtml(data.city || 'N/A')}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Classification</span>
+                        <span class="stat-pill-value" style="color:${data.hosting || data.proxy ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
+                            ${data.hosting ? 'DATACENTER' : (data.proxy ? 'PROXY / VPN' : 'RESIDENTIAL')}
                         </span>
                     </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Autonomous System</span>
+                        <span class="stat-pill-value" style="font-size:0.95rem; color:var(--accent-purple);">${escapeHtml(asn || 'N/A')}</span>
+                    </div>
                 </div>
 
-                <div class="property-grid">
-                    <div class="property-item">
-                        <span class="prop-key">ISP / Carrier</span>
-                        <span class="prop-val">${escapeHtml(data.isp || 'N/A')}</span>
+                <div class="prop-grid-container">
+                    <div class="prop-box">
+                        <span class="prop-box-key">ISP / Provider</span>
+                        <span class="prop-box-val">${escapeHtml(data.isp || 'N/A')}</span>
                     </div>
-                    <div class="property-item">
-                        <span class="prop-key">Organization</span>
-                        <span class="prop-val">${escapeHtml(data.org || 'N/A')}</span>
+                    <div class="prop-box">
+                        <span class="prop-box-key">Organization</span>
+                        <span class="prop-box-val">${escapeHtml(data.org || 'N/A')}</span>
                     </div>
-                    <div class="property-item">
-                        <span class="prop-key">Coordinates (Lat, Lon)</span>
-                        <span class="prop-val">${escapeHtml(String(data.latitude || data.lat || 'N/A'))}, ${escapeHtml(String(data.longitude || data.lon || 'N/A'))}</span>
+                    <div class="prop-box">
+                        <span class="prop-box-key">Reverse PTR DNS</span>
+                        <span class="prop-box-val"><code>${escapeHtml(data.reverse || data.reverse_dns || 'None')}</code></span>
                     </div>
-                    <div class="property-item">
-                        <span class="prop-key">Timezone</span>
-                        <span class="prop-val">${escapeHtml(data.timezone || 'N/A')}</span>
-                    </div>
-                    <div class="property-item">
-                        <span class="prop-key">Reverse DNS (PTR)</span>
-                        <span class="prop-val"><code>${escapeHtml(data.reverse_dns || data.hostname || 'None')}</code></span>
+                    <div class="prop-box">
+                        <span class="prop-box-key">Timezone</span>
+                        <span class="prop-box-val">${escapeHtml(data.timezone || 'N/A')}</span>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    // =========================================================
-    // 5. BGP ROUTING MODULE
-    // =========================================================
-    function renderBgpModule(data, elapsed, target) {
+    // 5. BGP Routing
+    function renderBgp(data, elapsed, target) {
         const prefixes = data.announced_prefixes || data.prefixes || [];
-        let prefixRows = '';
-
+        let rows = '';
         prefixes.slice(0, 100).forEach(p => {
             const cidr = typeof p === 'string' ? p : (p.prefix || JSON.stringify(p));
-            prefixRows += `
+            rows += `
                 <tr>
-                    <td><code>${escapeHtml(cidr)}</code></td>
-                    <td><span class="badge-status status-active">ANNOUNCED</span></td>
+                    <td><code style="color:var(--accent-cyan);">${escapeHtml(cidr)}</code></td>
+                    <td><span class="badge-tag-status badge-found">ANNOUNCED</span></td>
                     <td class="text-right">
-                        <button class="btn-sm-action copy-btn" data-copy="${escapeHtml(cidr)}" title="Copy Prefix">
-                            <i class="fas fa-copy"></i>
+                        <button class="btn-card-action copy-action" data-copy="${escapeHtml(cidr)}"><i class="fas fa-copy"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        return `
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
+                        <i class="fas fa-diagram-project"></i>
+                        <span>BGP Routing & Peering // ${escapeHtml(data.asn || target)}</span>
+                    </div>
+                    <div class="intel-card-actions">
+                        <span class="tag-latency">${elapsed}ms</span>
+                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Holder Entity</span>
+                        <span class="stat-pill-value" style="font-size:1rem;">${escapeHtml(data.holder || data.name || 'N/A')}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Announced CIDRs</span>
+                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${prefixes.length}</span>
+                    </div>
+                </div>
+
+                <div class="table-scroll">
+                    <table class="table-modern">
+                        <thead>
+                            <tr>
+                                <th>Prefix Block</th>
+                                <th>Status</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows || `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-dim);">No announced prefixes.</td></tr>`}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // 6. Email Intel
+    function renderEmail(data, elapsed, target) {
+        const mx = data.mx_records || [];
+        const domain = target.includes('@') ? target.split('@')[1] : target;
+        let mxRows = '';
+        mx.forEach(m => {
+            mxRows += `
+                <tr>
+                    <td><span style="color:var(--accent-cyan); font-family:var(--font-mono); font-weight:700;">${escapeHtml(String(m.priority || 0))}</span></td>
+                    <td><code>${escapeHtml(m.host || m.exchange || String(m))}</code></td>
+                </tr>
+            `;
+        });
+
+        return `
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
+                        <i class="fas fa-envelope-shield"></i>
+                        <span>Email & DNS Security Intelligence // ${escapeHtml(target)}</span>
+                    </div>
+                    <div class="intel-card-actions">
+                        <span class="tag-latency">${elapsed}ms</span>
+                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+
+                ${domain ? `
+                    <div class="pivot-box">
+                        <span class="pivot-title"><i class="fas fa-bolt"></i> Quick Pivot:</span>
+                        <button class="pivot-link-btn" data-pivot-mod="domain" data-pivot-val="${escapeHtml(domain)}">
+                            Inspect Domain WHOIS & CT for ${escapeHtml(domain)} <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                ` : ''}
+
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Mail Provider</span>
+                        <span class="stat-pill-value" style="font-size:1rem; color:var(--accent-cyan);">${escapeHtml(data.provider || 'Self-Hosted')}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">SPF Policy</span>
+                        <span class="stat-pill-value" style="color:${data.has_spf ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
+                            ${data.has_spf ? 'CONFIGURED' : 'MISSING'}
+                        </span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">DMARC Policy</span>
+                        <span class="stat-pill-value" style="color:${data.has_dmarc ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
+                            ${data.has_dmarc ? 'CONFIGURED' : 'MISSING'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="table-scroll">
+                    <table class="table-modern">
+                        <thead><tr><th style="width:90px;">Priority</th><th>MX Server Hostname</th></tr></thead>
+                        <tbody>${mxRows || `<tr><td colspan="2" style="text-align:center; padding:16px;">No MX records resolved.</td></tr>`}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // 7. Domain Intel
+    function renderDomain(data, elapsed, target) {
+        const subs = data.subdomains || [];
+        let subRows = '';
+        subs.slice(0, 100).forEach(s => {
+            subRows += `
+                <tr>
+                    <td><code style="color:var(--accent-cyan);">${escapeHtml(s)}</code></td>
+                    <td><span class="badge-tag-status badge-found">CT LOG</span></td>
+                    <td class="text-right">
+                        <button class="pivot-link-btn" data-pivot-mod="headers" data-pivot-val="https://${escapeHtml(s)}">
+                            Audit Headers <i class="fas fa-arrow-right"></i>
                         </button>
                     </td>
                 </tr>
@@ -528,382 +663,267 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-diagram-project"></i>
-                        <span>BGP Routing Table — ${escapeHtml(data.asn || target)}</span>
-                    </div>
-                    <div class="header-actions">
-                        <span class="latency-tag">${elapsed}ms</span>
-                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
-                    </div>
-                </div>
-
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Holder / Entity</span>
-                        <span class="metric-value">${escapeHtml(data.holder || data.name || 'N/A')}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Announced IPv4/IPv6 Prefixes</span>
-                        <span class="metric-value text-blue">${prefixes.length}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Data Source</span>
-                        <span class="metric-value">RIPE Stat Global Tables</span>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Prefix Range (CIDR)</th>
-                                <th>Routing Status</th>
-                                <th class="text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${prefixes.length > 0 ? prefixRows : `<tr><td colspan="3" class="text-center text-muted">No prefixes found or empty table.</td></tr>`}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-
-    // =========================================================
-    // 6. EMAIL MODULE
-    // =========================================================
-    function renderEmailModule(data, elapsed, target) {
-        const mxRecords = data.mx_records || [];
-        let mxRows = '';
-        mxRecords.forEach(mx => {
-            mxRows += `
-                <tr>
-                    <td><span class="priority-badge">${escapeHtml(String(mx.priority || '0'))}</span></td>
-                    <td><code>${escapeHtml(mx.host || mx.exchange || String(mx))}</code></td>
-                </tr>
-            `;
-        });
-
-        return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-envelope-circle-check"></i>
-                        <span>Mail Host & DNS Security — ${escapeHtml(target)}</span>
-                    </div>
-                    <div class="header-actions">
-                        <span class="latency-tag">${elapsed}ms</span>
-                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
-                    </div>
-                </div>
-
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Provider</span>
-                        <span class="metric-value text-blue">${escapeHtml(data.provider || 'Custom / Self-Hosted')}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">SPF Record</span>
-                        <span class="metric-value ${data.has_spf ? 'text-green' : 'text-red'}">
-                            ${data.has_spf ? 'CONFIGURED' : 'MISSING'}
-                        </span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">DMARC Record</span>
-                        <span class="metric-value ${data.has_dmarc ? 'text-green' : 'text-red'}">
-                            ${data.has_dmarc ? 'CONFIGURED' : 'MISSING'}
-                        </span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Gravatar Presence</span>
-                        <span class="metric-value ${data.gravatar_exists ? 'text-green' : 'text-muted'}">
-                            ${data.gravatar_exists ? 'FOUND' : 'NOT DETECTED'}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="property-grid">
-                    <div class="property-item">
-                        <span class="prop-key">SPF Text Record</span>
-                        <span class="prop-val mono-xs">${escapeHtml(data.spf_record || 'None')}</span>
-                    </div>
-                    <div class="property-item">
-                        <span class="prop-key">DMARC Policy</span>
-                        <span class="prop-val mono-xs">${escapeHtml(data.dmarc_record || 'None')}</span>
-                    </div>
-                </div>
-
-                <div class="table-responsive" style="margin-top: 14px;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 80px;">Priority</th>
-                                <th>MX Exchange Host</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${mxRecords.length > 0 ? mxRows : `<tr><td colspan="2" class="text-center text-muted">No MX records returned.</td></tr>`}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-
-    // =========================================================
-    // 7. DOMAIN MODULE
-    // =========================================================
-    function renderDomainModule(data, elapsed, target) {
-        const subdomains = data.subdomains || [];
-        const dnsRecords = data.dns_records || {};
-        let subRows = '';
-
-        subdomains.slice(0, 100).forEach(sub => {
-            subRows += `
-                <tr>
-                    <td><code>${escapeHtml(sub)}</code></td>
-                    <td><span class="badge-status status-active">CT LOG</span></td>
-                    <td class="text-right">
-                        <a href="https://${escapeHtml(sub)}" target="_blank" rel="noopener noreferrer" class="link-target">
-                            <i class="fas fa-arrow-up-right-from-square"></i>
-                        </a>
-                    </td>
-                </tr>
-            `;
-        });
-
-        return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
                         <i class="fas fa-globe"></i>
-                        <span>Domain Infrastructure — ${escapeHtml(target)}</span>
+                        <span>Domain Infrastructure & Subdomain Map // ${escapeHtml(target)}</span>
                     </div>
-                    <div class="header-actions">
-                        <span class="latency-tag">${elapsed}ms</span>
-                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
-                    </div>
-                </div>
-
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Registrar</span>
-                        <span class="metric-value">${escapeHtml(data.registrar || data.whois?.registrar || 'N/A')}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Creation Date</span>
-                        <span class="metric-value">${escapeHtml(data.creation_date || data.whois?.creation_date || 'N/A')}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Expiration Date</span>
-                        <span class="metric-value">${escapeHtml(data.expiration_date || data.whois?.expiration_date || 'N/A')}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Discovered Subdomains</span>
-                        <span class="metric-value text-blue">${subdomains.length}</span>
+                    <div class="intel-card-actions">
+                        <span class="tag-latency">${elapsed}ms</span>
+                        <button class="btn-card-action" id="btn-export-json"><i class="fas fa-download"></i> Export</button>
                     </div>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Subdomain</th>
-                                <th>Source</th>
-                                <th class="text-right">Endpoint</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${subdomains.length > 0 ? subRows : `<tr><td colspan="3" class="text-center text-muted">No Certificate Transparency subdomains logged.</td></tr>`}
-                        </tbody>
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Registrar</span>
+                        <span class="stat-pill-value" style="font-size:0.95rem;">${escapeHtml(data.registrar || data.whois?.registrar || 'N/A')}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Discovered Subdomains</span>
+                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${subs.length}</span>
+                    </div>
+                </div>
+
+                <div class="table-scroll">
+                    <table class="table-modern">
+                        <thead><tr><th>Subdomain Endpoint</th><th>Source</th><th class="text-right">Action</th></tr></thead>
+                        <tbody>${subRows || `<tr><td colspan="3" style="text-align:center; padding:16px;">No subdomains logged.</td></tr>`}</tbody>
                     </table>
                 </div>
             </div>
         `;
     }
 
-    // =========================================================
-    // 8. PHONE MODULE
-    // =========================================================
-    function renderPhoneModule(data, elapsed, target) {
+    // 8. Phone Intel
+    function renderPhone(data, elapsed, target) {
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-phone-volume"></i>
-                        <span>Phone / Telco Identification — ${escapeHtml(target)}</span>
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
+                        <i class="fas fa-phone-nodes"></i>
+                        <span>Phone / Telco Identification // ${escapeHtml(target)}</span>
                     </div>
-                    <span class="latency-tag">${elapsed}ms</span>
+                    <span class="tag-latency">${elapsed}ms</span>
                 </div>
 
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Valid Number</span>
-                        <span class="metric-value ${data.is_valid ? 'text-green' : 'text-red'}">
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Validation</span>
+                        <span class="stat-pill-value" style="color:${data.is_valid ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
                             ${data.is_valid ? 'VALID E.164' : 'INVALID'}
                         </span>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Line Type</span>
-                        <span class="metric-value text-blue">${escapeHtml(data.line_type || 'Unknown')}</span>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Line Classification</span>
+                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${escapeHtml(data.line_type || 'Unknown')}</span>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Carrier</span>
-                        <span class="metric-value">${escapeHtml(data.carrier || 'N/A')}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Geographic Region</span>
-                        <span class="metric-value">${escapeHtml(data.location || data.country || 'N/A')}</span>
-                    </div>
-                </div>
-
-                <div class="property-grid">
-                    <div class="property-item">
-                        <span class="prop-key">International Format</span>
-                        <span class="prop-val"><code>${escapeHtml(data.international_format || 'N/A')}</code></span>
-                    </div>
-                    <div class="property-item">
-                        <span class="prop-key">National Format</span>
-                        <span class="prop-val"><code>${escapeHtml(data.national_format || 'N/A')}</code></span>
-                    </div>
-                    <div class="property-item">
-                        <span class="prop-key">Timezones</span>
-                        <span class="prop-val">${escapeHtml((data.timezones || []).join(', ') || 'N/A')}</span>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Carrier Network</span>
+                        <span class="stat-pill-value" style="font-size:0.95rem;">${escapeHtml(data.carrier || 'N/A')}</span>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    // =========================================================
-    // 9. HEADERS MODULE
-    // =========================================================
-    function renderHeadersModule(data, elapsed, target) {
-        const grade = data.security_score || data.grade || 'B';
-        const headers = data.headers || {};
-        let headerRows = '';
-
-        for (const [hk, hv] of Object.entries(headers)) {
-            headerRows += `
-                <tr>
-                    <td><code>${escapeHtml(hk)}</code></td>
-                    <td class="mono-xs">${escapeHtml(String(hv))}</td>
-                </tr>
-            `;
+    // 9. HTTP Security Headers
+    function renderHeaders(data, elapsed, target) {
+        const h = data.headers || {};
+        let hRows = '';
+        for (const [k, v] of Object.entries(h)) {
+            hRows += `<tr><td><code>${escapeHtml(k)}</code></td><td style="font-family:var(--font-mono); font-size:0.75rem;">${escapeHtml(String(v))}</td></tr>`;
         }
 
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
                         <i class="fas fa-shield-halved"></i>
-                        <span>HTTP Response Security Audit — ${escapeHtml(target)}</span>
+                        <span>HTTP Security Headers Audit // ${escapeHtml(target)}</span>
                     </div>
-                    <div class="header-actions">
-                        <span class="latency-tag">${elapsed}ms</span>
-                        <button class="btn-export" id="btn-export-json"><i class="fas fa-download"></i> Export JSON</button>
+                    <span class="tag-latency">${elapsed}ms</span>
+                </div>
+
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">HSTS</span>
+                        <span class="stat-pill-value" style="color:${data.has_hsts ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${data.has_hsts ? 'PRESENT' : 'MISSING'}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Content-Security-Policy</span>
+                        <span class="stat-pill-value" style="color:${data.has_csp ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${data.has_csp ? 'PRESENT' : 'MISSING'}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">X-Frame-Options</span>
+                        <span class="stat-pill-value" style="color:${data.has_x_frame ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${data.has_x_frame ? 'PROTECTED' : 'MISSING'}</span>
                     </div>
                 </div>
 
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Server Fingerprint</span>
-                        <span class="metric-value">${escapeHtml(data.server || headers['server'] || 'Undisclosed')}</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">HSTS (Strict-Transport-Security)</span>
-                        <span class="metric-value ${data.has_hsts ? 'text-green' : 'text-red'}">
-                            ${data.has_hsts ? 'PRESENT' : 'MISSING'}
-                        </span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Content-Security-Policy</span>
-                        <span class="metric-value ${data.has_csp ? 'text-green' : 'text-red'}">
-                            ${data.has_csp ? 'PRESENT' : 'MISSING'}
-                        </span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">X-Frame-Options</span>
-                        <span class="metric-value ${data.has_x_frame ? 'text-green' : 'text-red'}">
-                            ${data.has_x_frame ? 'PROTECTED' : 'NOT SET'}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 260px;">Header Key</th>
-                                <th>Header Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${headerRows}
-                        </tbody>
+                <div class="table-scroll">
+                    <table class="table-modern">
+                        <thead><tr><th style="width:240px;">Header</th><th>Value</th></tr></thead>
+                        <tbody>${hRows}</tbody>
                     </table>
                 </div>
             </div>
         `;
     }
 
-    // =========================================================
-    // 10. HASH MODULE
-    // =========================================================
-    function renderHashModule(data, elapsed, target) {
+    // 10. Hash Classifier
+    function renderHash(data, elapsed, target) {
         const matches = data.possible_types || data.matches || [];
         return `
-            <div class="result-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-key"></i>
+            <div class="intel-card">
+                <div class="intel-card-header">
+                    <div class="intel-card-title">
+                        <i class="fas fa-fingerprint"></i>
                         <span>Cryptographic Hash Identification</span>
                     </div>
-                    <span class="latency-tag">${elapsed}ms</span>
+                    <span class="tag-latency">${elapsed}ms</span>
                 </div>
 
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <span class="metric-label">Byte Length</span>
-                        <span class="metric-value">${escapeHtml(String(data.length || target.length))} chars</span>
+                <div class="stat-pill-grid">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Length</span>
+                        <span class="stat-pill-value">${escapeHtml(String(data.length || target.length))} chars</span>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Shannon Entropy</span>
-                        <span class="metric-value text-blue">${escapeHtml(String(data.entropy || 'N/A'))}</span>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Shannon Entropy</span>
+                        <span class="stat-pill-value" style="color:var(--accent-cyan);">${escapeHtml(String(data.entropy || 'N/A'))}</span>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Primary Candidate</span>
-                        <span class="metric-value text-green">${escapeHtml(matches[0] || 'Unknown Hash Type')}</span>
-                    </div>
-                </div>
-
-                <div class="property-grid">
-                    <div class="property-item">
-                        <span class="prop-key">All Possible Algorithms</span>
-                        <span class="prop-val">${matches.map(m => `<span class="platform-badge">${escapeHtml(m)}</span>`).join(' ')}</span>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">Primary Candidate</span>
+                        <span class="stat-pill-value" style="color:var(--accent-emerald); font-size:1.05rem;">${escapeHtml(matches[0] || 'Unknown')}</span>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    // =========================================================
-    // DOM INTERACTIONS (COPY, EXPORT, FILTERS)
-    // =========================================================
-    function bindResultActions(container, data, target, moduleName) {
-        // Copy buttons
-        container.querySelectorAll('.copy-btn').forEach(btn => {
+    // ==========================================================================
+    // INTERACTIVE MAP (LEAFLET.JS)
+    // ==========================================================================
+    function mountLeafletMap(lat, lon, city, country, ip) {
+        const mapContainer = document.getElementById('leaflet-ip-map');
+        if (!mapContainer) return;
+
+        if (currentMap) {
+            currentMap.remove();
+            currentMap = null;
+        }
+
+        currentMap = L.map('leaflet-ip-map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([lat, lon], 10);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(currentMap);
+
+        const customIcon = L.divIcon({
+            className: 'custom-map-pin',
+            html: `<div style="width:14px; height:14px; background:#06b6d4; border-radius:50%; box-shadow:0 0 15px #06b6d4, 0 0 30px #06b6d4;"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+
+        const marker = L.marker([lat, lon], { icon: customIcon }).addTo(currentMap);
+        marker.bindPopup(`<b>${escapeHtml(ip)}</b><br>${escapeHtml(city || '')}, ${escapeHtml(country || '')}`).openPopup();
+    }
+
+    // ==========================================================================
+    // INTERACTIVE NODE GRAPH TOPOLOGY (VIS.JS)
+    // ==========================================================================
+    function buildTopologyGraph(moduleName, target, data) {
+        const container = document.getElementById('vis-network-canvas');
+        if (!container) return;
+
+        const nodes = [
+            { id: 'target', label: target, color: '#06b6d4', font: { color: '#ffffff', size: 16, face: 'Plus Jakarta Sans' }, shape: 'box' }
+        ];
+        const edges = [];
+
+        if (moduleName === 'username') {
+            const found = (data.found || []).slice(0, 25);
+            found.forEach((item, idx) => {
+                const nodeId = `social_${idx}`;
+                nodes.push({ id: nodeId, label: item.platform, color: '#10b981', font: { color: '#ffffff', size: 12 }, shape: 'dot', size: 12 });
+                edges.push({ from: 'target', to: nodeId, color: { color: '#10b981', opacity: 0.6 } });
+            });
+        } else if (moduleName === 'ip') {
+            if (data.country) {
+                nodes.push({ id: 'geo', label: `${data.city || ''}, ${data.country}`, color: '#f59e0b', font: { color: '#ffffff', size: 12 }, shape: 'ellipse' });
+                edges.push({ from: 'target', to: 'geo', color: { color: '#f59e0b', opacity: 0.6 } });
+            }
+            if (data.asn || data.as) {
+                nodes.push({ id: 'asn', label: data.asn || data.as, color: '#8b5cf6', font: { color: '#ffffff', size: 12 }, shape: 'box' });
+                edges.push({ from: 'target', to: 'asn', color: { color: '#8b5cf6', opacity: 0.6 } });
+            }
+            if (data.isp) {
+                nodes.push({ id: 'isp', label: `ISP: ${data.isp}`, color: '#3b82f6', font: { color: '#ffffff', size: 12 }, shape: 'dot', size: 10 });
+                edges.push({ from: 'target', to: 'isp', color: { color: '#3b82f6', opacity: 0.6 } });
+            }
+        } else if (moduleName === 'domain') {
+            const subs = (data.subdomains || []).slice(0, 20);
+            subs.forEach((sub, idx) => {
+                const nodeId = `sub_${idx}`;
+                nodes.push({ id: nodeId, label: sub, color: '#06b6d4', font: { color: '#ffffff', size: 11 }, shape: 'dot', size: 8 });
+                edges.push({ from: 'target', to: nodeId, color: { color: '#06b6d4', opacity: 0.5 } });
+            });
+        }
+
+        visNodes = new vis.DataSet(nodes);
+        visEdges = new vis.DataSet(edges);
+
+        const options = {
+            nodes: { borderWidth: 1, shadow: true },
+            edges: { width: 1.5, smooth: { type: 'continuous' } },
+            physics: {
+                solver: 'forceAtlas2Based',
+                forceAtlas2Based: { gravitationalConstant: -35, centralGravity: 0.01, springLength: 90, springConstant: 0.08 }
+            },
+            interaction: { hover: true, tooltipDelay: 100 }
+        };
+
+        visNetwork = new vis.Network(container, { nodes: visNodes, edges: visEdges }, options);
+    }
+
+    if (btnGraphFit) btnGraphFit.addEventListener('click', () => visNetwork && visNetwork.fit());
+    if (btnGraphReset) btnGraphReset.addEventListener('click', () => visNetwork && visNetwork.setData({ nodes: visNodes, edges: visEdges }));
+
+    // ==========================================================================
+    // ACTION BINDINGS (PIVOTS, COPY, EXPORTS)
+    // ==========================================================================
+    function bindInteractions(container, data, target, moduleName) {
+        // Quick Pivots
+        container.querySelectorAll('.pivot-link-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const text = btn.getAttribute('data-copy');
-                if (text) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        showToast('Copied to clipboard', 'info');
-                    });
+                const pivotMod = btn.getAttribute('data-pivot-mod');
+                const pivotVal = btn.getAttribute('data-pivot-val');
+                if (pivotMod && pivotVal) {
+                    switchTab(pivotMod);
+                    const targetInput = document.getElementById(`input-${pivotMod}`);
+                    if (targetInput) {
+                        targetInput.value = pivotVal;
+                        const panel = document.getElementById(`panel-${pivotMod}`);
+                        const scanBtn = panel?.querySelector('.btn-launch-scan');
+                        if (scanBtn) scanBtn.click();
+                    }
+                }
+            });
+        });
+
+        // Copy buttons
+        container.querySelectorAll('.copy-action').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const val = btn.getAttribute('data-copy');
+                if (val) {
+                    navigator.clipboard.writeText(val).then(() => showToast('Copied to clipboard', 'info'));
                 }
             });
         });
@@ -921,33 +941,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                showToast('JSON export downloaded', 'success');
-            });
-        }
-
-        // Live username filter
-        const filterInput = container.querySelector('#username-filter-input');
-        if (filterInput) {
-            filterInput.addEventListener('input', () => {
-                const q = filterInput.value.toLowerCase().trim();
-                const rows = container.querySelectorAll('#username-table tbody tr.row-found');
-                let count = 0;
-                rows.forEach(r => {
-                    const name = r.getAttribute('data-name') || '';
-                    if (name.includes(q)) {
-                        r.style.display = '';
-                        count++;
-                    } else {
-                        r.style.display = 'none';
-                    }
-                });
-                const countEl = container.querySelector('#username-filter-count');
-                if (countEl) countEl.textContent = `Showing ${count} profiles`;
+                showToast('Intelligence JSON Exported', 'success');
             });
         }
     }
 
-    // Toast Notifications
+    // ==========================================================================
+    // GLOBAL COMMAND PALETTE (CMD+K / CTRL+K)
+    // ==========================================================================
+    function openCmdPalette() {
+        if (!cmdPaletteModal) return;
+        cmdPaletteModal.style.display = 'flex';
+        cmdPaletteInput.value = '';
+        cmdPaletteInput.focus();
+        filterCmdItems('');
+    }
+
+    function closeCmdPalette() {
+        if (!cmdPaletteModal) return;
+        cmdPaletteModal.style.display = 'none';
+    }
+
+    if (cmdPaletteTrigger) cmdPaletteTrigger.addEventListener('click', openCmdPalette);
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            if (cmdPaletteModal.style.display === 'none' || !cmdPaletteModal.style.display) {
+                openCmdPalette();
+            } else {
+                closeCmdPalette();
+            }
+        } else if (e.key === 'Escape') {
+            closeCmdPalette();
+        }
+    });
+
+    if (cmdPaletteModal) {
+        cmdPaletteModal.querySelector('.cmd-palette-backdrop').addEventListener('click', closeCmdPalette);
+    }
+
+    if (cmdPaletteInput) {
+        cmdPaletteInput.addEventListener('input', (e) => {
+            filterCmdItems(e.target.value.toLowerCase().trim());
+        });
+    }
+
+    function filterCmdItems(q) {
+        const items = cmdResultsList.querySelectorAll('.cmd-item');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(q) ? 'flex' : 'none';
+        });
+    }
+
+    if (cmdResultsList) {
+        cmdResultsList.querySelectorAll('.cmd-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const targetMod = item.getAttribute('data-target');
+                if (targetMod) {
+                    switchTab(targetMod);
+                    closeCmdPalette();
+                }
+            });
+        });
+    }
+
+    // ==========================================================================
+    // TOAST NOTIFICATIONS
+    // ==========================================================================
     function showToast(message, type = 'info') {
         if (!toastContainer) return;
         const toast = document.createElement('div');
@@ -961,8 +1022,10 @@ document.addEventListener('DOMContentLoaded', () => {
         toastContainer.appendChild(toast);
 
         setTimeout(() => {
-            toast.classList.add('fade-out');
-            setTimeout(() => toast.remove(), 250);
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(6px)';
+            toast.style.transition = 'all 0.2s ease';
+            setTimeout(() => toast.remove(), 200);
         }, 3000);
     }
 
