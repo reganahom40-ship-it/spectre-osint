@@ -1351,48 +1351,57 @@
         drawer.innerHTML = content;
     }
 
-    // --- Live Stream Generator (Threat Radar) ---
+    // --- Live Stream Generator (Threat Radar & Home Operations Hub) ---
     function initLiveStream() {
         const streamBox = document.getElementById('live-stream-box');
+        const homeFeed = document.getElementById('home-event-feed');
         const btnToggle = document.getElementById('btn-feed-toggle');
-        if (!streamBox) return;
 
         const simulatedEvents = [
-            { icon: 'fas fa-user-astronaut', color: '#06b6d4', title: 'Username Sweep', desc: 'Identified public profile on GitHub & GitLab' },
-            { icon: 'fas fa-network-wired', color: '#10b981', title: 'BGP Route Match', desc: 'Prefix announced by AS15169 (Google LLC)' },
-            { icon: 'fa-brands fa-discord', color: '#a855f7', title: 'Snowflake Bitshift', desc: 'Epoch decoded: Account created Oct 2017' },
-            { icon: 'fas fa-shield-halved', color: '#f43f5e', title: 'Security Header Audit', desc: 'Missing Content-Security-Policy header' },
-            { icon: 'fas fa-certificate', color: '#f59e0b', title: 'CT Certificate Found', desc: 'Wildcard *.domain.internal logged to crt.sh' },
-            { icon: 'fas fa-key', color: '#ec4899', title: 'Cryptographic Hash', desc: 'High entropy MD5 hash classified' }
+            { icon: 'fas fa-user-astronaut', color: '#06b6d4', badge: 'USER', badgeCls: 'badge-cyan', title: 'Username Sweep', desc: 'Identified public profile on GitHub & GitLab' },
+            { icon: 'fas fa-network-wired', color: '#10b981', badge: 'BGP', badgeCls: 'badge-green', title: 'BGP Route Match', desc: 'Prefix announced by AS15169 (Google LLC)' },
+            { icon: 'fa-brands fa-discord', color: '#a855f7', badge: 'EPOCH', badgeCls: 'badge-purple', title: 'Snowflake Bitshift', desc: 'Epoch decoded: Account created Oct 2017' },
+            { icon: 'fas fa-shield-halved', color: '#f43f5e', badge: 'AUDIT', badgeCls: 'badge-amber', title: 'Security Header Audit', desc: 'Missing Content-Security-Policy header' },
+            { icon: 'fas fa-certificate', color: '#f59e0b', badge: 'SSL/CT', badgeCls: 'badge-amber', title: 'CT Certificate Found', desc: 'Wildcard *.domain.internal logged to crt.sh' },
+            { icon: 'fas fa-key', color: '#ec4899', badge: 'CRYPTO', badgeCls: 'badge-purple', title: 'Cryptographic Hash', desc: 'High entropy MD5 digest classified' },
+            { icon: 'fas fa-phone-nodes', color: '#14b8a6', badge: 'TELCO', badgeCls: 'badge-cyan', title: 'Carrier Routing', desc: 'E.164 ITU-T validation confirmed' }
         ];
 
         function addEvent() {
             if (streamPaused) return;
             const ev = simulatedEvents[Math.floor(Math.random() * simulatedEvents.length)];
             const timeStr = new Date().toTimeString().split(' ')[0];
-            const div = document.createElement('div');
-            div.className = 'stream-event-item';
-            div.innerHTML = `
-                <div class="sevent-left">
-                    <div class="sevent-icon" style="background:${ev.color}20; color:${ev.color};">
-                        <i class="${ev.icon}"></i>
-                    </div>
-                    <div class="sevent-meta">
-                        <h5>${ev.title}</h5>
-                        <p>${ev.desc}</p>
-                    </div>
-                </div>
-                <span class="sevent-time">${timeStr}</span>
-            `;
 
-            streamBox.insertBefore(div, streamBox.firstChild);
-            if (streamBox.children.length > 20) {
-                streamBox.removeChild(streamBox.lastChild);
+            if (streamBox) {
+                const div = document.createElement('div');
+                div.className = 'stream-event-item';
+                div.innerHTML = `
+                    <div class="sevent-left">
+                        <div class="sevent-icon" style="background:${ev.color}20; color:${ev.color};">
+                            <i class="${ev.icon}"></i>
+                        </div>
+                        <div class="sevent-meta">
+                            <h5>${ev.title}</h5>
+                            <p>${ev.desc}</p>
+                        </div>
+                    </div>
+                    <span class="sevent-time">${timeStr}</span>
+                `;
+                streamBox.insertBefore(div, streamBox.firstChild);
+                if (streamBox.children.length > 20) streamBox.removeChild(streamBox.lastChild);
+            }
+
+            if (homeFeed) {
+                const item = document.createElement('div');
+                item.className = 'tevent-item';
+                item.innerHTML = `<span class="tevent-time">${timeStr.slice(3, 8)}</span> <span class="tevent-badge ${ev.badgeCls}">${ev.badge}</span> ${ev.title}: ${ev.desc.slice(0, 32)}...`;
+                homeFeed.insertBefore(item, homeFeed.firstChild);
+                if (homeFeed.children.length > 8) homeFeed.removeChild(homeFeed.lastChild);
             }
         }
 
         for (let i = 0; i < 4; i++) addEvent();
-        streamInterval = setInterval(addEvent, 3500);
+        streamInterval = setInterval(addEvent, 2800);
 
         if (btnToggle) {
             btnToggle.addEventListener('click', () => {
