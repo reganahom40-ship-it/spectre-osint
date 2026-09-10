@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_clean_v23">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_lively_v24">
 </head>
 <body>
 
@@ -173,15 +173,48 @@
 
                         <!-- Instant Clickable Target Presets -->
                         <div class="preset-chips-row">
-                            <span class="preset-label"><i class="fas fa-wand-magic-sparkles"></i> Try Presets:</span>
-                            <button class="preset-chip" data-val="shadow"><i class="fas fa-user"></i> @shadow (Username)</button>
-                            <button class="preset-chip" data-val="+14155552671"><i class="fas fa-phone-nodes"></i> +1 415 555 2671 (Phone)</button>
-                            <button class="preset-chip" data-val="8080"><i class="fas fa-ethernet"></i> 8080 (Port)</button>
-                            <button class="preset-chip" data-val="1.1.1.1"><i class="fas fa-network-wired"></i> 1.1.1.1 (IP Address)</button>
-                            <button class="preset-chip" data-val="155149108183695360"><i class="fa-brands fa-discord"></i> Discord Snowflake</button>
-                            <button class="preset-chip" data-val="5d41402abc4b2a76b9719d911017c592"><i class="fas fa-key"></i> MD5 Hash</button>
-                            <button class="preset-chip" data-val="AS15169"><i class="fas fa-diagram-project"></i> AS15169 (BGP ASN)</button>
-                            <button class="preset-chip" data-val="contact@proton.me"><i class="fas fa-envelope"></i> Email</button>
+                            <span class="preset-label"><i class="fas fa-bolt-lightning text-amber"></i> Quick Targets:</span>
+                            <button class="preset-chip" data-val="8080"><i class="fas fa-ethernet text-orange"></i> 8080 (Port)</button>
+                            <button class="preset-chip" data-val="+14155552671"><i class="fas fa-phone-nodes text-teal"></i> +1 415 555 2671 (Phone)</button>
+                            <button class="preset-chip" data-val="1.1.1.1"><i class="fas fa-network-wired text-emerald"></i> 1.1.1.1 (IP Address)</button>
+                            <button class="preset-chip" data-val="155149108183695360"><i class="fa-brands fa-discord text-purple"></i> Discord Snowflake</button>
+                            <button class="preset-chip" data-val="AS15169"><i class="fas fa-diagram-project text-amber"></i> AS15169 (BGP ASN)</button>
+                            <button class="preset-chip" data-val="5d41402abc4b2a76b9719d911017c592"><i class="fas fa-key text-pink"></i> MD5 Hash</button>
+                            <button class="preset-chip" data-val="shadow"><i class="fas fa-user-astronaut text-cyan"></i> @shadow (Username)</button>
+                            <button class="preset-chip" data-val="github.com"><i class="fas fa-globe text-indigo"></i> github.com (Domain)</button>
+                        </div>
+
+                        <!-- Live Telemetry Stats Bar -->
+                        <div class="hero-live-stats-bar">
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-cyan"><i class="fas fa-user-astronaut"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">112+</span>
+                                    <span class="hstat-lbl">Global Platforms</span>
+                                </div>
+                            </div>
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-emerald"><i class="fas fa-network-wired"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">10 Vectors</span>
+                                    <span class="hstat-lbl">Parallel Sockets</span>
+                                </div>
+                            </div>
+                            <div class="hstat-icon-sep"></div>
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-amber"><i class="fas fa-bolt"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">&lt; 15ms</span>
+                                    <span class="hstat-lbl">Cascade Speed</span>
+                                </div>
+                            </div>
+                            <div class="hstat-item">
+                                <div class="hstat-icon icon-purple"><i class="fas fa-shield-halved"></i></div>
+                                <div class="hstat-text">
+                                    <span class="hstat-val">100%</span>
+                                    <span class="hstat-lbl">Passive Non-Intrusive</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -449,7 +482,7 @@
         <div class="cdrawer-body">
             <!-- Theme Presets -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label">Color Themes</label>
+                <label class="cdrawer-label"><i class="fas fa-palette"></i> 8 Accent Colorways</label>
                 <div class="theme-picker-grid">
                     <button class="theme-choice active" data-t="indigo">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #6366f1, #06b6d4);"></span>
@@ -471,6 +504,14 @@
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #f43f5e, #991b1b);"></span>
                         <span>Crimson Red</span>
                     </button>
+                    <button class="theme-choice" data-t="cyan">
+                        <span class="tcolor-dot" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);"></span>
+                        <span>Electric Cyan</span>
+                    </button>
+                    <button class="theme-choice" data-t="gold">
+                        <span class="tcolor-dot" style="background: linear-gradient(135deg, #eab308, #f97316);"></span>
+                        <span>Cyber Gold</span>
+                    </button>
                     <button class="theme-choice" data-t="stealth">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #e2e8f0, #475569);"></span>
                         <span>OLED Stealth</span>
@@ -480,17 +521,18 @@
 
             <!-- Dynamic Glow Intensity -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label">Ambient Radial Glow</label>
+                <label class="cdrawer-label"><i class="fas fa-sun"></i> Ambient Glow Aura</label>
                 <div class="toggle-segmented" id="glow-segmented">
                     <button class="seg-btn" data-glow="off">Off</button>
                     <button class="seg-btn" data-glow="subtle">Subtle</button>
                     <button class="seg-btn active" data-glow="high">High</button>
+                    <button class="seg-btn" data-glow="ultra">Ultra</button>
                 </div>
             </div>
 
             <!-- Interactive Particle Background -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label">Interactive Particle Mesh</label>
+                <label class="cdrawer-label"><i class="fas fa-atom"></i> Particle Motion Physics</label>
                 <div class="toggle-segmented" id="particles-segmented">
                     <button class="seg-btn active" data-particles="true">Active</button>
                     <button class="seg-btn" data-particles="false">Disabled</button>
@@ -499,10 +541,20 @@
 
             <!-- 3D Card Tilt Effects -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label">3D Card Tilt Physics</label>
+                <label class="cdrawer-label"><i class="fas fa-cubes"></i> 3D Kinetic Tilt Physics</label>
                 <div class="toggle-segmented" id="tilt-segmented">
                     <button class="seg-btn active" data-tilt="true">Enabled</button>
                     <button class="seg-btn" data-tilt="false">Disabled</button>
+                </div>
+            </div>
+
+            <!-- Typography Family -->
+            <div class="cdrawer-section">
+                <label class="cdrawer-label"><i class="fas fa-font"></i> Interface Font Style</label>
+                <div class="toggle-segmented" id="font-segmented">
+                    <button class="seg-btn active" data-font="sans">Modern Sans</button>
+                    <button class="seg-btn" data-font="mono">Tactical Mono</button>
+                    <button class="seg-btn" data-font="display">Space Grotesk</button>
                 </div>
             </div>
 
@@ -533,6 +585,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_clean_v23"></script>
+    <script src="/static/js/app.js?v=20260910_lively_v24"></script>
 </body>
 </html>

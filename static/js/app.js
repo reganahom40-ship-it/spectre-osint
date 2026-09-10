@@ -19,13 +19,15 @@
         theme: localStorage.getItem('spectre_theme') || 'indigo',
         glow: localStorage.getItem('spectre_glow') || 'high',
         particles: localStorage.getItem('spectre_particles') !== 'false',
-        tilt: localStorage.getItem('spectre_tilt') !== 'false'
+        tilt: localStorage.getItem('spectre_tilt') !== 'false',
+        font: localStorage.getItem('spectre_font') || 'sans'
     };
 
     function applyPreferences() {
         document.documentElement.setAttribute('data-theme', prefs.theme);
         document.documentElement.setAttribute('data-glow', prefs.glow);
         document.documentElement.setAttribute('data-particles', prefs.particles.toString());
+        document.documentElement.setAttribute('data-font', prefs.font);
 
         // Update Theme picker UI
         document.querySelectorAll('.theme-choice').forEach(btn => {
@@ -45,6 +47,11 @@
         // Update Tilt UI
         document.querySelectorAll('#tilt-segmented .seg-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tilt === prefs.tilt.toString());
+        });
+
+        // Update Font UI
+        document.querySelectorAll('#font-segmented .seg-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.font === prefs.font);
         });
 
         // Update HUD label
@@ -564,6 +571,16 @@
             });
         });
 
+        // Font family segment
+        document.querySelectorAll('#font-segmented .seg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const f = btn.dataset.font;
+                savePref('font', f);
+                playTone(670, 'sine', 0.06);
+                showToast(`Font Applied: ${f.toUpperCase()}`, 'fas fa-font');
+            });
+        });
+
         // Reset prefs
         const btnReset = document.getElementById('btn-reset-prefs');
         if (btnReset) {
@@ -573,6 +590,7 @@
                 prefs.glow = 'high';
                 prefs.particles = true;
                 prefs.tilt = true;
+                prefs.font = 'sans';
                 applyPreferences();
                 playTone(400, 'sine', 0.12);
                 showToast('Reset to Factory Defaults', 'fas fa-arrow-rotate-left');
@@ -597,7 +615,14 @@
             { id: 'th_amethyst', title: 'Theme: Amethyst Neon', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'amethyst') },
             { id: 'th_amber', title: 'Theme: Solar Amber', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'amber') },
             { id: 'th_crimson', title: 'Theme: Crimson Red', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'crimson') },
+            { id: 'th_cyan', title: 'Theme: Electric Cyan', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'cyan') },
+            { id: 'th_gold', title: 'Theme: Cyber Gold', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'gold') },
             { id: 'th_stealth', title: 'Theme: OLED Stealth', badge: 'THEME', icon: 'fas fa-palette', action: () => savePref('theme', 'stealth') },
+            { id: 'fn_sans', title: 'Font: Plus Jakarta Modern Sans', badge: 'FONT', icon: 'fas fa-font', action: () => savePref('font', 'sans') },
+            { id: 'fn_mono', title: 'Font: JetBrains Tactical Mono', badge: 'FONT', icon: 'fas fa-terminal', action: () => savePref('font', 'mono') },
+            { id: 'fn_disp', title: 'Font: Space Grotesk Display', badge: 'FONT', icon: 'fas fa-shapes', action: () => savePref('font', 'display') },
+            { id: 'p_port', title: 'Run Target: 8080 (Service Port)', badge: 'PRESET', icon: 'fas fa-ethernet', action: () => runPreset('8080') },
+            { id: 'p_phone', title: 'Run Target: +1 415 555 2671 (Phone)', badge: 'PRESET', icon: 'fas fa-phone-nodes', action: () => runPreset('+14155552671') },
             { id: 'p_shadow', title: 'Run Target: @shadow', badge: 'PRESET', icon: 'fas fa-play', action: () => runPreset('shadow') },
             { id: 'p_ip', title: 'Run Target: 1.1.1.1 (Cloudflare)', badge: 'PRESET', icon: 'fas fa-play', action: () => runPreset('1.1.1.1') },
             { id: 'p_git', title: 'Run Target: github.com', badge: 'PRESET', icon: 'fas fa-play', action: () => runPreset('github.com') }
