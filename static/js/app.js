@@ -22,6 +22,8 @@
         tilt: localStorage.getItem('spectre_tilt') !== 'false',
         font: localStorage.getItem('spectre_font') || 'sans',
         atmosphere: localStorage.getItem('spectre_atmosphere') || 'neural',
+        motion: localStorage.getItem('spectre_motion') || 'normal',
+        graphStyle: localStorage.getItem('spectre_graphstyle') || 'technical',
         shape: localStorage.getItem('spectre_shape') || 'dots',
         lineStyle: localStorage.getItem('spectre_linestyle') || 'straight',
         density: parseInt(localStorage.getItem('spectre_density') || '50', 10),
@@ -36,6 +38,8 @@
         document.documentElement.setAttribute('data-glow', prefs.glow);
         document.documentElement.setAttribute('data-particles', prefs.particles.toString());
         document.documentElement.setAttribute('data-font', prefs.font);
+        document.documentElement.setAttribute('data-motion', prefs.motion);
+        document.documentElement.setAttribute('data-graphstyle', prefs.graphStyle);
 
         // Update Theme picker UI
         document.querySelectorAll('.theme-choice').forEach(btn => {
@@ -45,6 +49,16 @@
         // Update Glow UI
         document.querySelectorAll('#glow-segmented .seg-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.glow === prefs.glow);
+        });
+
+        // Update Motion UI
+        document.querySelectorAll('#motion-segmented .seg-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.motion === prefs.motion);
+        });
+
+        // Update Graph Style UI
+        document.querySelectorAll('#graphstyle-segmented .seg-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.graphstyle === prefs.graphStyle);
         });
 
         // Update Particles UI
@@ -325,9 +339,11 @@
 
         function rebuildParticles() {
             particles = [];
-            const baseCount = Math.floor((width / 30) * (prefs.density / 50));
-            const count = Math.max(16, Math.min(baseCount, 130));
-            const speedFactor = (prefs.speed / 100) * 0.65;
+            if (prefs.atmosphere === 'off') return;
+            const baseCount = Math.floor((width / 28) * (prefs.density / 50));
+            const count = Math.max(12, Math.min(baseCount, 140));
+            const motionMult = prefs.motion === 'off' ? 0 : prefs.motion === 'subtle' ? 0.35 : prefs.motion === 'cinematic' ? 1.3 : 0.65;
+            const speedFactor = (prefs.speed / 100) * motionMult;
 
             for (let i = 0; i < count; i++) {
                 const depth = Math.random() * 0.7 + 0.3; // depth scale 0.3 - 1.0
@@ -335,9 +351,11 @@
                     x: Math.random() * width,
                     y: Math.random() * height,
                     vx: (Math.random() - 0.5) * speedFactor * depth,
-                    vy: (Math.random() - 0.5) * speedFactor * depth,
+                    vy: (prefs.shape === 'hearts' || prefs.shape === 'flowers') ? -(Math.random() * 0.4 + 0.2) * speedFactor : (Math.random() - 0.5) * speedFactor * depth,
                     size: (Math.random() * 2 + 1.2) * depth,
-                    depth: depth
+                    depth: depth,
+                    phase: Math.random() * Math.PI * 2,
+                    twinkleSpeed: Math.random() * 0.04 + 0.02
                 });
             }
         }
@@ -353,7 +371,7 @@
         });
 
         function animate() {
-            if (!prefs.particles) {
+            if (!prefs.particles || prefs.atmosphere === 'off') {
                 ctx.clearRect(0, 0, width, height);
                 requestAnimationFrame(animate);
                 return;
@@ -369,17 +387,32 @@
 
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
+                p.phase += p.twinkleSpeed;
+
+                if (shape === 'hearts' || shape === 'flowers') {
+                    p.x += Math.sin(p.phase) * 0.3;
+                    p.y += p.vy;
+                } else {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                }
 
                 if (p.x < -20) p.x = width + 20;
                 if (p.x > width + 20) p.x = -20;
                 if (p.y < -20) p.y = height + 20;
                 if (p.y > height + 20) p.y = -20;
 
-                drawParticleShape(ctx, p, shape, p.size);
+                if (shape === 'stars') {
+                    const twAlpha = 0.4 + Math.sin(p.phase) * 0.35;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0.15, twAlpha);
+                    drawParticleShape(ctx, p, shape, p.size);
+                    ctx.restore();
+                } else {
+                    drawParticleShape(ctx, p, shape, p.size);
+                }
 
-                if (prefs.lineDensity > 0) {
+                if (prefs.lineDensity > 0 && shape !== 'hearts' && shape !== 'flowers') {
                     for (let j = i + 1; j < particles.length; j++) {
                         const p2 = particles[j];
                         const dx = p.x - p2.x;
@@ -756,7 +789,7 @@
         if (btnClose) btnClose.addEventListener('click', closeDrawer);
         if (backdrop) backdrop.addEventListener('click', closeDrawer);
 
-        // Atmosphere Presets
+        // Atmosphere Presets (10 Full Presets)
         document.querySelectorAll('#atmosphere-grid .atmo-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const atmo = btn.dataset.atmo;
@@ -769,36 +802,58 @@
                     prefs.density = 50;
                     prefs.lineDensity = 50;
                     prefs.speed = 100;
-                } else if (atmo === 'minimal') {
+                } else if (atmo === 'constellation') {
                     prefs.shape = 'dots';
-                    prefs.lineStyle = 'thin';
-                    prefs.density = 25;
-                    prefs.lineDensity = 15;
+                    prefs.lineStyle = 'straight';
+                    prefs.density = 60;
+                    prefs.lineDensity = 65;
                     prefs.speed = 50;
+                } else if (atmo === 'particles') {
+                    prefs.shape = 'circles';
+                    prefs.lineStyle = 'straight';
+                    prefs.density = 75;
+                    prefs.lineDensity = 0;
+                    prefs.speed = 120;
                 } else if (atmo === 'orbital') {
                     prefs.shape = 'circles';
                     prefs.lineStyle = 'orbital';
                     prefs.density = 40;
-                    prefs.lineDensity = 35;
-                    prefs.speed = 120;
-                } else if (atmo === 'matrix') {
+                    prefs.lineDensity = 50;
+                    prefs.speed = 90;
+                } else if (atmo === 'geometric') {
                     prefs.shape = 'hexagons';
                     prefs.lineStyle = 'dotted';
-                    prefs.density = 65;
-                    prefs.lineDensity = 45;
-                    prefs.speed = 90;
-                } else if (atmo === 'cosmic') {
+                    prefs.density = 45;
+                    prefs.lineDensity = 40;
+                    prefs.speed = 70;
+                } else if (atmo === 'hearts') {
+                    prefs.shape = 'hearts';
+                    prefs.lineStyle = 'thin';
+                    prefs.density = 35;
+                    prefs.lineDensity = 20;
+                    prefs.speed = 60;
+                } else if (atmo === 'flowers') {
+                    prefs.shape = 'flowers';
+                    prefs.lineStyle = 'thin';
+                    prefs.density = 35;
+                    prefs.lineDensity = 20;
+                    prefs.speed = 60;
+                } else if (atmo === 'stars') {
                     prefs.shape = 'stars';
                     prefs.lineStyle = 'glow';
-                    prefs.density = 75;
+                    prefs.density = 65;
                     prefs.lineDensity = 30;
-                    prefs.speed = 60;
-                } else if (atmo === 'aurora') {
-                    prefs.shape = 'diamonds';
-                    prefs.lineStyle = 'dashed';
-                    prefs.density = 45;
-                    prefs.lineDensity = 55;
-                    prefs.speed = 80;
+                    prefs.speed = 50;
+                } else if (atmo === 'minimal') {
+                    prefs.shape = 'dots';
+                    prefs.lineStyle = 'thin';
+                    prefs.density = 20;
+                    prefs.lineDensity = 15;
+                    prefs.speed = 40;
+                } else if (atmo === 'off') {
+                    prefs.density = 0;
+                    prefs.lineDensity = 0;
+                    prefs.speed = 0;
                 }
 
                 localStorage.setItem('spectre_shape', prefs.shape);
@@ -809,7 +864,28 @@
 
                 applyPreferences();
                 playTone(600, 'sine', 0.08);
-                showToast(`Atmosphere: ${atmo.toUpperCase()}`, 'fas fa-meteor');
+                showToast(`Ambient Scene: ${atmo.toUpperCase()}`, 'fas fa-meteor');
+            });
+        });
+
+        // Motion Intensity segment
+        document.querySelectorAll('#motion-segmented .seg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const m = btn.dataset.motion;
+                savePref('motion', m);
+                playTone(630, 'sine', 0.06);
+                showToast(`Motion Dynamics: ${m.toUpperCase()}`, 'fas fa-wind');
+            });
+        });
+
+        // Graph Style segment
+        document.querySelectorAll('#graphstyle-segmented .seg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const gs = btn.dataset.graphstyle;
+                savePref('graphStyle', gs);
+                playTone(650, 'sine', 0.06);
+                showToast(`Topology Style: ${gs.toUpperCase()}`, 'fas fa-circle-nodes');
+                if (networkGraph) networkGraph.redraw();
             });
         });
 
@@ -1058,72 +1134,222 @@
     }
 
     // --- Vis.js Topology Graph ---
+    let latestTargetNodeId = 'spectre';
+    let autoRotate = false;
+    let autoRotateFrame = null;
+    let originalNodeStyles = {};
+    let originalEdgeStyles = {};
+
+    function updateGraphNodeCount() {
+        const badge = document.getElementById('graph-node-count');
+        if (badge && networkGraph) {
+            const count = networkGraph.body.data.nodes.length;
+            badge.textContent = `${count} NODES`;
+        }
+    }
+
     function initGraph(containerId = 'vis-full-canvas') {
         const container = document.getElementById(containerId);
         if (!container) return;
 
         const data = {
             nodes: new vis.DataSet([
-                { id: 'spectre', label: 'SPECTRE CORE', color: { background: '#312e81', border: '#6366f1', highlight: { background: '#4f46e5', border: '#818cf8' } }, shape: 'dot', size: 22, font: { color: '#e0e7ff', face: 'Plus Jakarta Sans', size: 12, weight: '600' } },
-                { id: 'coord_1', label: 'POINT-α', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
-                { id: 'coord_2', label: 'POINT-β', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
-                { id: 'coord_3', label: 'POINT-γ', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
-                { id: 'coord_4', label: 'POINT-δ', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } }
+                { id: 'spectre', label: 'SPECTRE CORE', type: 'CORE', meta: 'Central Neural Aggregator • Status: Active', color: { background: '#312e81', border: '#6366f1', highlight: { background: '#4f46e5', border: '#818cf8' } }, shape: 'dot', size: 22, font: { color: '#e0e7ff', face: 'Plus Jakarta Sans', size: 12, weight: '600' } },
+                { id: 'coord_1', label: 'POINT-α (IP/BGP)', type: 'VECTOR', meta: 'Network Ingestion Gateway • Latency: 12ms', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
+                { id: 'coord_2', label: 'POINT-β (OSINT)', type: 'VECTOR', meta: 'Social & Identity Discovery Mesh', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
+                { id: 'coord_3', label: 'POINT-γ (DNS)', type: 'VECTOR', meta: 'Infrastructure & Subdomain Enumerator', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
+                { id: 'coord_4', label: 'POINT-δ (THREAT)', type: 'VECTOR', meta: 'Threat Telemetry & Anomaly Radar', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } }
             ]),
             edges: new vis.DataSet([
-                { from: 'spectre', to: 'coord_1', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true },
-                { from: 'spectre', to: 'coord_2', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true },
-                { from: 'spectre', to: 'coord_3', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true },
-                { from: 'spectre', to: 'coord_4', color: { color: 'rgba(99,102,241,0.12)', highlight: 'rgba(99,102,241,0.4)' }, width: 1, dashes: true }
+                { id: 'e_coord_1', from: 'spectre', to: 'coord_1', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true },
+                { id: 'e_coord_2', from: 'spectre', to: 'coord_2', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true },
+                { id: 'e_coord_3', from: 'spectre', to: 'coord_3', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true },
+                { id: 'e_coord_4', from: 'spectre', to: 'coord_4', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true }
             ])
         };
 
         const options = {
             physics: {
                 stabilization: { iterations: 120 },
-                barnesHut: { gravitationalConstant: -3600, springLength: 120, springConstant: 0.04, damping: 0.09 }
+                barnesHut: { gravitationalConstant: -3600, springLength: 110, springConstant: 0.04, damping: 0.09 }
             },
             interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true }
         };
 
         networkGraph = new vis.Network(container, data, options);
+        updateGraphNodeCount();
 
-        // Click-to-Focus Interaction
+        // Subtle Mouse Parallax on Stage
+        const stage = document.getElementById('spatial-graph-stage');
+        if (stage) {
+            stage.addEventListener('mousemove', (e) => {
+                const rect = stage.getBoundingClientRect();
+                const ox = ((e.clientX - rect.left) / rect.width - 0.5) * 6;
+                const oy = ((e.clientY - rect.top) / rect.height - 0.5) * 6;
+                container.style.transform = `translate(${ox}px, ${oy}px)`;
+            });
+            stage.addEventListener('mouseleave', () => {
+                container.style.transform = 'translate(0px, 0px)';
+            });
+        }
+
+        // Node Hover: Edge brightening and subtle scale
+        networkGraph.on('hoverNode', function (params) {
+            container.style.cursor = 'pointer';
+            const nodeId = params.node;
+            try {
+                const connectedNodes = networkGraph.getConnectedNodes(nodeId);
+                const connectedEdges = networkGraph.getConnectedEdges(nodeId);
+                
+                // Highlight connected edges
+                connectedEdges.forEach(eid => {
+                    networkGraph.body.data.edges.update({ id: eid, width: 2.5, color: { color: '#06b6d4', opacity: 1 } });
+                });
+            } catch (e) {}
+        });
+
+        networkGraph.on('blurNode', function (params) {
+            container.style.cursor = 'default';
+            const nodeId = params.node;
+            try {
+                const connectedEdges = networkGraph.getConnectedEdges(nodeId);
+                connectedEdges.forEach(eid => {
+                    networkGraph.body.data.edges.update({ id: eid, width: 1, color: { color: 'rgba(99,102,241,0.25)', opacity: 0.5 } });
+                });
+            } catch (e) {}
+        });
+
+        // Click-to-Focus & Node Inspection Popover
         networkGraph.on('selectNode', function (params) {
             if (params.nodes.length > 0) {
                 const nodeId = params.nodes[0];
+                showNodeInspectionPopover(nodeId);
                 networkGraph.focus(nodeId, {
-                    scale: 1.25,
-                    animation: { duration: 400, easingFunction: 'easeInOutQuad' }
+                    scale: 1.3,
+                    animation: { duration: 380, easingFunction: 'easeInOutQuad' }
                 });
                 playTone(720, 'sine', 0.06);
             }
         });
 
-        networkGraph.on('hoverNode', function () {
-            container.style.cursor = 'pointer';
-        });
-        networkGraph.on('blurNode', function () {
-            container.style.cursor = 'default';
+        // Double-Click Deep Focus
+        networkGraph.on('doubleClick', function (params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                networkGraph.focus(nodeId, {
+                    scale: 1.65,
+                    animation: { duration: 400, easingFunction: 'easeInOutQuad' }
+                });
+                playTone(840, 'sine', 0.08);
+            }
         });
 
+        // ESC Key Listener: Clear selection & close popover
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (networkGraph) networkGraph.unselectAll();
+                hideNodeInspectionPopover();
+            }
+        });
+
+        // Toolbar: Fit View
         const btnFit = document.getElementById('btn-graph-fit');
         if (btnFit) btnFit.addEventListener('click', () => {
             networkGraph.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
             playTone(600, 'sine', 0.05);
+            hideNodeInspectionPopover();
         });
 
-        const btnFitDedicated = document.getElementById('btn-graph-fit-dedicated');
-        if (btnFitDedicated) btnFitDedicated.addEventListener('click', () => {
-            networkGraph.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
-            playTone(600, 'sine', 0.05);
+        // Toolbar: Focus Target
+        const btnFocusTarget = document.getElementById('btn-graph-focus-target');
+        if (btnFocusTarget) btnFocusTarget.addEventListener('click', () => {
+            if (networkGraph) {
+                const targetNode = networkGraph.body.data.nodes.get(latestTargetNodeId) ? latestTargetNodeId : 'spectre';
+                window.focusGraphNode(targetNode);
+                playTone(680, 'sine', 0.06);
+            }
         });
 
+        // Toolbar: Auto Rotate Loop
+        const btnAutoRotate = document.getElementById('btn-graph-autorotate');
+        const lblAutoRotate = document.getElementById('lbl-autorotate');
+        if (btnAutoRotate) {
+            btnAutoRotate.addEventListener('click', () => {
+                autoRotate = !autoRotate;
+                btnAutoRotate.classList.toggle('active', autoRotate);
+                if (lblAutoRotate) lblAutoRotate.textContent = autoRotate ? 'Rotate: On' : 'Rotate: Off';
+                if (autoRotate) {
+                    playTone(750, 'sine', 0.06);
+                    showToast('Auto-Rotate Engaged', 'fas fa-arrows-rotate');
+                    runAutoRotate();
+                } else {
+                    if (autoRotateFrame) cancelAnimationFrame(autoRotateFrame);
+                    showToast('Auto-Rotate Disengaged', 'fas fa-pause');
+                }
+            });
+        }
+
+        function runAutoRotate() {
+            if (!autoRotate || !networkGraph) return;
+            try {
+                const pos = networkGraph.getViewPosition();
+                const currentScale = networkGraph.getScale();
+                networkGraph.moveTo({
+                    position: { x: pos.x + Math.sin(Date.now() * 0.001) * 0.4, y: pos.y + Math.cos(Date.now() * 0.001) * 0.4 },
+                    scale: currentScale
+                });
+            } catch (e) {}
+            autoRotateFrame = requestAnimationFrame(runAutoRotate);
+        }
+
+        // Toolbar: Reset Network
         const btnReset = document.getElementById('btn-graph-reset');
         if (btnReset) {
             btnReset.addEventListener('click', () => {
                 initGraph(containerId);
+                hideNodeInspectionPopover();
                 showToast('Topology Graph Reset', 'fas fa-rotate');
+            });
+        }
+
+        // Toolbar: Fullscreen Toggle
+        const btnFullscreen = document.getElementById('btn-graph-fullscreen');
+        if (btnFullscreen && stage) {
+            btnFullscreen.addEventListener('click', () => {
+                stage.classList.toggle('fullscreen-stage');
+                const isFull = stage.classList.contains('fullscreen-stage');
+                btnFullscreen.innerHTML = isFull ? `<i class="fas fa-down-left-and-up-right-to-center"></i>` : `<i class="fas fa-up-right-and-down-left-from-center"></i>`;
+                setTimeout(() => {
+                    if (networkGraph) {
+                        networkGraph.redraw();
+                        networkGraph.fit({ animation: { duration: 300, easingFunction: 'easeInOutQuad' } });
+                    }
+                }, 100);
+            });
+        }
+
+        // Popover Controls
+        const btnGnpClose = document.getElementById('btn-gnp-close');
+        if (btnGnpClose) btnGnpClose.addEventListener('click', hideNodeInspectionPopover);
+
+        const btnGnpFocus = document.getElementById('btn-gnp-focus');
+        if (btnGnpFocus) {
+            btnGnpFocus.addEventListener('click', () => {
+                const nid = btnGnpFocus.dataset.nodeId;
+                if (nid && networkGraph) {
+                    networkGraph.focus(nid, { scale: 1.5, animation: { duration: 350, easingFunction: 'easeInOutQuad' } });
+                    playTone(800, 'sine', 0.06);
+                }
+            });
+        }
+
+        const btnGnpCopy = document.getElementById('btn-gnp-copy');
+        if (btnGnpCopy) {
+            btnGnpCopy.addEventListener('click', () => {
+                const text = btnGnpCopy.dataset.copyText || '';
+                navigator.clipboard.writeText(text);
+                showToast(`Copied: ${text}`, 'fas fa-copy');
+                playTone(880, 'sine', 0.05);
             });
         }
 
@@ -1134,6 +1360,62 @@
         });
     }
 
+    // Node Inspection Popover Display
+    function showNodeInspectionPopover(nodeId) {
+        const popover = document.getElementById('graph-node-popover');
+        if (!popover || !networkGraph) return;
+        const node = networkGraph.body.data.nodes.get(nodeId);
+        if (!node) return;
+
+        const lbl = document.getElementById('gnp-label');
+        const type = document.getElementById('gnp-type');
+        const meta = document.getElementById('gnp-meta');
+        const btnFocus = document.getElementById('btn-gnp-focus');
+        const btnCopy = document.getElementById('btn-gnp-copy');
+
+        if (lbl) lbl.textContent = node.label || nodeId;
+        if (type) type.textContent = node.type || 'NODE';
+        if (meta) meta.textContent = node.meta || `Connected to active intelligence graph (${networkGraph.getConnectedNodes(nodeId).length} links).`;
+        if (btnFocus) btnFocus.dataset.nodeId = nodeId;
+        if (btnCopy) btnCopy.dataset.copyText = node.label ? node.label.replace(/^TARGET:\s*|^IP:\s*|^DOMAIN:\s*|^ASN:\s*/, '') : nodeId;
+
+        popover.style.display = 'block';
+    }
+
+    function hideNodeInspectionPopover() {
+        const popover = document.getElementById('graph-node-popover');
+        if (popover) popover.style.display = 'none';
+    }
+
+    // Global helper to focus node by ID from any dossier card
+    window.focusGraphNode = function (nodeId) {
+        if (!networkGraph) return;
+        try {
+            const exists = networkGraph.body.data.nodes.get(nodeId);
+            if (!exists) return;
+
+            networkGraph.selectNodes([nodeId]);
+            networkGraph.focus(nodeId, {
+                scale: 1.4,
+                animation: { duration: 400, easingFunction: 'easeInOutQuad' }
+            });
+            showNodeInspectionPopover(nodeId);
+            playTone(760, 'sine', 0.08);
+
+            // Scroll smoothly towards topology if not in view
+            const graphEl = document.getElementById('spatial-graph-stage');
+            if (graphEl) {
+                const rect = graphEl.getBoundingClientRect();
+                if (rect.top < 0 || rect.bottom > window.innerHeight) {
+                    graphEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        } catch (e) {
+            console.error('Focus node error', e);
+        }
+    };
+
+    // Progressive Node Addition with Timed Cascade Animation
     function updateGraphWithTarget(target, data) {
         if (!networkGraph) return;
         try {
@@ -1141,120 +1423,155 @@
             const edges = networkGraph.body.data.edges;
 
             const tNodeId = `target_${Date.now()}`;
+            latestTargetNodeId = tNodeId;
+
+            // 1. Root Target Node
             nodes.add({
                 id: tNodeId,
                 label: `TARGET: ${target}`,
+                type: 'TARGET ROOT',
+                meta: `Root target entity investigated at ${new Date().toLocaleTimeString()}`,
                 color: '#6366f1',
                 shape: 'dot',
-                size: 26,
-                font: { color: '#fff', face: 'JetBrains Mono', size: 14, strokeWidth: 2, strokeColor: '#000' }
+                size: 24,
+                font: { color: '#fff', face: 'JetBrains Mono', size: 13, strokeWidth: 2, strokeColor: '#000' }
             });
-            edges.add({ from: 'spectre', to: tNodeId, color: { color: '#6366f1' }, width: 2, arrows: 'to' });
+            edges.add({ id: `e_root_${tNodeId}`, from: 'spectre', to: tNodeId, color: { color: '#6366f1' }, width: 2, arrows: 'to' });
 
             const res = data.results || (data.data && data.data.dossier) || {};
             
-            // 1. IP Nodes
-            if (res.ip && !res.ip.error) {
-                const ipNodeId = `res_ip_${Date.now()}`;
-                nodes.add({
-                    id: ipNodeId,
-                    label: `IP: ${res.ip.ip || target}`,
-                    color: '#10b981',
-                    shape: 'dot',
-                    size: 16,
-                    font: { color: '#6ee7b7', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: ipNodeId, color: { color: 'rgba(16,185,129,0.5)' } });
-
-                if (res.ip.city || res.ip.country) {
-                    const locNodeId = `res_loc_${Date.now()}`;
+            // 2. IP & Location (Staggered 60ms)
+            setTimeout(() => {
+                if (res.ip && !res.ip.error) {
+                    const ipNodeId = `res_ip_${Date.now()}`;
                     nodes.add({
-                        id: locNodeId,
-                        label: `${res.ip.city || ''}, ${res.ip.country || ''}`,
-                        color: '#06b6d4',
+                        id: ipNodeId,
+                        label: `IP: ${res.ip.ip || target}`,
+                        type: 'IP ROUTE',
+                        meta: `ISP: ${res.ip.org || res.ip.isp || 'Public IP'} • Geo: ${res.ip.city || ''}, ${res.ip.country || ''}`,
+                        color: '#10b981',
                         shape: 'dot',
-                        size: 12,
-                        font: { color: '#94a3b8', face: 'JetBrains Mono', size: 11 }
+                        size: 16,
+                        font: { color: '#6ee7b7', face: 'JetBrains Mono', size: 11 }
                     });
-                    edges.add({ from: ipNodeId, to: locNodeId, color: { color: 'rgba(6,182,212,0.4)' } });
-                }
-            }
+                    edges.add({ id: `e_${ipNodeId}`, from: tNodeId, to: ipNodeId, color: { color: 'rgba(16,185,129,0.6)' }, width: 1.5 });
 
-            // 2. BGP ASN Nodes
-            if (res.bgp && !res.bgp.error) {
-                const bgpNodeId = `res_bgp_${Date.now()}`;
-                nodes.add({
-                    id: bgpNodeId,
-                    label: `ASN: ${res.bgp.asn || target}`,
-                    color: '#f59e0b',
-                    shape: 'dot',
-                    size: 16,
-                    font: { color: '#fcd34d', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: bgpNodeId, color: { color: 'rgba(245,158,11,0.5)' } });
-            }
-
-            // 3. Social / Username Found Nodes
-            if (res.username && !res.username.error && res.username.found) {
-                const hits = res.username.found.slice(0, 4);
-                hits.forEach((h, idx) => {
-                    const uNodeId = `res_u_${idx}_${Date.now()}`;
-                    nodes.add({
-                        id: uNodeId,
-                        label: `${h.platform}`,
-                        color: '#06b6d4',
-                        shape: 'dot',
-                        size: 13,
-                        font: { color: '#67e8f9', face: 'JetBrains Mono', size: 11 }
-                    });
-                    edges.add({ from: tNodeId, to: uNodeId, color: { color: 'rgba(6,182,212,0.4)' } });
-                });
-            }
-
-            // 4. Domain & Subdomains Nodes
-            if (res.domain && !res.domain.error) {
-                const domNodeId = `res_dom_${Date.now()}`;
-                nodes.add({
-                    id: domNodeId,
-                    label: `DOMAIN: ${res.domain.domain || target}`,
-                    color: '#8b5cf6',
-                    shape: 'dot',
-                    size: 16,
-                    font: { color: '#c4b5fd', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: domNodeId, color: { color: 'rgba(139,92,246,0.5)' } });
-
-                if (res.domain.subdomains_ct) {
-                    res.domain.subdomains_ct.slice(0, 3).forEach((sub, idx) => {
-                        const sNodeId = `res_sub_${idx}_${Date.now()}`;
+                    if (res.ip.city || res.ip.country) {
+                        const locNodeId = `res_loc_${Date.now()}`;
                         nodes.add({
-                            id: sNodeId,
-                            label: `${sub}`,
-                            color: '#a855f7',
+                            id: locNodeId,
+                            label: `${res.ip.city || ''}, ${res.ip.country || ''}`,
+                            type: 'GEOLOCATION',
+                            meta: `Lat: ${res.ip.lat || '—'}, Lon: ${res.ip.lon || '—'}`,
+                            color: '#06b6d4',
                             shape: 'dot',
-                            size: 11,
+                            size: 12,
                             font: { color: '#94a3b8', face: 'JetBrains Mono', size: 10 }
                         });
-                        edges.add({ from: domNodeId, to: sNodeId, color: { color: 'rgba(168,85,247,0.35)' } });
-                    });
+                        edges.add({ id: `e_${locNodeId}`, from: ipNodeId, to: locNodeId, color: { color: 'rgba(6,182,212,0.45)' } });
+                    }
+                    updateGraphNodeCount();
                 }
-            }
+            }, 60);
 
-            // 5. Discord Snowflake Node
-            if (res.discord && !res.discord.error) {
-                const discNodeId = `res_disc_${Date.now()}`;
-                nodes.add({
-                    id: discNodeId,
-                    label: `Discord: ${res.discord.created_at_utc || 'Epoch'}`,
-                    color: '#a855f7',
-                    shape: 'dot',
-                    size: 14,
-                    font: { color: '#d8b4fe', face: 'JetBrains Mono' }
-                });
-                edges.add({ from: tNodeId, to: discNodeId, color: { color: 'rgba(168,85,247,0.5)' } });
-            }
+            // 3. BGP ASN (Staggered 120ms)
+            setTimeout(() => {
+                if (res.bgp && !res.bgp.error) {
+                    const bgpNodeId = `res_bgp_${Date.now()}`;
+                    nodes.add({
+                        id: bgpNodeId,
+                        label: `ASN: ${res.bgp.asn || target}`,
+                        type: 'BGP AUTONOMOUS SYSTEM',
+                        meta: `Holder: ${res.bgp.holder || 'BGP Carrier'} • ${res.bgp.prefixes ? res.bgp.prefixes.length : 0} routes`,
+                        color: '#f59e0b',
+                        shape: 'dot',
+                        size: 16,
+                        font: { color: '#fcd34d', face: 'JetBrains Mono', size: 11 }
+                    });
+                    edges.add({ id: `e_${bgpNodeId}`, from: tNodeId, to: bgpNodeId, color: { color: 'rgba(245,158,11,0.6)' }, width: 1.5 });
+                    updateGraphNodeCount();
+                }
+            }, 120);
 
-            networkGraph.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
+            // 4. Social / Username Found Nodes (Staggered 180ms)
+            setTimeout(() => {
+                if (res.username && !res.username.error && res.username.found) {
+                    const hits = res.username.found.slice(0, 4);
+                    hits.forEach((h, idx) => {
+                        const uNodeId = `res_u_${idx}_${Date.now()}`;
+                        nodes.add({
+                            id: uNodeId,
+                            label: `${h.platform}`,
+                            type: 'SOCIAL PLATFORM',
+                            meta: `Account URL: ${h.url || 'Discovered Profile'}`,
+                            color: '#06b6d4',
+                            shape: 'dot',
+                            size: 13,
+                            font: { color: '#67e8f9', face: 'JetBrains Mono', size: 10 }
+                        });
+                        edges.add({ id: `e_${uNodeId}`, from: tNodeId, to: uNodeId, color: { color: 'rgba(6,182,212,0.45)' } });
+                    });
+                    updateGraphNodeCount();
+                }
+            }, 180);
+
+            // 5. Domain & Subdomains Nodes (Staggered 240ms)
+            setTimeout(() => {
+                if (res.domain && !res.domain.error) {
+                    const domNodeId = `res_dom_${Date.now()}`;
+                    nodes.add({
+                        id: domNodeId,
+                        label: `DOMAIN: ${res.domain.domain || target}`,
+                        type: 'DNS INFRASTRUCTURE',
+                        meta: `Registrar: ${res.domain.registrar || 'ICANN Registry'}`,
+                        color: '#8b5cf6',
+                        shape: 'dot',
+                        size: 16,
+                        font: { color: '#c4b5fd', face: 'JetBrains Mono', size: 11 }
+                    });
+                    edges.add({ id: `e_${domNodeId}`, from: tNodeId, to: domNodeId, color: { color: 'rgba(139,92,246,0.6)' }, width: 1.5 });
+
+                    if (res.domain.subdomains_ct) {
+                        res.domain.subdomains_ct.slice(0, 3).forEach((sub, idx) => {
+                            const sNodeId = `res_sub_${idx}_${Date.now()}`;
+                            nodes.add({
+                                id: sNodeId,
+                                label: `${sub}`,
+                                type: 'SUBDOMAIN',
+                                meta: `Parent: ${res.domain.domain}`,
+                                color: '#a855f7',
+                                shape: 'dot',
+                                size: 11,
+                                font: { color: '#94a3b8', face: 'JetBrains Mono', size: 10 }
+                            });
+                            edges.add({ id: `e_${sNodeId}`, from: domNodeId, to: sNodeId, color: { color: 'rgba(168,85,247,0.35)' } });
+                        });
+                    }
+                    updateGraphNodeCount();
+                }
+            }, 240);
+
+            // 6. Discord Snowflake / Extra metadata (Staggered 300ms)
+            setTimeout(() => {
+                if (res.discord && !res.discord.error) {
+                    const discNodeId = `res_disc_${Date.now()}`;
+                    nodes.add({
+                        id: discNodeId,
+                        label: `Discord: ${res.discord.created_at_utc || 'Epoch'}`,
+                        type: 'DISCORD ARTIFACT',
+                        meta: `Created UTC: ${res.discord.created_at_utc} • Timestamp: ${res.discord.timestamp_ms}`,
+                        color: '#a855f7',
+                        shape: 'dot',
+                        size: 14,
+                        font: { color: '#d8b4fe', face: 'JetBrains Mono', size: 10 }
+                    });
+                    edges.add({ id: `e_${discNodeId}`, from: tNodeId, to: discNodeId, color: { color: 'rgba(168,85,247,0.5)' } });
+                    updateGraphNodeCount();
+                }
+
+                networkGraph.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+            }, 300);
+
         } catch (e) {
             console.error('Graph update err', e);
         }
@@ -1423,6 +1740,7 @@
                     <div class="dcard-header">
                         <div class="dcard-title-wrap"><i class="fas fa-network-wired"></i><h4>IP Intelligence & Geo</h4></div>
                         <span class="dcard-badge">GEOLOCATION</span>
+                        <button class="btn-focus-node-action" onclick="window.focusGraphNode(latestTargetNodeId);" title="Locate in 3D Topology"><i class="fas fa-crosshairs"></i> Locate</button>
                     </div>
                     <table class="kv-table">
                         <tr><td class="kv-key">IP Address</td><td class="kv-val">${ipd.ip || target}</td></tr>
@@ -1444,6 +1762,7 @@
                     <div class="dcard-header">
                         <div class="dcard-title-wrap"><i class="fas fa-diagram-project"></i><h4>BGP Routing & ASN</h4></div>
                         <span class="dcard-badge">RIPE STAT</span>
+                        <button class="btn-focus-node-action" onclick="window.focusGraphNode(latestTargetNodeId);" title="Locate in 3D Topology"><i class="fas fa-crosshairs"></i> Locate</button>
                     </div>
                     <table class="kv-table">
                         <tr><td class="kv-key">Autonomous System</td><td class="kv-val">${bgp.asn || target}</td></tr>
@@ -1470,6 +1789,7 @@
                     <div class="dcard-header">
                         <div class="dcard-title-wrap"><i class="fas fa-user-astronaut"></i><h4>Username Discovery (${hits.length} Found)</h4></div>
                         <span class="dcard-badge">${res.username.total_checked || 112}+ CHECKED</span>
+                        <button class="btn-focus-node-action" onclick="window.focusGraphNode(latestTargetNodeId);" title="Locate in 3D Topology"><i class="fas fa-crosshairs"></i> Locate</button>
                     </div>
                     ${hits.length > 0 ? `
                         <div class="hit-tags-grid">
@@ -1488,6 +1808,7 @@
                     <div class="dcard-header">
                         <div class="dcard-title-wrap"><i class="fa-brands fa-discord"></i><h4>Discord Snowflake</h4></div>
                         <span class="dcard-badge">64-BIT TIMESTAMP</span>
+                        <button class="btn-focus-node-action" onclick="window.focusGraphNode(latestTargetNodeId);" title="Locate in 3D Topology"><i class="fas fa-crosshairs"></i> Locate</button>
                     </div>
                     <table class="kv-table">
                         <tr><td class="kv-key">Snowflake ID</td><td class="kv-val">${d.snowflake}</td></tr>
@@ -1509,6 +1830,7 @@
                     <div class="dcard-header">
                         <div class="dcard-title-wrap"><i class="fas fa-globe"></i><h4>Domain & CT Certificates</h4></div>
                         <span class="dcard-badge">WHOIS + CT</span>
+                        <button class="btn-focus-node-action" onclick="window.focusGraphNode(latestTargetNodeId);" title="Locate in 3D Topology"><i class="fas fa-crosshairs"></i> Locate</button>
                     </div>
                     <table class="kv-table">
                         <tr><td class="kv-key">Registrar</td><td class="kv-val">${w.registrar || '—'}</td></tr>

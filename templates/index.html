@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_polish_v37">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_interactive_v38">
 </head>
 <body>
 
@@ -138,19 +138,43 @@
                 </div>
 
                 <!-- 3D Spatial Intelligence Environment (Expansive Hero) -->
-                <div class="spatial-graph-stage">
+                <div class="spatial-graph-stage" id="spatial-graph-stage">
+                    <div class="graph-grid-overlay"></div>
                     <div class="graph-floating-header">
                         <div class="graph-tagline">
                             <span class="pulse-dot"></span>
                             <span>3D INTELLIGENCE TOPOLOGY</span>
+                            <span class="graph-node-count-badge" id="graph-node-count">5 NODES</span>
                         </div>
                         <div class="graph-ghost-tools">
-                            <button class="btn-topo-tool" id="btn-graph-fit"><i class="fas fa-expand"></i> Fit View</button>
-                            <button class="btn-topo-tool" id="btn-graph-reset"><i class="fas fa-rotate"></i> Reset Network</button>
+                            <button class="btn-topo-tool" id="btn-graph-fit" title="Fit Entire Graph"><i class="fas fa-expand"></i> <span>Fit</span></button>
+                            <button class="btn-topo-tool" id="btn-graph-focus-target" title="Focus Root Target"><i class="fas fa-crosshairs"></i> <span>Focus</span></button>
+                            <button class="btn-topo-tool" id="btn-graph-autorotate" title="Toggle Auto-Rotate"><i class="fas fa-arrows-rotate"></i> <span id="lbl-autorotate">Rotate: Off</span></button>
+                            <button class="btn-topo-tool" id="btn-graph-reset" title="Reset Network Layout"><i class="fas fa-rotate"></i> <span>Reset</span></button>
+                            <button class="btn-topo-tool" id="btn-graph-fullscreen" title="Expand Fullscreen"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
                         </div>
                     </div>
                     <div id="vis-full-canvas"></div>
-                    <div class="graph-ambient-caption">interactive intelligence topology</div>
+                    
+                    <!-- Contextual Node Inspection Popover -->
+                    <div class="graph-node-popover" id="graph-node-popover" style="display: none;">
+                        <div class="gnp-header">
+                            <div class="gnp-type-badge" id="gnp-type">NODE</div>
+                            <button class="gnp-close" id="btn-gnp-close"><i class="fas fa-xmark"></i></button>
+                        </div>
+                        <div class="gnp-body">
+                            <div class="gnp-title" id="gnp-label">Node Identifier</div>
+                            <div class="gnp-meta" id="gnp-meta">Details standby</div>
+                        </div>
+                        <div class="gnp-actions">
+                            <button class="gnp-btn-action" id="btn-gnp-focus"><i class="fas fa-crosshairs"></i> Focus Node</button>
+                            <button class="gnp-btn-action" id="btn-gnp-copy"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="graph-ambient-caption">
+                        <span><kbd>Click</kbd> to inspect</span> • <span><kbd>Dbl-Click</kbd> to focus</span> • <span><kbd>ESC</kbd> to clear</span>
+                    </div>
                 </div>
 
                 <!-- Omni Results Stage -->
@@ -585,15 +609,40 @@
         <div class="cdrawer-body">
             <!-- Background & Atmosphere Style -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-meteor"></i> Atmosphere & Environment</label>
+                <label class="cdrawer-label"><i class="fas fa-meteor"></i> Ambient Scene Presets</label>
                 <div class="atmosphere-picker-grid" id="atmosphere-grid">
                     <button class="atmo-btn active" data-atmo="neural"><i class="fas fa-network-wired"></i><span>Neural</span></button>
+                    <button class="atmo-btn" data-atmo="constellation"><i class="fas fa-project-diagram"></i><span>Constellation</span></button>
+                    <button class="atmo-btn" data-atmo="particles"><i class="fas fa-braille"></i><span>Particles</span></button>
+                    <button class="atmo-btn" data-atmo="orbital"><i class="fas fa-atom"></i><span>Orbitals</span></button>
+                    <button class="atmo-btn" data-atmo="geometric"><i class="fas fa-draw-polygon"></i><span>Geometric</span></button>
+                    <button class="atmo-btn" data-atmo="hearts"><i class="fas fa-heart"></i><span>Hearts</span></button>
+                    <button class="atmo-btn" data-atmo="flowers"><i class="fas fa-fan"></i><span>Flowers</span></button>
+                    <button class="atmo-btn" data-atmo="stars"><i class="fas fa-star"></i><span>Stars</span></button>
                     <button class="atmo-btn" data-atmo="minimal"><i class="fas fa-circle-dot"></i><span>Minimal</span></button>
-                    <button class="atmo-btn" data-atmo="orbital"><i class="fas fa-atom"></i><span>Orbital</span></button>
-                    <button class="atmo-btn" data-atmo="matrix"><i class="fas fa-microchip"></i><span>Matrix</span></button>
-                    <button class="atmo-btn" data-atmo="cosmic"><i class="fas fa-star"></i><span>Cosmic</span></button>
-                    <button class="atmo-btn" data-atmo="aurora"><i class="fas fa-wind"></i><span>Aurora</span></button>
-                    <button class="atmo-btn" data-atmo="custom"><i class="fas fa-sliders"></i><span>Custom</span></button>
+                    <button class="atmo-btn" data-atmo="off"><i class="fas fa-power-off"></i><span>Off</span></button>
+                </div>
+            </div>
+
+            <!-- Motion Intensity -->
+            <div class="cdrawer-section">
+                <label class="cdrawer-label"><i class="fas fa-wind"></i> Motion Intensity</label>
+                <div class="toggle-segmented" id="motion-segmented">
+                    <button class="seg-btn" data-motion="subtle">Subtle</button>
+                    <button class="seg-btn active" data-motion="normal">Normal</button>
+                    <button class="seg-btn" data-motion="cinematic">Cinematic</button>
+                    <button class="seg-btn" data-motion="off">Off</button>
+                </div>
+            </div>
+
+            <!-- 3D Graph Styling -->
+            <div class="cdrawer-section">
+                <label class="cdrawer-label"><i class="fas fa-circle-nodes"></i> 3D Topology Style</label>
+                <div class="toggle-segmented" id="graphstyle-segmented">
+                    <button class="seg-btn active" data-graphstyle="technical">Technical</button>
+                    <button class="seg-btn" data-graphstyle="neon">Neon</button>
+                    <button class="seg-btn" data-graphstyle="glass">Glass</button>
+                    <button class="seg-btn" data-graphstyle="minimal">Minimal</button>
                 </div>
             </div>
 
@@ -696,27 +745,9 @@
                 <label class="cdrawer-label"><i class="fas fa-sun"></i> Ambient Glow Aura</label>
                 <div class="toggle-segmented" id="glow-segmented">
                     <button class="seg-btn" data-glow="off">Off</button>
-                    <button class="seg-btn" data-glow="subtle">Subtle</button>
+                    <button class="seg-btn" data-glow="subtle">Low</button>
+                    <button class="seg-btn" data-glow="medium">Medium</button>
                     <button class="seg-btn active" data-glow="high">High</button>
-                    <button class="seg-btn" data-glow="ultra">Ultra</button>
-                </div>
-            </div>
-
-            <!-- Interactive Particle Background -->
-            <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-atom"></i> Particle Motion Physics</label>
-                <div class="toggle-segmented" id="particles-segmented">
-                    <button class="seg-btn active" data-particles="true">Active</button>
-                    <button class="seg-btn" data-particles="false">Disabled</button>
-                </div>
-            </div>
-
-            <!-- 3D Card Tilt Effects -->
-            <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-cubes"></i> 3D Kinetic Tilt Physics</label>
-                <div class="toggle-segmented" id="tilt-segmented">
-                    <button class="seg-btn active" data-tilt="true">Enabled</button>
-                    <button class="seg-btn" data-tilt="false">Disabled</button>
                 </div>
             </div>
 
@@ -757,6 +788,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_polish_v37"></script>
+    <script src="/static/js/app.js?v=20260910_interactive_v38"></script>
 </body>
 </html>
