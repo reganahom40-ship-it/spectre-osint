@@ -230,6 +230,46 @@
     }
 
     // --- REAL-TIME TARGET INSPECTOR & DETECTIVE ---
+    const COMMON_PORT_MAP = {
+        21: 'FTP Control (Auth/File Transfer)',
+        22: 'SSH Secure Shell Remote Admin',
+        23: 'Telnet Legacy Unencrypted Shell',
+        25: 'SMTP Mail Transfer Protocol',
+        53: 'DNS Domain Name System',
+        80: 'HTTP Standard Web Server',
+        88: 'Kerberos Authentication Service',
+        110: 'POP3 Mail Retrieval',
+        123: 'NTP Network Time Protocol',
+        135: 'MS RPC Endpoint Mapper',
+        139: 'NetBIOS Session Service',
+        143: 'IMAP Mail Protocol',
+        161: 'SNMP Network Management',
+        389: 'LDAP Directory Access',
+        443: 'HTTPS Encrypted Web Server',
+        445: 'SMB Active Windows File Sharing',
+        465: 'SMTPS Secure Mail Submission',
+        587: 'SMTP Modern Mail Submission',
+        993: 'IMAPS Encrypted Mail Protocol',
+        995: 'POP3S Encrypted POP3 Mail',
+        1433: 'MS SQL Relational Database',
+        1521: 'Oracle Database Listener (TNS)',
+        2049: 'NFS Network File System',
+        3306: 'MySQL / MariaDB Database Server',
+        3389: 'RDP Windows Remote Desktop GUI',
+        5000: 'Flask / Python / UPnP Dev Server',
+        5432: 'PostgreSQL Relational Database',
+        5900: 'VNC Remote Desktop Protocol',
+        6379: 'Redis In-Memory Key-Value Cache',
+        8000: 'HTTP Alt / Django Dev Server',
+        8080: 'HTTP Proxy / Apache Tomcat / Spring',
+        8443: 'HTTPS Alt / Web Admin Console',
+        8888: 'Jupyter Notebook / Web Dashboard',
+        9000: 'Portainer Docker / SonarQube',
+        9200: 'Elasticsearch REST Cluster Node',
+        27017: 'MongoDB NoSQL Document Database',
+        25565: 'Minecraft Game Server Daemon'
+    };
+
     function inspectTargetRealtime(raw) {
         const t = (raw || '').trim();
         const badge = document.getElementById('tinspect-type-badge');
@@ -244,10 +284,13 @@
             if (badgeText) badgeText.textContent = 'STANDBY • AWAITING TARGET';
             if (schemaVal) schemaVal.textContent = 'None (Input Empty)';
             if (vectorsVal) vectorsVal.textContent = 'Standby Mode';
-            if (intelVal) intelVal.textContent = 'Type any IP, Discord ID, domain, email, hash, phone, or username to see instant schema and metadata extraction.';
+            if (intelVal) intelVal.textContent = 'Type any number, port, phone, IP, Discord ID, domain, email, hash, or username for instant intelligence.';
             if (pulseIcon) pulseIcon.innerHTML = '<i class="fas fa-magnifying-glass"></i>';
             return;
         }
+
+        const isPureDigits = /^\d+$/.test(t);
+        const digitsOnly = t.replace(/\D/g, '');
 
         // 1. ASN Identifier (e.g. AS15169, AS13335)
         if (/^AS\d+$/i.test(t)) {
@@ -269,13 +312,13 @@
             if (badgeText) badgeText.innerHTML = '<i class="fas fa-network-wired text-emerald"></i> IDENTIFIED: IPV4 HOST ADDRESS';
             if (schemaVal) schemaVal.textContent = `Dot-Decimal IPv4 Notation [${scope}]`;
             if (vectorsVal) vectorsVal.textContent = 'GeoIP Coordinates • ASN Provider • BGP CIDR • Reverse DNS PTR';
-            if (intelVal) intelVal.innerHTML = `Valid IPv4 address. Decimal integer representation: <code>${(parts[0]<<24 | parts[1]<<16 | parts[2]<<8 | parts[3]) >>> 0}</code>. Scope: <strong>${scope}</strong>.`;
+            if (intelVal) intelVal.innerHTML = `Valid IPv4 address. Decimal integer: <code>${(parts[0]<<24 | parts[1]<<16 | parts[2]<<8 | parts[3]) >>> 0}</code>. Scope: <strong>${scope}</strong>.`;
             if (pulseIcon) pulseIcon.innerHTML = '<i class="fas fa-network-wired text-emerald"></i>';
             return;
         }
 
-        // 3. Discord Snowflake ID (17 to 19 digits)
-        if (/^\d{17,19}$/.test(t)) {
+        // 3. Discord Snowflake ID (15 to 20 digits)
+        if (isPureDigits && t.length >= 15 && t.length <= 20) {
             let dateStr = 'Unknown';
             let ageDays = 0;
             try {
@@ -288,13 +331,64 @@
 
             if (badgeText) badgeText.innerHTML = '<i class="fa-brands fa-discord text-purple"></i> IDENTIFIED: DISCORD 64-BIT SNOWFLAKE';
             if (schemaVal) schemaVal.textContent = '64-Bit Discord/Twitter Timestamp Epoch';
-            if (vectorsVal) vectorsVal.textContent = 'Epoch Bitshift • Account Age • CDN Avatar Resolution';
+            if (vectorsVal) vectorsVal.textContent = 'Epoch Bitshift • Account Age • CDN Avatar Resolution • Worker ID';
             if (intelVal) intelVal.innerHTML = `Bitshift Decoded: Created on <strong>${dateStr}</strong> (Account Age: <strong>${ageDays.toLocaleString()} days</strong>).`;
             if (pulseIcon) pulseIcon.innerHTML = '<i class="fa-brands fa-discord text-purple"></i>';
             return;
         }
 
-        // 4. Email Address
+        // 4. Telephone Number (International / National: 7 to 15 digits or starts with +)
+        if (t.startsWith('+') || (isPureDigits && t.length >= 7 && t.length <= 14) || (/^[\d\s\-\(\)\.]{7,25}$/.test(t) && digitsOnly.length >= 7 && digitsOnly.length <= 15)) {
+            const dLen = digitsOnly.length;
+            let countryGuess = 'Global / North America (+1)';
+            if (t.startsWith('+44') || (t.startsWith('07') && dLen === 11)) countryGuess = 'United Kingdom (+44)';
+            else if (t.startsWith('+49')) countryGuess = 'Germany (+49)';
+            else if (t.startsWith('+33')) countryGuess = 'France (+33)';
+            else if (t.startsWith('+61')) countryGuess = 'Australia (+61)';
+            else if (t.startsWith('+91')) countryGuess = 'India (+91)';
+            else if (t.startsWith('+81')) countryGuess = 'Japan (+81)';
+            else if (t.startsWith('+55')) countryGuess = 'Brazil (+55)';
+            else if (dLen === 10) countryGuess = 'United States / Canada (+1)';
+
+            if (badgeText) badgeText.innerHTML = '<i class="fas fa-phone-nodes text-teal"></i> IDENTIFIED: TELEPHONE NUMBER';
+            if (schemaVal) schemaVal.textContent = `ITU-T E.164 Dialing Standard (${dLen} Digits • ${countryGuess})`;
+            if (vectorsVal) vectorsVal.textContent = 'Carrier Routing • WhatsApp / Telegram Pivots • HLR Geolocation • Truecaller';
+            if (intelVal) intelVal.innerHTML = `Identified phone string. E.164 Target: <code>+${digitsOnly.replace(/^0+/, '')}</code>. Ready for carrier routing & messaging OSINT.`;
+            if (pulseIcon) pulseIcon.innerHTML = '<i class="fas fa-phone-nodes text-teal"></i>';
+            return;
+        }
+
+        // 5. IANA Service Port Number (1 to 65535, 1-5 digits)
+        if (isPureDigits && Number(t) >= 1 && Number(t) <= 65535 && t.length <= 5) {
+            const portNum = Number(t);
+            const knownService = COMMON_PORT_MAP[portNum] || (portNum <= 1024 ? 'Privileged System Port' : 'Registered / Dynamic User Port');
+
+            if (badgeText) badgeText.innerHTML = `<i class="fas fa-ethernet text-orange"></i> IDENTIFIED: NETWORK SERVICE PORT (${portNum})`;
+            if (schemaVal) schemaVal.textContent = `IANA 16-Bit Transport Port [${portNum}/TCP/UDP]`;
+            if (vectorsVal) vectorsVal.textContent = 'Port Profile • CVE Exploit Vectors • Shodan Dork • Nmap Command Syntax';
+            if (intelVal) intelVal.innerHTML = `Default Service: <strong>${knownService}</strong>. Shodan filter: <code>port:${portNum}</code> | Nmap: <code>nmap -p ${portNum} -sV &lt;target&gt;</code>.`;
+            if (pulseIcon) pulseIcon.innerHTML = '<i class="fas fa-ethernet text-orange"></i>';
+            return;
+        }
+
+        // 6. Decimal IPv4 / Large Numeric Value
+        if (isPureDigits) {
+            const numBig = BigInt(t);
+            let decimalIpStr = '';
+            if (numBig >= 0n && numBig <= 4294967295n) {
+                const n = Number(numBig);
+                decimalIpStr = ` -> IPv4: <strong>${(n>>>24)&255}.${(n>>>16)&255}.${(n>>>8)&255}.${n&255}</strong>`;
+            }
+
+            if (badgeText) badgeText.innerHTML = '<i class="fas fa-calculator text-amber"></i> IDENTIFIED: NUMERIC IDENTIFIER / MATH';
+            if (schemaVal) schemaVal.textContent = `Unsigned Integer (${t.length} Digits / ${numBig.toString(16).length * 4} Bits)`;
+            if (vectorsVal) vectorsVal.textContent = 'Decimal IPv4 • Hex/Octal/Binary Encodings • BGP ASN Check • Search Dorks';
+            if (intelVal) intelVal.innerHTML = `Hex: <code>0x${numBig.toString(16).toUpperCase()}</code> | Octal: <code>0o${numBig.toString(8)}</code>${decimalIpStr}.`;
+            if (pulseIcon) pulseIcon.innerHTML = '<i class="fas fa-calculator text-amber"></i>';
+            return;
+        }
+
+        // 7. Email Address
         if (/@/.test(t) && /\./.test(t)) {
             const parts = t.split('@');
             const userPart = parts[0];
@@ -308,7 +402,7 @@
             return;
         }
 
-        // 5. Cryptographic Hash (MD5: 32 chars, SHA-1: 40 chars, SHA-256: 64 chars)
+        // 8. Cryptographic Hash (MD5: 32 chars, SHA-1: 40 chars, SHA-256: 64 chars)
         if (/^[a-fA-F0-9]{32}$/.test(t)) {
             if (badgeText) badgeText.innerHTML = '<i class="fas fa-key text-violet"></i> IDENTIFIED: 128-BIT MD5 / NTLM HASH';
             if (schemaVal) schemaVal.textContent = '32-Character Hexadecimal Digest (128 bits)';
@@ -334,7 +428,7 @@
             return;
         }
 
-        // 6. Domain Name / FQDN / URL
+        // 9. Domain Name / FQDN / URL
         if (/\./.test(t) && !t.startsWith('+') && !/\s/.test(t)) {
             const cleanDomain = t.replace(/^https?:\/\//i, '').split('/')[0];
             const tld = cleanDomain.split('.').pop() || '';
@@ -347,18 +441,7 @@
             return;
         }
 
-        // 7. International Phone Number (E.164)
-        if (t.startsWith('+') || (/^[\d\s\-\(\)]{8,20}$/.test(t) && t.replace(/\D/g, '').length >= 10)) {
-            const digits = t.replace(/\D/g, '');
-            if (badgeText) badgeText.innerHTML = '<i class="fas fa-phone-nodes text-teal"></i> IDENTIFIED: INTERNATIONAL PHONE';
-            if (schemaVal) schemaVal.textContent = 'ITU-T E.164 Global Numbering Standard';
-            if (vectorsVal) vectorsVal.textContent = 'Country Code • Telco Carrier Network • Timezone Offset';
-            if (intelVal) intelVal.innerHTML = `Total numeric digits: <strong>${digits.length}</strong>. Primed for telecom provider routing and regional dialing inspection.`;
-            if (pulseIcon) pulseIcon.innerHTML = '<i class="fas fa-phone-nodes text-teal"></i>';
-            return;
-        }
-
-        // 8. Default: Username / Social Handle
+        // 10. Default: Username / Social Handle
         const handle = t.replace(/^@/, '');
         if (badgeText) badgeText.innerHTML = '<i class="fas fa-user-astronaut text-cyan"></i> IDENTIFIED: USERNAME / HANDLE';
         if (schemaVal) schemaVal.textContent = `Alphanumeric Web Handle (@${escapeHtml(handle)})`;
@@ -967,6 +1050,96 @@
                         <tr><td class="kv-key">SPF Valid</td><td class="kv-val">${em.spf ? 'Enforced' : 'Missing / Incomplete'}</td></tr>
                         <tr><td class="kv-key">Gravatar Account</td><td class="kv-val">${em.gravatar_exists ? 'Identified' : 'Not Found'}</td></tr>
                     </table>
+                </div>
+            `;
+        }
+
+        // 9. Phone Intelligence & Carrier Routing Card
+        if (res.phone) {
+            const ph = res.phone;
+            const fm = ph.formatted || {};
+            const piv = ph.messaging_pivots || {};
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-phone-nodes text-teal"></i><h4>Telephone Intelligence</h4></div>
+                        <span class="dcard-badge" style="background:rgba(20,184,166,0.15);color:#2dd4bf;border-color:rgba(20,184,166,0.3);">${ph.valid ? 'VALID E.164' : 'STANDARD DIAL'}</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">E.164 Format</td><td class="kv-val"><strong>${fm.e164 || ph.input}</strong></td></tr>
+                        <tr><td class="kv-key">Country / Region</td><td class="kv-val">${ph.country || 'Global / Unknown'}</td></tr>
+                        <tr><td class="kv-key">Carrier / Telco</td><td class="kv-val">${ph.carrier || 'Standard Network Provider'}</td></tr>
+                        <tr><td class="kv-key">Line Standard</td><td class="kv-val">${ph.line_type || 'MOBILE / FIXED'}</td></tr>
+                        <tr><td class="kv-key">National Format</td><td class="kv-val">${fm.national || ph.digits || '—'}</td></tr>
+                    </table>
+                    <div style="margin-top:12px;">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">ACTIVE MESSAGING & TELCO PIVOTS:</span>
+                        <div class="hit-tags-grid" style="margin-top:6px;">
+                            ${piv.whatsapp_url ? `<a href="${piv.whatsapp_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(37,211,102,0.12);color:#25d366;border-color:rgba(37,211,102,0.3);"><i class="fa-brands fa-whatsapp"></i> WhatsApp API</a>` : ''}
+                            ${piv.telegram_url ? `<a href="${piv.telegram_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(0,136,204,0.12);color:#0088cc;border-color:rgba(0,136,204,0.3);"><i class="fa-brands fa-telegram"></i> Telegram Chat</a>` : ''}
+                            ${piv.truecaller_search ? `<a href="${piv.truecaller_search}" target="_blank" rel="noopener" class="hit-badge"><i class="fas fa-search"></i> Truecaller Search</a>` : ''}
+                            ${piv.numlookup_search ? `<a href="${piv.numlookup_search}" target="_blank" rel="noopener" class="hit-badge"><i class="fas fa-tower-cell"></i> NumLookup Carrier</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 10. Port & Network Protocol Card
+        if (res.number && res.number.port_analysis) {
+            const p = res.number.port_analysis;
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-ethernet text-orange"></i><h4>Port ${p.port} Analysis</h4></div>
+                        <span class="dcard-badge" style="background:rgba(249,115,22,0.15);color:#fb923c;border-color:rgba(249,115,22,0.3);">${p.protocol}</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">Standard Service</td><td class="kv-val"><strong>${p.service}</strong></td></tr>
+                        <tr><td class="kv-key">Service Scope</td><td class="kv-val">${p.description}</td></tr>
+                        <tr><td class="kv-key">Threat Profile</td><td class="kv-val">${p.risk_profile}</td></tr>
+                        <tr><td class="kv-key">Nmap Probe</td><td class="kv-val"><code>${escapeHtml(p.nmap_command)}</code></td></tr>
+                    </table>
+                    <div style="margin-top:12px;">
+                        <a href="${p.shodan_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(239,68,68,0.12);color:#f87171;border-color:rgba(239,68,68,0.3);"><i class="fas fa-crosshairs"></i> Search Shodan (${p.shodan_dork})</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 11. Numeric Forensics & Math Encodings Card
+        if (res.number && res.number.valid) {
+            const num = res.number;
+            const enc = num.encodings || {};
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-calculator text-amber"></i><h4>Numeric Encodings & Math</h4></div>
+                        <span class="dcard-badge">${num.digit_count} DIGITS / ${enc.bit_length || 0} BITS</span>
+                    </div>
+                    <table class="kv-table">
+                        <tr><td class="kv-key">Hexadecimal</td><td class="kv-val"><code>${enc.hex || '—'}</code></td></tr>
+                        <tr><td class="kv-key">Octal</td><td class="kv-val"><code>${enc.octal || '—'}</code></td></tr>
+                        <tr><td class="kv-key">Binary</td><td class="kv-val" style="word-break:break-all;font-size:0.75rem;"><code>${(enc.binary || '').slice(0, 34)}${(enc.binary || '').length > 34 ? '...' : ''}</code></td></tr>
+                        ${num.ipv4_decimal ? `<tr><td class="kv-key">Decimal IPv4</td><td class="kv-val"><strong>${num.ipv4_decimal.resolved_ip}</strong> (<a href="${num.ipv4_decimal.shodan_url}" target="_blank" style="color:var(--accent-secondary);text-decoration:none;">Shodan Host</a>)</td></tr>` : ''}
+                        ${num.timestamp_epoch ? `<tr><td class="kv-key">Unix Epoch UTC</td><td class="kv-val"><strong>${num.timestamp_epoch.utc_datetime}</strong> (${num.timestamp_epoch.relative_time})</td></tr>` : ''}
+                    </table>
+                </div>
+            `;
+        }
+
+        // 12. Global OSINT Search Pivots Card
+        if (res.dorks && res.dorks.dorks && res.dorks.dorks.length > 0) {
+            const dorkList = res.dorks.dorks;
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-search-nodes text-indigo"></i><h4>OSINT Search Pivots (${dorkList.length})</h4></div>
+                        <span class="dcard-badge">LIVE PIVOTS</span>
+                    </div>
+                    <div class="hit-tags-grid" style="max-height:160px;overflow-y:auto;">
+                        ${dorkList.slice(0, 10).map(d => `<a href="${d.search_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3);color:#a5b4fc;"><i class="fas fa-arrow-up-right-from-square"></i> ${d.name}</a>`).join('')}
+                    </div>
                 </div>
             `;
         }

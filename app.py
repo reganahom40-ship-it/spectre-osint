@@ -12,6 +12,7 @@ from modules.discord_lookup import lookup_discord
 from modules.hash_lookup import analyze_hash
 from modules.dork_generator import generate_dorks
 from modules.bgp_lookup import lookup_bgp
+from modules.number_forensics import analyze_number
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -70,6 +71,9 @@ def api_omni():
     summary_intel = {}
     dossier = {}
 
+    digits_only = ''.join(c for c in target if c.isdigit())
+    is_pure_digits = target.isdigit()
+
     # 1. ASN Check (e.g. AS15169 or AS13335)
     if re.match(r'^AS\d+$', target, re.IGNORECASE):
         detected_type = 'asn'
@@ -83,7 +87,7 @@ def api_omni():
         except Exception as e:
             dossier['bgp_error'] = str(e)
 
-    # 2. IP Address Check (IPv4)
+    # 2. IPv4 Address Check (e.g. 1.1.1.1 or 192.168.1.1)
     elif re.match(r'^(\d{1,3}\.){3}\d{1,3}$', target):
         detected_type = 'ip'
         schema_info = 'IPv4 Global Unicast Address'
@@ -105,20 +109,102 @@ def api_omni():
         except Exception as e:
             dossier['ip_error'] = str(e)
 
-    # 3. Discord Snowflake Check (17-19 digits)
-    elif re.match(r'^\d{17,19}$', target):
-        detected_type = 'discord'
-        schema_info = '64-Bit Discord Snowflake Epoch'
-        confidence = 0.99
-        try:
-            disc_res = lookup_discord(target)
-            dossier['discord'] = disc_res
-            summary_intel['account_age_days'] = disc_res.get('age_days', 0)
-            summary_intel['created_utc'] = disc_res.get('timestamp_utc', 'Unknown')
-        except Exception as e:
-            dossier['discord_error'] = str(e)
+    # 3. Pure Numbers & Integer Intelligence (Ports, Phones, Epochs, Snowflakes, Math)
+    elif is_pure_digits:
+        num_val = int(target)
+        digit_len = len(target)
+        num_forensics = analyze_number(target)
+        dossier['number'] = num_forensics
 
-    # 4. Email Address Check
+        # Discord Snowflake check (15 - 20 digits)
+        if 15 <= digit_len <= 20:
+            detected_type = 'discord'
+            schema_info = '64-Bit Discord/Twitter Snowflake Timestamp'
+            confidence = 0.99
+            try:
+                disc_res = lookup_discord(target)
+                dossier['discord'] = disc_res
+                summary_intel['account_age_days'] = disc_res.get('age_days', 0)
+                summary_intel['created_utc'] = disc_res.get('timestamp_utc', 'Unknown')
+            except Exception as e:
+                dossier['discord_error'] = str(e)
+
+        # Phone Number Check (7 to 14 digits)
+        elif 7 <= digit_len <= 14:
+            detected_type = 'phone'
+            schema_info = f'Global Telephone Number ({digit_len} Digits)'
+            confidence = 0.95
+            try:
+                p_res = lookup_phone(target)
+                dossier['phone'] = p_res
+                summary_intel['country'] = p_res.get('country', 'Unknown')
+                summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
+                summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
+            except Exception as e:
+                dossier['phone_error'] = str(e)
+
+        # Port Check (1 - 65535)
+        elif 1 <= num_val <= 65535 and digit_len <= 5:
+            detected_type = 'port'
+            port_data = num_forensics.get('port_analysis', {})
+            schema_info = f"IANA Port {num_val} ({port_data.get('service', 'Service')})"
+            confidence = 0.98
+            summary_intel['service'] = port_data.get('service', 'Standard Port')
+            summary_intel['protocol'] = port_data.get('protocol', 'TCP/UDP')
+            summary_intel['risk'] = port_data.get('risk_profile', 'Standard')
+            
+            # If valid ASN candidate, check BGP too
+            if 1 <= num_val <= 400000:
+                try:
+                    dossier['bgp'] = lookup_bgp(f'AS{num_val}')
+                except Exception:
+                    pass
+
+        # General Big Integer / Decimal IP / Unix Epoch
+        else:
+            detected_type = 'number'
+            schema_info = f'Numeric Identifier ({digit_len} Digits / {num_val.bit_length()} Bits)'
+            confidence = 0.95
+            summary_intel['hex'] = hex(num_val)
+            summary_intel['bit_length'] = num_val.bit_length()
+            if num_forensics.get('ipv4_decimal'):
+                summary_intel['decimal_ipv4'] = num_forensics['ipv4_decimal']['resolved_ip']
+            if num_forensics.get('timestamp_epoch'):
+                summary_intel['epoch_utc'] = num_forensics['timestamp_epoch']['utc_datetime']
+
+        # Dorks & username fallback if short
+        try:
+            dossier['dorks'] = generate_dorks(target)
+        except Exception:
+            pass
+        if digit_len <= 15:
+            try:
+                u_res = check_username(target)
+                if u_res.get('found'):
+                    dossier['username'] = u_res
+            except Exception:
+                pass
+
+    # 4. Formatted Phone Number (+, -, (), spaces)
+    elif target.startswith('+') or (re.match(r'^\+?[\d\s\-\(\)\.]{7,25}$', target) and len(digits_only) >= 7):
+        detected_type = 'phone'
+        schema_info = 'ITU-T E.164 Formatted Telephone Number'
+        confidence = 0.97
+        try:
+            p_res = lookup_phone(target)
+            dossier['phone'] = p_res
+            dossier['number'] = analyze_number(digits_only)
+            summary_intel['country'] = p_res.get('country', 'Unknown')
+            summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
+            summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
+        except Exception as e:
+            dossier['phone_error'] = str(e)
+        try:
+            dossier['dorks'] = generate_dorks(digits_only)
+        except Exception:
+            pass
+
+    # 5. Email Address Check
     elif '@' in target and '.' in target:
         detected_type = 'email'
         schema_info = 'RFC 5322 Standard Email Address'
@@ -137,7 +223,7 @@ def api_omni():
         except Exception:
             pass
 
-    # 5. Cryptographic Hash Check (Hex 32 MD5/NTLM, 40 SHA-1, 64 SHA-256)
+    # 6. Cryptographic Hash Check
     elif re.match(r'^[a-fA-F0-9]{32}$|^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{64}$', target):
         detected_type = 'hash'
         schema_info = 'Hexadecimal Digest / Cryptographic Checksum'
@@ -150,7 +236,7 @@ def api_omni():
         except Exception as e:
             dossier['hash_error'] = str(e)
 
-    # 6. Domain / URL Check
+    # 7. Domain / URL Check
     elif '.' in target and not target.startswith('+') and not ' ' in target:
         detected_type = 'domain'
         schema_info = 'Fully Qualified Domain Name (FQDN)'
@@ -173,20 +259,7 @@ def api_omni():
         except Exception:
             pass
 
-    # 7. Phone Check (E.164 international)
-    elif target.startswith('+') or (re.match(r'^\+?[\d\s\-\(\)]{8,20}$', target) and sum(c.isdigit() for c in target) >= 10):
-        detected_type = 'phone'
-        schema_info = 'ITU-T E.164 Global Telephone Number'
-        confidence = 0.95
-        try:
-            phone_res = lookup_phone(target)
-            dossier['phone'] = phone_res
-            summary_intel['country'] = phone_res.get('country', 'Unknown')
-            summary_intel['carrier'] = phone_res.get('carrier', 'Unknown')
-        except Exception as e:
-            dossier['phone_error'] = str(e)
-
-    # 8. Username Discovery
+    # 8. Username Discovery Default
     else:
         detected_type = 'username'
         clean_user = target.lstrip('@')
@@ -229,6 +302,19 @@ def api_omni():
 # =========================================================================
 # DEDICATED INDIVIDUAL API ROUTES
 # =========================================================================
+@app.route('/api/number', methods=['GET', 'POST', 'OPTIONS'])
+def api_number():
+    if request.method == 'OPTIONS':
+        return '', 204
+    number_query = get_param('number') or get_param('target') or get_param('q')
+    if not number_query:
+        return make_response_json(False, 'number', '', error='Missing number parameter'), 400
+    try:
+        result = analyze_number(number_query)
+        return make_response_json(True, 'number', number_query, data=result), 200
+    except Exception as e:
+        return make_response_json(False, 'number', number_query, error=str(e)), 500
+
 @app.route('/api/username', methods=['GET', 'POST', 'OPTIONS'])
 def api_username():
     if request.method == 'OPTIONS':
