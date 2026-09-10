@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_lively_v24">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_ops_v25">
 </head>
 <body>
 
@@ -221,17 +221,161 @@
 
                 <!-- Omni Results Stage -->
                 <div class="results-viewport" id="omni-results-viewport">
-                    <!-- Default Empty State with animated radar rings -->
-                    <div class="empty-state-container" id="omni-empty-state">
-                        <div class="radar-scan-graphic">
-                            <div class="radar-sweep-beam"></div>
-                            <div class="radar-circle-ring ring-1"></div>
-                            <div class="radar-circle-ring ring-2"></div>
-                            <div class="radar-circle-ring ring-3"></div>
-                            <i class="fas fa-crosshairs radar-center-icon"></i>
+                    <!-- Rich Interactive Cyber Command Operations Hub (Shown on Idle/Standby) -->
+                    <div class="ops-hub-container" id="omni-empty-state">
+                        <div class="ops-hub-header">
+                            <div class="ops-header-title">
+                                <span class="pulse-dot"></span>
+                                <h3>Active Multi-Vector Recon Matrix</h3>
+                                <span class="ops-status-badge"><i class="fas fa-satellite"></i> 10 VECTORS STANDBY</span>
+                            </div>
+                            <p class="ops-header-desc">
+                                All parallel ingestion sockets are primed. Select any vector card below or execute an identifier above for immediate forensic decomposition.
+                            </p>
                         </div>
-                        <h3>Recon Engine Primed</h3>
-                        <p>Type a target identifier or click any instant preset above to launch multi-threaded parallel intelligence gathering.</p>
+
+                        <!-- 10 Interactive Vector Launch Hub Grid -->
+                        <div class="ops-vectors-grid">
+                            <!-- 1. Username -->
+                            <div class="ops-vcard" data-preset="shadow">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-cyan"><i class="fas fa-user-astronaut"></i></div>
+                                    <span class="ovc-badge">112+ PLATFORMS</span>
+                                </div>
+                                <h4>Social Footprint</h4>
+                                <p>Multi-threaded async probing across GitHub, X, Reddit, Discord, Telegram & forums.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>@shadow</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='shadow'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 2. IP -->
+                            <div class="ops-vcard" data-preset="1.1.1.1">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-emerald"><i class="fas fa-network-wired"></i></div>
+                                    <span class="ovc-badge">MAXMIND & BGP</span>
+                                </div>
+                                <h4>IP Geolocation</h4>
+                                <p>City-level GPS coordinates, ISP organization, ASN routing, and Shodan intelligence.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>1.1.1.1</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='1.1.1.1'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 3. Port Forensics -->
+                            <div class="ops-vcard" data-preset="8080">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-amber"><i class="fas fa-ethernet"></i></div>
+                                    <span class="ovc-badge">&lt; 10MS CASCADE</span>
+                                </div>
+                                <h4>Port & Service Profiler</h4>
+                                <p>1–65535 IANA service catalog, Nmap probe command generator, and CVE dorks.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>8080</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='8080'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 4. Phone Lookup -->
+                            <div class="ops-vcard" data-preset="+14155552671">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-teal"><i class="fas fa-phone-nodes"></i></div>
+                                    <span class="ovc-badge">E.164 ITU-T</span>
+                                </div>
+                                <h4>Phone Forensics</h4>
+                                <p>International carrier routing, HLR geolocation, and WhatsApp / Telegram pivots.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>+1 415 555 2671</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='+14155552671'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 5. Discord Snowflake -->
+                            <div class="ops-vcard" data-preset="155149108183695360">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-purple"><i class="fa-brands fa-discord"></i></div>
+                                    <span class="ovc-badge">64-BIT EPOCH</span>
+                                </div>
+                                <h4>Discord Snowflake</h4>
+                                <p>Reverse millisecond account creation timestamp, internal worker ID, and increment.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>155149108183695360</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='155149108183695360'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 6. BGP Routing -->
+                            <div class="ops-vcard" data-preset="AS15169">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-amber"><i class="fas fa-diagram-project"></i></div>
+                                    <span class="ovc-badge">RIPE STAT BGP</span>
+                                </div>
+                                <h4>BGP ASN Routing</h4>
+                                <p>Autonomous System prefix CIDRs, peering neighbors, and global route announcements.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>AS15169</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='AS15169'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 7. Domain & DNS -->
+                            <div class="ops-vcard" data-preset="github.com">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-indigo"><i class="fas fa-globe"></i></div>
+                                    <span class="ovc-badge">WHOIS & CT LOGS</span>
+                                </div>
+                                <h4>Domain Intelligence</h4>
+                                <p>Live Certificate Transparency subdomains, registrar WHOIS, and DNS zone records.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>github.com</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='github.com'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 8. Email Recon -->
+                            <div class="ops-vcard" data-preset="admin@target.corp">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-rose"><i class="fas fa-envelope-shield"></i></div>
+                                    <span class="ovc-badge">RFC 5322 & SPF</span>
+                                </div>
+                                <h4>Email & Mailbox</h4>
+                                <p>MX record priority, SPF alignment, DMARC security policy, and Gravatar lookup.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>admin@proton.me</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='admin@proton.me'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 9. Cryptographic Hash -->
+                            <div class="ops-vcard" data-preset="5d41402abc4b2a76b9719d911017c592">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-purple"><i class="fas fa-key"></i></div>
+                                    <span class="ovc-badge">ENTROPY & DIGEST</span>
+                                </div>
+                                <h4>Cryptographic Hashes</h4>
+                                <p>MD5, SHA-1, SHA-256 signature classifier, and Shannon bitwise entropy score.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>5d41402abc...</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='5d41402abc4b2a76b9719d911017c592'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+
+                            <!-- 10. Security Headers -->
+                            <div class="ops-vcard" data-preset="https://cloudflare.com">
+                                <div class="ovc-top">
+                                    <div class="ovc-icon icon-emerald"><i class="fas fa-shield-halved"></i></div>
+                                    <span class="ovc-badge">AUDIT SCORE</span>
+                                </div>
+                                <h4>Security Headers</h4>
+                                <p>CSP, HSTS, X-Frame-Options, CORS permissions policy, and server exposure audit.</p>
+                                <div class="ovc-footer">
+                                    <span class="ovc-sample">Target: <code>https://cloudflare.com</code></span>
+                                    <button class="ovc-btn" onclick="document.getElementById('omni-input').value='https://cloudflare.com'; document.getElementById('btn-omni-exec').click();"><i class="fas fa-play"></i> Probe</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Dynamic Results Container -->
@@ -585,6 +729,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_lively_v24"></script>
+    <script src="/static/js/app.js?v=20260910_ops_v25"></script>
 </body>
 </html>
