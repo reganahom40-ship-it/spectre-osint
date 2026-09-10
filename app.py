@@ -116,55 +116,48 @@ def api_omni():
         num_forensics = analyze_number(target)
         dossier['number'] = num_forensics
 
-        # Discord Snowflake check (15 - 20 digits)
-        if 15 <= digit_len <= 20:
+        # Test phone validity
+        p_res = lookup_phone(target)
+        
+        # Test Discord snowflake validity
+        disc_res = lookup_discord(target) if (15 <= digit_len <= 20) else None
+
+        if p_res.get('valid'):
+            detected_type = 'phone'
+            schema_info = f"Global Telephone ({p_res.get('country', 'E.164')})"
+            confidence = '100% VALIDATED E.164'
+            dossier['phone'] = p_res
+            summary_intel['country'] = p_res.get('country', 'Unknown')
+            summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
+            summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
+
+        elif disc_res and disc_res.get('valid') and 2015 <= disc_res.get('year', 0) <= 2030:
             detected_type = 'discord'
             schema_info = '64-Bit Discord/Twitter Snowflake Timestamp'
-            confidence = 0.99
-            try:
-                disc_res = lookup_discord(target)
-                dossier['discord'] = disc_res
-                summary_intel['account_age_days'] = disc_res.get('age_days', 0)
-                summary_intel['created_utc'] = disc_res.get('timestamp_utc', 'Unknown')
-            except Exception as e:
-                dossier['discord_error'] = str(e)
+            confidence = 'VERIFIED DISCORD EPOCH'
+            dossier['discord'] = disc_res
+            summary_intel['account_age_days'] = disc_res.get('age_days', 0)
+            summary_intel['created_utc'] = disc_res.get('timestamp_utc', 'Unknown')
 
-        # Phone Number Check (7 to 14 digits)
-        elif 7 <= digit_len <= 14:
-            detected_type = 'phone'
-            schema_info = f'Global Telephone Number ({digit_len} Digits)'
-            confidence = 0.95
-            try:
-                p_res = lookup_phone(target)
-                dossier['phone'] = p_res
-                summary_intel['country'] = p_res.get('country', 'Unknown')
-                summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
-                summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
-            except Exception as e:
-                dossier['phone_error'] = str(e)
-
-        # Port Check (1 - 65535)
         elif 1 <= num_val <= 65535 and digit_len <= 5:
             detected_type = 'port'
             port_data = num_forensics.get('port_analysis', {})
             schema_info = f"IANA Port {num_val} ({port_data.get('service', 'Service')})"
-            confidence = 0.98
+            confidence = 'IANA PORT STANDARD'
             summary_intel['service'] = port_data.get('service', 'Standard Port')
             summary_intel['protocol'] = port_data.get('protocol', 'TCP/UDP')
             summary_intel['risk'] = port_data.get('risk_profile', 'Standard')
             
-            # If valid ASN candidate, check BGP too
             if 1 <= num_val <= 400000:
                 try:
                     dossier['bgp'] = lookup_bgp(f'AS{num_val}')
                 except Exception:
                     pass
 
-        # General Big Integer / Decimal IP / Unix Epoch
         else:
             detected_type = 'number'
             schema_info = f'Numeric Identifier ({digit_len} Digits / {num_val.bit_length()} Bits)'
-            confidence = 0.95
+            confidence = f'EXACT NUMERIC / {num_val.bit_length()}-BIT MATH'
             summary_intel['hex'] = hex(num_val)
             summary_intel['bit_length'] = num_val.bit_length()
             if num_forensics.get('ipv4_decimal'):
@@ -172,7 +165,6 @@ def api_omni():
             if num_forensics.get('timestamp_epoch'):
                 summary_intel['epoch_utc'] = num_forensics['timestamp_epoch']['utc_datetime']
 
-        # Dorks & pivots
         try:
             dossier['dorks'] = generate_dorks(target)
         except Exception:
@@ -180,18 +172,22 @@ def api_omni():
 
     # 4. Formatted Phone Number (+, -, (), spaces)
     elif target.startswith('+') or (re.match(r'^\+?[\d\s\-\(\)\.]{7,25}$', target) and len(digits_only) >= 7):
-        detected_type = 'phone'
-        schema_info = 'ITU-T E.164 Formatted Telephone Number'
-        confidence = 0.97
-        try:
-            p_res = lookup_phone(target)
-            dossier['phone'] = p_res
-            dossier['number'] = analyze_number(digits_only)
-            summary_intel['country'] = p_res.get('country', 'Unknown')
-            summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
-            summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
-        except Exception as e:
-            dossier['phone_error'] = str(e)
+        p_res = lookup_phone(target)
+        dossier['phone'] = p_res
+        dossier['number'] = analyze_number(digits_only)
+        
+        if p_res.get('valid'):
+            detected_type = 'phone'
+            schema_info = f"ITU-T E.164 Telephone ({p_res.get('country', 'Valid')})"
+            confidence = '100% VALIDATED E.164'
+        else:
+            detected_type = 'phone'
+            schema_info = 'Unallocated / Invalid Telephone Range'
+            confidence = 'INVALID ITU-T PREFIX (0% MATCH)'
+
+        summary_intel['country'] = p_res.get('country', 'Unknown')
+        summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
+        summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
         try:
             dossier['dorks'] = generate_dorks(digits_only)
         except Exception:
@@ -201,17 +197,22 @@ def api_omni():
     elif '@' in target and '.' in target:
         detected_type = 'email'
         schema_info = 'RFC 5322 Standard Email Address'
-        confidence = 0.98
         try:
             email_res = lookup_email(target)
             dossier['email'] = email_res
+            mx_count = len(email_res.get('mx_records', []))
+            if mx_count > 0:
+                confidence = f'{mx_count} MX HOSTS VERIFIED'
+            else:
+                confidence = 'NO MX RECORDS (UNRESOLVED DOMAIN)'
             summary_intel['mx_servers'] = email_res.get('mx_records', [])
             summary_intel['has_gravatar'] = email_res.get('gravatar_exists', False)
         except Exception as e:
+            confidence = 'INVALID EMAIL FORMAT'
             dossier['email_error'] = str(e)
+        
         domain_part = target.split('@')[-1]
         try:
-            dossier['domain'] = lookup_domain(domain_part)
             dossier['dorks'] = generate_dorks(domain_part)
         except Exception:
             pass

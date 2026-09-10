@@ -33,14 +33,9 @@ def lookup_phone(phone_number: str) -> dict:
     country_code = parsed_number.country_code if parsed_number else (1 if len(digits) == 10 else 'Unknown')
     national_number = str(parsed_number.national_number) if parsed_number else digits
     
-    country = 'Unknown'
-    c_name = 'Unknown Telco'
-    timezones = []
-    line_type = 'MOBILE / FIXED'
-    
-    if parsed_number:
-        country = geocoder.description_for_number(parsed_number, 'en') or 'Global Unassigned / Virtual'
-        c_name = carrier.name_for_number(parsed_number, 'en') or 'Local / Wireless Provider'
+    if parsed_number and is_valid:
+        country = geocoder.description_for_number(parsed_number, 'en') or 'International / Geographic'
+        c_name = carrier.name_for_number(parsed_number, 'en') or 'Carrier Info Unavailable'
         timezones = list(timezone.time_zones_for_number(parsed_number))
         
         num_type_int = phonenumbers.number_type(parsed_number)
@@ -62,10 +57,14 @@ def lookup_phone(phone_number: str) -> dict:
             national = digits
             rfc3966 = f'tel:+{digits}'
     else:
-        e164 = f'+{digits}'
-        international = f'+{digits}'
-        national = digits
-        rfc3966 = f'tel:+{digits}'
+        country = 'Invalid / Unallocated ITU Prefix'
+        c_name = 'Unassigned Number / No Carrier'
+        timezones = []
+        line_type = 'UNASSIGNED_RANGE'
+        e164 = f'+{digits}' if digits else 'Invalid'
+        international = f'+{digits}' if digits else 'Invalid'
+        national = digits or 'Invalid'
+        rfc3966 = f'tel:+{digits}' if digits else 'Invalid'
 
     clean_digits = digits.lstrip('0')
     

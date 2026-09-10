@@ -873,6 +873,31 @@
         if (res.headers) dataPointsCount += 5;
         if (dataPointsCount === 0) dataPointsCount = 8;
 
+        // Compute dynamic confidence level
+        let confidenceText = 'ANALYZED';
+        if (data.confidence) {
+            confidenceText = String(data.confidence).toUpperCase();
+        } else if (data.data && data.data.confidence) {
+            confidenceText = String(data.data.confidence).toUpperCase();
+        } else if (detectedType === 'PHONE') {
+            confidenceText = (res.phone && res.phone.valid) ? '100% VALIDATED E.164' : 'INVALID / UNALLOCATED (0%)';
+        } else if (detectedType === 'EMAIL') {
+            const mxCount = res.email && res.email.mx_records ? res.email.mx_records.length : 0;
+            confidenceText = mxCount > 0 ? `${mxCount} MX HOSTS VERIFIED` : 'NO MX (UNRESOLVED DOMAIN)';
+        } else if (detectedType === 'PORT') {
+            confidenceText = 'IANA STANDARD PORT';
+        } else if (detectedType === 'DISCORD') {
+            confidenceText = (res.discord && res.discord.valid) ? 'VERIFIED DISCORD EPOCH' : 'UNUSUAL EPOCH';
+        } else if (detectedType === 'IP') {
+            confidenceText = 'PUBLIC UNICAST ROUTED';
+        } else if (detectedType === 'NUMBER') {
+            confidenceText = 'NUMERIC ENCODINGS & MATH';
+        } else {
+            confidenceText = 'MULTI-VECTOR DISCOVERY';
+        }
+
+        const confidenceColor = (confidenceText.includes('INVALID') || confidenceText.includes('UNRESOLVED') || confidenceText.includes('0%')) ? 'var(--accent-rose)' : 'var(--accent-emerald)';
+
         let html = `
             <!-- Top Summary Card -->
             <div class="dossier-summary-card">
@@ -898,8 +923,8 @@
                     <span class="kpi-val text-cyan">${detectedType}</span>
                 </div>
                 <div class="kpi-stat-box">
-                    <span class="kpi-lbl"><i class="fas fa-shield-halved text-green"></i> Confidence Level</span>
-                    <span class="kpi-val text-green">99.8% VERIFIED</span>
+                    <span class="kpi-lbl"><i class="fas fa-shield-halved text-green"></i> Verification Status</span>
+                    <span class="kpi-val" style="color:${confidenceColor}">${confidenceText}</span>
                 </div>
                 <div class="kpi-stat-box">
                     <span class="kpi-lbl"><i class="fas fa-stopwatch text-purple"></i> Cascade Latency</span>
@@ -999,9 +1024,10 @@
         }
 
         // 5. Domain & WHOIS Card
-        if (res.domain && !res.domain.error) {
+        if (res.domain && !res.domain.error && detectedType === 'DOMAIN') {
             const d = res.domain;
-            const subs = d.subdomains_ct || [];
+            const w = d.whois || {};
+            const subs = d.subdomains || [];
             html += `
                 <div class="dossier-card">
                     <div class="dcard-header">
@@ -1009,9 +1035,9 @@
                         <span class="dcard-badge">WHOIS + CT</span>
                     </div>
                     <table class="kv-table">
-                        <tr><td class="kv-key">Registrar</td><td class="kv-val">${d.registrar || '—'}</td></tr>
-                        <tr><td class="kv-key">Created Date</td><td class="kv-val">${d.creation_date || '—'}</td></tr>
-                        <tr><td class="kv-key">Expiration Date</td><td class="kv-val">${d.expiration_date || '—'}</td></tr>
+                        <tr><td class="kv-key">Registrar</td><td class="kv-val">${w.registrar || '—'}</td></tr>
+                        <tr><td class="kv-key">Created Date</td><td class="kv-val">${w.creation_date || '—'}</td></tr>
+                        <tr><td class="kv-key">Expiration Date</td><td class="kv-val">${w.expiration_date || '—'}</td></tr>
                     </table>
                     ${subs.length > 0 ? `
                         <div style="margin-top:12px;">
@@ -1064,23 +1090,29 @@
         // 8. Email Security Card
         if (res.email && !res.email.error) {
             const em = res.email;
+            const mxList = em.mx_records || [];
+            const mxStr = mxList.length > 0
+                ? mxList.map(m => typeof m === 'object' ? `${escapeHtml(m.server)} (p:${m.priority})` : escapeHtml(m)).join(', ')
+                : '<span style="color:var(--accent-rose);">None / Domain Unresolved</span>';
             html += `
                 <div class="dossier-card">
                     <div class="dcard-header">
-                        <div class="dcard-title-wrap"><i class="fas fa-envelope-shield"></i><h4>Email & DNS Posture</h4></div>
-                        <span class="dcard-badge">MAIL AUDIT</span>
+                        <div class="dcard-title-wrap"><i class="fas fa-envelope-shield text-rose"></i><h4>Email & DNS Posture</h4></div>
+                        <span class="dcard-badge">${em.mail_provider || 'MAIL AUDIT'}</span>
                     </div>
                     <table class="kv-table">
-                        <tr><td class="kv-key">MX Records</td><td class="kv-val">${(em.mx_records || []).join(', ') || 'None'}</td></tr>
-                        <tr><td class="kv-key">SPF Valid</td><td class="kv-val">${em.spf ? 'Enforced' : 'Missing / Incomplete'}</td></tr>
-                        <tr><td class="kv-key">Gravatar Account</td><td class="kv-val">${em.gravatar_exists ? 'Identified' : 'Not Found'}</td></tr>
+                        <tr><td class="kv-key">Mail Provider</td><td class="kv-val"><strong>${escapeHtml(em.mail_provider || 'Custom / Self-Hosted')}</strong></td></tr>
+                        <tr><td class="kv-key">MX Records</td><td class="kv-val" style="word-break:break-all;">${mxStr}</td></tr>
+                        <tr><td class="kv-key">SPF Valid</td><td class="kv-val">${em.spf_record ? '<span class="text-green">Enforced</span>' : '<span style="color:var(--accent-amber);">Missing / Incomplete</span>'}</td></tr>
+                        <tr><td class="kv-key">DMARC Policy</td><td class="kv-val">${em.dmarc_record ? '<span class="text-green">Configured</span>' : '<span style="color:var(--accent-amber);">Not Configured</span>'}</td></tr>
+                        <tr><td class="kv-key">Gravatar Account</td><td class="kv-val">${(em.gravatar && em.gravatar.exists) ? '<span class="text-green">Identified Profile</span>' : '<span style="color:var(--text-dim);">Not Found</span>'}</td></tr>
                     </table>
                 </div>
             `;
         }
 
         // 9. Phone Intelligence & Carrier Routing Card
-        if (res.phone) {
+        if (res.phone && (res.phone.valid || detectedType === 'PHONE')) {
             const ph = res.phone;
             const fm = ph.formatted || {};
             const piv = ph.messaging_pivots || {};
@@ -1088,24 +1120,27 @@
                 <div class="dossier-card">
                     <div class="dcard-header">
                         <div class="dcard-title-wrap"><i class="fas fa-phone-nodes text-teal"></i><h4>Telephone Intelligence</h4></div>
-                        <span class="dcard-badge" style="background:rgba(20,184,166,0.15);color:#2dd4bf;border-color:rgba(20,184,166,0.3);">${ph.valid ? 'VALID E.164' : 'STANDARD DIAL'}</span>
+                        <span class="dcard-badge" style="background:${ph.valid ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)'};color:${ph.valid ? '#34d399' : '#f87171'};border-color:${ph.valid ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'};">${ph.valid ? 'VALID E.164' : 'INVALID RANGE'}</span>
                     </div>
                     <table class="kv-table">
                         <tr><td class="kv-key">E.164 Format</td><td class="kv-val"><strong>${fm.e164 || ph.input}</strong></td></tr>
-                        <tr><td class="kv-key">Country / Region</td><td class="kv-val">${ph.country || 'Global / Unknown'}</td></tr>
-                        <tr><td class="kv-key">Carrier / Telco</td><td class="kv-val">${ph.carrier || 'Standard Network Provider'}</td></tr>
-                        <tr><td class="kv-key">Line Standard</td><td class="kv-val">${ph.line_type || 'MOBILE / FIXED'}</td></tr>
-                        <tr><td class="kv-key">National Format</td><td class="kv-val">${fm.national || ph.digits || '—'}</td></tr>
+                        <tr><td class="kv-key">Validation Status</td><td class="kv-val">${ph.valid ? '<span class="text-green">Allocated ITU-T Number</span>' : '<span style="color:var(--accent-rose);">Unallocated / Invalid Number</span>'}</td></tr>
+                        <tr><td class="kv-key">Country / Region</td><td class="kv-val">${escapeHtml(ph.country || 'Unknown')}</td></tr>
+                        <tr><td class="kv-key">Carrier / Telco</td><td class="kv-val">${escapeHtml(ph.carrier || 'Unknown')}</td></tr>
+                        <tr><td class="kv-key">Line Standard</td><td class="kv-val">${escapeHtml(ph.line_type || 'STANDARD')}</td></tr>
+                        <tr><td class="kv-key">National Format</td><td class="kv-val">${escapeHtml(fm.national || ph.digits || '—')}</td></tr>
                     </table>
-                    <div style="margin-top:12px;">
-                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">ACTIVE MESSAGING & TELCO PIVOTS:</span>
-                        <div class="hit-tags-grid" style="margin-top:6px;">
-                            ${piv.whatsapp_url ? `<a href="${piv.whatsapp_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(37,211,102,0.12);color:#25d366;border-color:rgba(37,211,102,0.3);"><i class="fa-brands fa-whatsapp"></i> WhatsApp API</a>` : ''}
-                            ${piv.telegram_url ? `<a href="${piv.telegram_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(0,136,204,0.12);color:#0088cc;border-color:rgba(0,136,204,0.3);"><i class="fa-brands fa-telegram"></i> Telegram Chat</a>` : ''}
-                            ${piv.truecaller_search ? `<a href="${piv.truecaller_search}" target="_blank" rel="noopener" class="hit-badge"><i class="fas fa-search"></i> Truecaller Search</a>` : ''}
-                            ${piv.numlookup_search ? `<a href="${piv.numlookup_search}" target="_blank" rel="noopener" class="hit-badge"><i class="fas fa-tower-cell"></i> NumLookup Carrier</a>` : ''}
+                    ${ph.valid ? `
+                        <div style="margin-top:12px;">
+                            <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">ACTIVE MESSAGING & TELCO PIVOTS:</span>
+                            <div class="hit-tags-grid" style="margin-top:6px;">
+                                ${piv.whatsapp_url ? `<a href="${piv.whatsapp_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(37,211,102,0.12);color:#25d366;border-color:rgba(37,211,102,0.3);"><i class="fa-brands fa-whatsapp"></i> WhatsApp API</a>` : ''}
+                                ${piv.telegram_url ? `<a href="${piv.telegram_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(0,136,204,0.12);color:#0088cc;border-color:rgba(0,136,204,0.3);"><i class="fa-brands fa-telegram"></i> Telegram Chat</a>` : ''}
+                                ${piv.truecaller_search ? `<a href="${piv.truecaller_search}" target="_blank" rel="noopener" class="hit-badge"><i class="fas fa-search"></i> Truecaller Search</a>` : ''}
+                                ${piv.numlookup_search ? `<a href="${piv.numlookup_search}" target="_blank" rel="noopener" class="hit-badge"><i class="fas fa-tower-cell"></i> NumLookup Carrier</a>` : ''}
+                            </div>
                         </div>
-                    </div>
+                    ` : ''}
                 </div>
             `;
         }
