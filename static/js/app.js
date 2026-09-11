@@ -340,9 +340,9 @@
         function rebuildParticles() {
             particles = [];
             if (prefs.atmosphere === 'off') return;
-            const baseCount = Math.floor((width / 28) * (prefs.density / 50));
-            const count = Math.max(12, Math.min(baseCount, 140));
-            const motionMult = prefs.motion === 'off' ? 0 : prefs.motion === 'subtle' ? 0.35 : prefs.motion === 'cinematic' ? 1.3 : 0.65;
+            const baseCount = Math.floor((width / 26) * (prefs.density / 50));
+            const count = Math.max(12, Math.min(baseCount, 130));
+            const motionMult = prefs.motion === 'off' ? 0 : prefs.motion === 'subtle' ? 0.35 : prefs.motion === 'cinematic' ? 1.35 : 0.7;
             const speedFactor = (prefs.speed / 100) * motionMult;
 
             for (let i = 0; i < count; i++) {
@@ -354,8 +354,9 @@
                     vy: (prefs.shape === 'hearts' || prefs.shape === 'flowers') ? -(Math.random() * 0.4 + 0.2) * speedFactor : (Math.random() - 0.5) * speedFactor * depth,
                     size: (Math.random() * 2 + 1.2) * depth,
                     depth: depth,
+                    baseAlpha: 0.2 + depth * 0.5,
                     phase: Math.random() * Math.PI * 2,
-                    twinkleSpeed: Math.random() * 0.04 + 0.02
+                    twinkleSpeed: Math.random() * 0.03 + 0.015
                 });
             }
         }
@@ -368,10 +369,12 @@
         window.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
+            document.documentElement.style.setProperty('--mouse-x', `${mouseX}px`);
+            document.documentElement.style.setProperty('--mouse-y', `${mouseY}px`);
         });
 
         function animate() {
-            if (!prefs.particles || prefs.atmosphere === 'off') {
+            if (!prefs.particles || prefs.atmosphere === 'off' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 ctx.clearRect(0, 0, width, height);
                 requestAnimationFrame(animate);
                 return;
@@ -389,6 +392,16 @@
                 const p = particles[i];
                 p.phase += p.twinkleSpeed;
 
+                // Gentle Cursor Repulsion / Attraction Reaction
+                const mdx = p.x - mouseX;
+                const mdy = p.y - mouseY;
+                const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                if (mdist < 120 && mdist > 2) {
+                    const force = (1 - mdist / 120) * 0.6;
+                    p.x += (mdx / mdist) * force;
+                    p.y += (mdy / mdist) * force;
+                }
+
                 if (shape === 'hearts' || shape === 'flowers') {
                     p.x += Math.sin(p.phase) * 0.3;
                     p.y += p.vy;
@@ -402,15 +415,12 @@
                 if (p.y < -20) p.y = height + 20;
                 if (p.y > height + 20) p.y = -20;
 
-                if (shape === 'stars') {
-                    const twAlpha = 0.4 + Math.sin(p.phase) * 0.35;
-                    ctx.save();
-                    ctx.globalAlpha = Math.max(0.15, twAlpha);
-                    drawParticleShape(ctx, p, shape, p.size);
-                    ctx.restore();
-                } else {
-                    drawParticleShape(ctx, p, shape, p.size);
-                }
+                const twAlpha = p.baseAlpha + Math.sin(p.phase) * 0.2;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0.12, Math.min(twAlpha, 0.9));
+
+                drawParticleShape(ctx, p, shape, p.size);
+                ctx.restore();
 
                 if (prefs.lineDensity > 0 && shape !== 'hearts' && shape !== 'flowers') {
                     for (let j = i + 1; j < particles.length; j++) {
@@ -426,12 +436,10 @@
                 }
 
                 // Interactive Mouse Connection Glow
-                const mdx = p.x - mouseX;
-                const mdy = p.y - mouseY;
-                const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-                if (mdist < 150) {
+                if (mdist < 140) {
                     ctx.save();
-                    ctx.strokeStyle = `rgba(6, 182, 212, ${0.55 * (1 - mdist / 150)})`;
+                    ctx.strokeStyle = `rgba(6, 182, 212, ${0.45 * (1 - mdist / 140)})`;
+                    ctx.lineWidth = 0.8;
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(mouseX, mouseY);
@@ -444,26 +452,25 @@
         animate();
     }
 
-    // --- 3D Tilt Card Physics ---
-    function init3DTilt() {
-        document.addEventListener('mousemove', (e) => {
-            if (!prefs.tilt) return;
-            const tiltElements = document.querySelectorAll('.tilt-box');
-            tiltElements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const isHovered = e.clientX >= rect.left && e.clientX <= rect.right &&
-                                  e.clientY >= rect.top && e.clientY <= rect.bottom;
-                if (isHovered) {
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    const cx = rect.width / 2;
-                    const cy = rect.height / 2;
-                    const rotateX = ((y - cy) / cy) * -6;
-                    const rotateY = ((x - cx) / cx) * 6;
-                    el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-                } else {
-                    el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
-                }
+    // --- Magnetic Interactive Cards & 3D Tilt ---
+    function initMagneticCards() {
+        const vcards = document.querySelectorAll('.ops-vcard, .studio-card');
+        vcards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                if (!prefs.tilt || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const cx = rect.width / 2;
+                const cy = rect.height / 2;
+                const rotX = ((y - cy) / cy) * -3.2; // max ~3 deg
+                const rotY = ((x - cx) / cx) * 3.2;
+                const transX = ((x - cx) / cx) * 2; // max 2px
+                const transY = ((y - cy) / cy) * 2 - 4;
+                card.style.transform = `perspective(800px) rotateX(${rotX}deg) rotateY(${rotY}deg) translate(${transX}px, ${transY}px)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) translate(0px, 0px)';
             });
         });
     }
@@ -1198,9 +1205,7 @@
             container.style.cursor = 'pointer';
             const nodeId = params.node;
             try {
-                const connectedNodes = networkGraph.getConnectedNodes(nodeId);
                 const connectedEdges = networkGraph.getConnectedEdges(nodeId);
-                
                 // Highlight connected edges
                 connectedEdges.forEach(eid => {
                     networkGraph.body.data.edges.update({ id: eid, width: 2.5, color: { color: '#06b6d4', opacity: 1 } });
@@ -1219,17 +1224,39 @@
             } catch (e) {}
         });
 
-        // Click-to-Focus & Node Inspection Popover
+        // Click-to-Focus & Node Inspection Popover with Dominance Feedback
         networkGraph.on('selectNode', function (params) {
             if (params.nodes.length > 0) {
                 const nodeId = params.nodes[0];
                 showNodeInspectionPopover(nodeId);
                 networkGraph.focus(nodeId, {
-                    scale: 1.3,
+                    scale: 1.35,
                     animation: { duration: 380, easingFunction: 'easeInOutQuad' }
                 });
                 playTone(720, 'sine', 0.06);
+
+                try {
+                    const connectedEdges = new Set(networkGraph.getConnectedEdges(nodeId));
+                    const allEdges = networkGraph.body.data.edges.get();
+                    allEdges.forEach(edge => {
+                        if (connectedEdges.has(edge.id)) {
+                            networkGraph.body.data.edges.update({ id: edge.id, width: 3, color: { color: '#06b6d4', opacity: 1 } });
+                        } else {
+                            networkGraph.body.data.edges.update({ id: edge.id, width: 0.6, color: { color: 'rgba(255,255,255,0.06)', opacity: 0.15 } });
+                        }
+                    });
+                } catch (e) {}
             }
+        });
+
+        networkGraph.on('deselectNode', function () {
+            hideNodeInspectionPopover();
+            try {
+                const allEdges = networkGraph.body.data.edges.get();
+                allEdges.forEach(edge => {
+                    networkGraph.body.data.edges.update({ id: edge.id, width: 1, color: { color: 'rgba(99,102,241,0.25)', opacity: 0.5 } });
+                });
+            } catch (e) {}
         });
 
         // Double-Click Deep Focus
@@ -2219,11 +2246,26 @@
     function initPresetsAndInput() {
         const input = document.getElementById('omni-input');
         const btnExec = document.getElementById('btn-omni-exec');
+        const typingIndicator = document.getElementById('spotlight-typing-indicator');
 
         if (input) {
-            // Real-time keystroke inspector
+            // Real-time keystroke inspector & typing state
             input.addEventListener('input', (e) => {
-                inspectTargetRealtime(e.target.value);
+                const val = e.target.value.trim();
+                inspectTargetRealtime(val);
+                if (typingIndicator) {
+                    if (val.length > 0) {
+                        typingIndicator.classList.add('active');
+                        const stiText = typingIndicator.querySelector('.sti-text');
+                        if (stiText) stiText.textContent = 'ANALYZING...';
+                    } else {
+                        typingIndicator.classList.remove('active');
+                    }
+                }
+            });
+
+            input.addEventListener('focus', () => {
+                playTone(580, 'sine', 0.04);
             });
 
             if (btnExec) {
@@ -2239,9 +2281,15 @@
         chips.forEach(chip => {
             chip.addEventListener('click', () => {
                 const val = chip.dataset.val;
+                playTone(640, 'sine', 0.06);
                 if (input) {
                     input.value = val;
                     inspectTargetRealtime(val);
+                    if (typingIndicator) {
+                        typingIndicator.classList.add('active');
+                        const stiText = typingIndicator.querySelector('.sti-text');
+                        if (stiText) stiText.textContent = 'PRIMED';
+                    }
                 }
                 executeOmniRecon(val);
             });
@@ -2262,7 +2310,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         applyPreferences();
         initParticles();
-        init3DTilt();
+        initMagneticCards();
         initCursorGlow();
         initClock();
         initNavigation();

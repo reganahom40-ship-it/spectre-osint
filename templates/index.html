@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_interactive_v38">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260910_real_upgrade_v39">
 </head>
 <body>
 
@@ -90,6 +90,7 @@
                  ============================================== -->
             <section class="mode-view active" id="view-omni">
                 <div class="hero-section">
+                    <div class="hero-ambient-aura"></div>
                     <div class="hero-subline-tag">AUTONOMOUS OSINT RECONNAISSANCE</div>
                     <h1 class="hero-heading">INVESTIGATE</h1>
                     <p class="hero-subheading">
@@ -98,11 +99,15 @@
 
                     <!-- Large Floating Investigation Command Bar -->
                     <div class="spotlight-wrapper">
-                        <div class="spotlight-box">
+                        <div class="spotlight-box" id="spotlight-box-container">
                             <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
                                 <i class="fas fa-magnifying-glass"></i>
                             </div>
                             <input type="text" id="omni-input" placeholder="Search IP, domain, username, email, phone, Discord ID, hash..." autocomplete="off" spellcheck="false">
+                            <div class="spotlight-typing-indicator" id="spotlight-typing-indicator">
+                                <span class="sti-dot"></span>
+                                <span class="sti-text">READY</span>
+                            </div>
                             <button class="btn-spotlight-exec" id="btn-omni-exec">
                                 <span>Investigate</span>
                                 <i class="fas fa-arrow-right"></i>
@@ -127,12 +132,12 @@
                         <!-- Subtle Contextual Examples -->
                         <div class="preset-chips-row">
                             <span class="preset-label">Targets:</span>
-                            <button class="preset-chip" data-val="1.1.1.1">1.1.1.1</button>
-                            <button class="preset-chip" data-val="github.com">github.com</button>
-                            <button class="preset-chip" data-val="shadow">@shadow</button>
-                            <button class="preset-chip" data-val="155149108183695360">Discord Snowflake</button>
-                            <button class="preset-chip" data-val="+14155552671">+1 415 555 2671</button>
-                            <button class="preset-chip" data-val="AS15169">AS15169</button>
+                            <button class="preset-chip" data-val="1.1.1.1"><span>1.1.1.1</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
+                            <button class="preset-chip" data-val="github.com"><span>github.com</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
+                            <button class="preset-chip" data-val="shadow"><span>@shadow</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
+                            <button class="preset-chip" data-val="155149108183695360"><span>Discord Snowflake</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
+                            <button class="preset-chip" data-val="+14155552671"><span>+1 415 555 2671</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
+                            <button class="preset-chip" data-val="AS15169"><span>AS15169</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
                         </div>
                     </div>
                 </div>
@@ -340,6 +345,11 @@
                             <div class="ops-telemetry-panel">
                                 <div class="telemetry-box-header">
                                     <div class="th-title"><i class="fas fa-satellite-dish text-cyan"></i> Live Signal Monitor</div>
+                                    <div class="live-activity-dots" title="Real-time socket streaming active">
+                                        <span class="ladot dot-1"></span>
+                                        <span class="ladot dot-2"></span>
+                                        <span class="ladot dot-3"></span>
+                                    </div>
                                     <span class="pulse-dot"></span>
                                 </div>
                                 <div class="telemetry-meters-row">
@@ -607,9 +617,12 @@
         </div>
 
         <div class="cdrawer-body">
-            <!-- Background & Atmosphere Style -->
+            <!-- GROUP 1: ATMOSPHERE -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-meteor"></i> Ambient Scene Presets</label>
+                <div class="cdrawer-group-header">
+                    <span class="cdrawer-group-title"><i class="fas fa-meteor text-cyan"></i> ATMOSPHERE</span>
+                    <span class="cdrawer-group-desc">Ambient Scene Presets</span>
+                </div>
                 <div class="atmosphere-picker-grid" id="atmosphere-grid">
                     <button class="atmo-btn active" data-atmo="neural"><i class="fas fa-network-wired"></i><span>Neural</span></button>
                     <button class="atmo-btn" data-atmo="constellation"><i class="fas fa-project-diagram"></i><span>Constellation</span></button>
@@ -624,31 +637,12 @@
                 </div>
             </div>
 
-            <!-- Motion Intensity -->
-            <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-wind"></i> Motion Intensity</label>
-                <div class="toggle-segmented" id="motion-segmented">
-                    <button class="seg-btn" data-motion="subtle">Subtle</button>
-                    <button class="seg-btn active" data-motion="normal">Normal</button>
-                    <button class="seg-btn" data-motion="cinematic">Cinematic</button>
-                    <button class="seg-btn" data-motion="off">Off</button>
-                </div>
-            </div>
-
-            <!-- 3D Graph Styling -->
-            <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-circle-nodes"></i> 3D Topology Style</label>
-                <div class="toggle-segmented" id="graphstyle-segmented">
-                    <button class="seg-btn active" data-graphstyle="technical">Technical</button>
-                    <button class="seg-btn" data-graphstyle="neon">Neon</button>
-                    <button class="seg-btn" data-graphstyle="glass">Glass</button>
-                    <button class="seg-btn" data-graphstyle="minimal">Minimal</button>
-                </div>
-            </div>
-
-            <!-- Custom Particle Shapes (Optional / Creative) -->
+            <!-- GROUP 2: PARTICLES -->
             <div class="cdrawer-section" id="shape-section">
-                <label class="cdrawer-label"><i class="fas fa-shapes"></i> Particle Geometry</label>
+                <div class="cdrawer-group-header">
+                    <span class="cdrawer-group-title"><i class="fas fa-shapes text-purple"></i> PARTICLES</span>
+                    <span class="cdrawer-group-desc">Geometry & Node Density</span>
+                </div>
                 <div class="shape-picker-grid" id="shape-grid">
                     <button class="shape-btn active" data-shape="dots"><span>●</span> Dots</button>
                     <button class="shape-btn" data-shape="circles"><span>○</span> Circles</button>
@@ -660,11 +654,21 @@
                     <button class="shape-btn" data-shape="hearts"><span>♥</span> Hearts</button>
                     <button class="shape-btn" data-shape="flowers"><span>✿</span> Flowers</button>
                 </div>
+                <div class="custom-slider-row" style="margin-top: 12px;">
+                    <div class="cslider-header">
+                        <span>Particle Density</span>
+                        <span class="cslider-val" id="val-density">50%</span>
+                    </div>
+                    <input type="range" id="slider-density" min="10" max="100" value="50" class="custom-range">
+                </div>
             </div>
 
-            <!-- Connection Lines Style -->
+            <!-- GROUP 3: CONNECTIONS -->
             <div class="cdrawer-section" id="line-section">
-                <label class="cdrawer-label"><i class="fas fa-bezier-curve"></i> Connection Lines</label>
+                <div class="cdrawer-group-header">
+                    <span class="cdrawer-group-title"><i class="fas fa-bezier-curve text-emerald"></i> CONNECTIONS</span>
+                    <span class="cdrawer-group-desc">Lines & Network Density</span>
+                </div>
                 <div class="line-style-grid" id="line-grid">
                     <button class="line-btn active" data-line="straight">Straight</button>
                     <button class="line-btn" data-line="dotted">Dotted</button>
@@ -673,26 +677,28 @@
                     <button class="line-btn" data-line="thin">Thin Tech</button>
                     <button class="line-btn" data-line="orbital">Orbital Arc</button>
                 </div>
-            </div>
-
-            <!-- Atmosphere Sliders -->
-            <div class="cdrawer-section" id="sliders-section">
-                <label class="cdrawer-label"><i class="fas fa-sliders"></i> Dynamics & Density</label>
-                <div class="custom-slider-row">
-                    <div class="cslider-header">
-                        <span>Particle Density</span>
-                        <span class="cslider-val" id="val-density">50%</span>
-                    </div>
-                    <input type="range" id="slider-density" min="10" max="100" value="50" class="custom-range">
-                </div>
-                <div class="custom-slider-row">
+                <div class="custom-slider-row" style="margin-top: 12px;">
                     <div class="cslider-header">
                         <span>Line Network Density</span>
                         <span class="cslider-val" id="val-linedensity">50%</span>
                     </div>
                     <input type="range" id="slider-linedensity" min="0" max="100" value="50" class="custom-range">
                 </div>
-                <div class="custom-slider-row">
+            </div>
+
+            <!-- GROUP 4: MOTION -->
+            <div class="cdrawer-section">
+                <div class="cdrawer-group-header">
+                    <span class="cdrawer-group-title"><i class="fas fa-wind text-cyan"></i> MOTION</span>
+                    <span class="cdrawer-group-desc">Dynamics & Drift Speed</span>
+                </div>
+                <div class="toggle-segmented" id="motion-segmented">
+                    <button class="seg-btn" data-motion="subtle">Subtle</button>
+                    <button class="seg-btn active" data-motion="normal">Normal</button>
+                    <button class="seg-btn" data-motion="cinematic">Cinematic</button>
+                    <button class="seg-btn" data-motion="off">Off</button>
+                </div>
+                <div class="custom-slider-row" style="margin-top: 12px;">
                     <div class="cslider-header">
                         <span>Drift & Speed</span>
                         <span class="cslider-val" id="val-speed">1.0x</span>
@@ -701,9 +707,12 @@
                 </div>
             </div>
 
-            <!-- Theme Presets -->
+            <!-- GROUP 5: ACCENTS & TOPOLOGY -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-palette"></i> 8 Accent Colorways</label>
+                <div class="cdrawer-group-header">
+                    <span class="cdrawer-group-title"><i class="fas fa-palette text-amber"></i> ACCENTS</span>
+                    <span class="cdrawer-group-desc">8 Colorways & Aura Glow</span>
+                </div>
                 <div class="theme-picker-grid">
                     <button class="theme-choice active" data-t="indigo">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #6366f1, #06b6d4);"></span>
@@ -738,22 +747,34 @@
                         <span>OLED Stealth</span>
                     </button>
                 </div>
-            </div>
 
-            <!-- Dynamic Glow Intensity -->
-            <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-sun"></i> Ambient Glow Aura</label>
-                <div class="toggle-segmented" id="glow-segmented">
-                    <button class="seg-btn" data-glow="off">Off</button>
-                    <button class="seg-btn" data-glow="subtle">Low</button>
-                    <button class="seg-btn" data-glow="medium">Medium</button>
-                    <button class="seg-btn active" data-glow="high">High</button>
+                <div style="margin-top: 14px;">
+                    <label class="cdrawer-sublabel"><i class="fas fa-sun"></i> Ambient Glow Aura</label>
+                    <div class="toggle-segmented" id="glow-segmented">
+                        <button class="seg-btn" data-glow="off">Off</button>
+                        <button class="seg-btn" data-glow="subtle">Low</button>
+                        <button class="seg-btn" data-glow="medium">Medium</button>
+                        <button class="seg-btn active" data-glow="high">High</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 14px;">
+                    <label class="cdrawer-sublabel"><i class="fas fa-circle-nodes"></i> 3D Topology Style</label>
+                    <div class="toggle-segmented" id="graphstyle-segmented">
+                        <button class="seg-btn active" data-graphstyle="technical">Technical</button>
+                        <button class="seg-btn" data-graphstyle="neon">Neon</button>
+                        <button class="seg-btn" data-graphstyle="glass">Glass</button>
+                        <button class="seg-btn" data-graphstyle="minimal">Minimal</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Typography Family -->
+            <!-- GROUP 6: TYPOGRAPHY -->
             <div class="cdrawer-section">
-                <label class="cdrawer-label"><i class="fas fa-font"></i> Interface Font Style</label>
+                <div class="cdrawer-group-header">
+                    <span class="cdrawer-group-title"><i class="fas fa-font text-cyan"></i> TYPOGRAPHY</span>
+                    <span class="cdrawer-group-desc">Interface Font System</span>
+                </div>
                 <div class="toggle-segmented" id="font-segmented">
                     <button class="seg-btn active" data-font="sans">Modern Sans</button>
                     <button class="seg-btn" data-font="mono">Tactical Mono</button>
@@ -762,8 +783,8 @@
             </div>
 
             <!-- Reset Preferences -->
-            <div class="cdrawer-section">
-                <button class="btn-reset-prefs" id="btn-reset-prefs"><i class="fas fa-arrow-rotate-left"></i> Reset to Defaults</button>
+            <div class="cdrawer-section" style="padding-top: 6px;">
+                <button class="btn-reset-prefs" id="btn-reset-prefs"><i class="fas fa-arrow-rotate-left"></i> Reset All Customizations</button>
             </div>
         </div>
     </aside>
@@ -788,6 +809,6 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_interactive_v38"></script>
+    <script src="/static/js/app.js?v=20260910_real_upgrade_v39"></script>
 </body>
 </html>
