@@ -187,7 +187,7 @@ body {
     width: 100%;
     max-width: 1520px;
     margin: 0 auto;
-    padding: 16px 28px 60px;
+    padding: 10px 24px 40px;
     box-sizing: border-box;
 }
 
@@ -195,11 +195,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
-    padding: 12px 0 20px;
+    gap: 16px;
+    padding: 6px 0 14px;
     background: transparent;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    margin-bottom: 24px;
+    margin-bottom: 12px;
 }
 
 .nav-brand {
@@ -338,7 +338,7 @@ body {
    ========================================================================== */
 .hero-section {
     position: relative;
-    padding: 8px 0 12px;
+    padding: 2px 0 6px;
     max-width: 840px;
     margin: 0 auto;
     text-align: center;
@@ -349,51 +349,51 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 680px;
-    height: 280px;
+    height: 240px;
     background: radial-gradient(ellipse at center, var(--accent-primary-glow) 0%, rgba(6, 182, 212, 0.08) 40%, transparent 70%);
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.55;
-    filter: blur(50px);
+    opacity: 0.5;
+    filter: blur(48px);
     animation: heroAuraShift 14s infinite alternate ease-in-out;
 }
 @keyframes heroAuraShift {
-    0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 0.45; }
-    50% { transform: translate(-48%, -52%) scale(1.1) rotate(3deg); opacity: 0.65; }
-    100% { transform: translate(-52%, -48%) scale(0.95) rotate(-3deg); opacity: 0.5; }
+    0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 0.4; }
+    50% { transform: translate(-48%, -52%) scale(1.08) rotate(3deg); opacity: 0.6; }
+    100% { transform: translate(-52%, -48%) scale(0.96) rotate(-3deg); opacity: 0.45; }
 }
 
 .hero-subline-tag {
     position: relative;
     z-index: 2;
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 700;
     letter-spacing: 0.25em;
     color: var(--accent-primary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     text-transform: uppercase;
 }
 .hero-heading {
     position: relative;
     z-index: 2;
     font-family: var(--font-display);
-    font-size: 2.2rem;
+    font-size: 2.05rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     color: var(--text-primary);
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     line-height: 1.1;
 }
 .hero-subheading {
     position: relative;
     z-index: 2;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
-    margin: 0 auto 14px;
-    max-width: 600px;
-    line-height: 1.45;
+    margin: 0 auto 10px;
+    max-width: 580px;
+    line-height: 1.4;
 }
 
 /* Large Floating Investigation Command Bar */
@@ -404,7 +404,7 @@ body {
     border: none;
     box-shadow: none;
     padding: 0;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 .spotlight-box {
     display: flex;
@@ -414,26 +414,26 @@ body {
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 9999px;
-    padding: 8px 10px 8px 22px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+    padding: 7px 10px 7px 20px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
     transition: all var(--transition-normal);
 }
 .spotlight-box:hover {
     background: rgba(15, 20, 32, 0.92);
     border-color: rgba(255, 255, 255, 0.16);
-    box-shadow: 0 14px 42px rgba(0, 0, 0, 0.68), 0 0 18px rgba(99, 102, 241, 0.12);
+    box-shadow: 0 12px 38px rgba(0, 0, 0, 0.68), 0 0 16px rgba(99, 102, 241, 0.12);
 }
 .spotlight-box:focus-within {
     border-color: var(--border-highlight);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 32px var(--accent-primary-glow);
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.75), 0 0 28px var(--accent-primary-glow);
     background: rgba(17, 24, 39, 0.97);
 }
 .spotlight-box:focus-within .spotlight-icon-pulse {
     color: var(--accent-secondary);
-    transform: scale(1.12);
+    transform: scale(1.1);
 }
 .spotlight-icon-pulse {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: var(--text-muted);
     transition: all var(--transition-fast);
 }
@@ -443,13 +443,13 @@ body {
     background: transparent;
     color: var(--text-primary);
     font-family: var(--font-ui);
-    font-size: 1.02rem;
+    font-size: 0.98rem;
     font-weight: 500;
     outline: none;
 }
 .spotlight-box input::placeholder {
     color: var(--text-dim);
-    font-size: 0.92rem;
+    font-size: 0.9rem;
 }
 .spotlight-typing-indicator {
     display: none;
@@ -484,12 +484,12 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 22px;
+    padding: 9px 20px;
     border: none;
     background: var(--accent-primary);
     color: #fff;
     font-family: var(--font-ui);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 700;
     border-radius: 9999px;
     cursor: pointer;
@@ -499,7 +499,7 @@ body {
 .btn-spotlight-exec:hover {
     background: var(--accent-primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px var(--accent-primary-glow);
+    box-shadow: 0 6px 18px var(--accent-primary-glow);
 }
 .btn-spotlight-exec:active {
     transform: translateY(0) scale(0.98);
@@ -514,7 +514,7 @@ body {
     justify-content: center;
     gap: 6px;
     flex-wrap: wrap;
-    margin-top: 10px;
+    margin-top: 6px;
 }
 .preset-label {
     font-size: 0.74rem;
@@ -525,7 +525,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 5px 12px;
+    padding: 4px 11px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 9999px;
@@ -564,17 +564,34 @@ body {
 .spatial-graph-stage {
     position: relative;
     width: 100%;
-    margin: 8px 0 20px;
+    margin: 6px 0 14px;
     border-radius: var(--radius-xl);
-    background: radial-gradient(circle at 50% 40%, rgba(20, 29, 48, 0.45) 0%, rgba(4, 6, 10, 0.95) 75%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: radial-gradient(circle at 50% 40%, rgba(20, 30, 52, 0.5) 0%, rgba(8, 12, 20, 0.9) 65%, rgba(4, 6, 10, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     overflow: hidden;
-    box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.85);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.85);
     transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+.spatial-graph-stage::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -80%;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.03), rgba(6, 182, 212, 0.05), transparent);
+    pointer-events: none;
+    z-index: 1;
+    transform: skewX(-20deg);
+    animation: graphLightSweep 16s infinite linear;
+}
+@keyframes graphLightSweep {
+    0% { left: -80%; }
+    40%, 100% { left: 160%; }
 }
 .spatial-graph-stage:hover {
     border-color: var(--border-highlight);
-    box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.9), 0 0 30px rgba(99, 102, 241, 0.12);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.9), 0 0 30px rgba(99, 102, 241, 0.12);
 }
 
 .graph-grid-overlay {
@@ -583,10 +600,10 @@ body {
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 36px 36px;
+    background-size: 34px 34px;
     background-position: center center;
-    mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 80%);
-    -webkit-mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 80%);
+    mask-image: radial-gradient(circle at 50% 50%, black 45%, transparent 85%);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, black 45%, transparent 85%);
     pointer-events: none;
     z-index: 1;
 }
@@ -609,9 +626,9 @@ body {
 
 .graph-floating-header {
     position: absolute;
-    top: 14px;
-    left: 18px;
-    right: 18px;
+    top: 12px;
+    left: 16px;
+    right: 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -650,10 +667,6 @@ body {
     border-radius: 50%;
     animation: pulseSlow 2s infinite ease-in-out;
 }
-@keyframes pulseSlow {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.35); opacity: 0.5; }
-}
 
 .graph-ghost-tools {
     display: flex;
@@ -666,7 +679,7 @@ body {
     align-items: center;
     gap: 6px;
     padding: 5px 10px;
-    background: rgba(15, 20, 32, 0.8);
+    background: rgba(15, 20, 32, 0.85);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-sm);
@@ -679,19 +692,20 @@ body {
 }
 .btn-topo-tool:hover {
     color: #ffffff;
-    border-color: rgba(99, 102, 241, 0.4);
-    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(99, 102, 241, 0.45);
+    background: rgba(30, 41, 59, 0.9);
     transform: translateY(-1px);
 }
 .btn-topo-tool.active {
     background: rgba(99, 102, 241, 0.25);
     border-color: var(--accent-primary);
     color: #fff;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
 }
 
 #vis-full-canvas {
     width: 100%;
-    height: 390px;
+    height: 410px;
     position: relative;
     z-index: 2;
 }

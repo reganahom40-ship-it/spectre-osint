@@ -1161,30 +1161,37 @@
 
         const data = {
             nodes: new vis.DataSet([
-                { id: 'spectre', label: 'SPECTRE CORE', type: 'CORE', meta: 'Central Neural Aggregator • Status: Active', color: { background: '#312e81', border: '#6366f1', highlight: { background: '#4f46e5', border: '#818cf8' } }, shape: 'dot', size: 22, font: { color: '#e0e7ff', face: 'Plus Jakarta Sans', size: 12, weight: '600' } },
-                { id: 'coord_1', label: 'POINT-α (IP/BGP)', type: 'VECTOR', meta: 'Network Ingestion Gateway • Latency: 12ms', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
-                { id: 'coord_2', label: 'POINT-β (OSINT)', type: 'VECTOR', meta: 'Social & Identity Discovery Mesh', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
-                { id: 'coord_3', label: 'POINT-γ (DNS)', type: 'VECTOR', meta: 'Infrastructure & Subdomain Enumerator', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } },
-                { id: 'coord_4', label: 'POINT-δ (THREAT)', type: 'VECTOR', meta: 'Threat Telemetry & Anomaly Radar', color: { background: '#0f172a', border: '#334155', highlight: { background: '#1e293b', border: '#475569' } }, shape: 'dot', size: 10, font: { color: '#475569', face: 'JetBrains Mono', size: 10 } }
+                { id: 'spectre', label: 'SPECTRE CORE', type: 'CORE', meta: 'Central Neural Aggregator • Status: Active', color: { background: '#312e81', border: '#818cf8', highlight: { background: '#4338ca', border: '#a5b4fc' } }, shape: 'dot', size: 28, font: { color: '#ffffff', face: 'Plus Jakarta Sans', size: 13, weight: '700', strokeWidth: 2, strokeColor: '#04060a' } },
+                { id: 'coord_1', label: 'POINT-α (IP/BGP)', type: 'VECTOR', meta: 'Network Ingestion Gateway • Latency: 12ms', color: { background: '#1e293b', border: '#6366f1', highlight: { background: '#334155', border: '#06b6d4' } }, shape: 'dot', size: 16, font: { color: '#cbd5e1', face: 'JetBrains Mono', size: 11, weight: '600' } },
+                { id: 'coord_2', label: 'POINT-β (OSINT)', type: 'VECTOR', meta: 'Social & Identity Discovery Mesh', color: { background: '#1e293b', border: '#6366f1', highlight: { background: '#334155', border: '#06b6d4' } }, shape: 'dot', size: 16, font: { color: '#cbd5e1', face: 'JetBrains Mono', size: 11, weight: '600' } },
+                { id: 'coord_3', label: 'POINT-γ (DNS)', type: 'VECTOR', meta: 'Infrastructure & Subdomain Enumerator', color: { background: '#1e293b', border: '#6366f1', highlight: { background: '#334155', border: '#06b6d4' } }, shape: 'dot', size: 16, font: { color: '#cbd5e1', face: 'JetBrains Mono', size: 11, weight: '600' } },
+                { id: 'coord_4', label: 'POINT-δ (THREAT)', type: 'VECTOR', meta: 'Threat Telemetry & Anomaly Radar', color: { background: '#1e293b', border: '#6366f1', highlight: { background: '#334155', border: '#06b6d4' } }, shape: 'dot', size: 16, font: { color: '#cbd5e1', face: 'JetBrains Mono', size: 11, weight: '600' } }
             ]),
             edges: new vis.DataSet([
-                { id: 'e_coord_1', from: 'spectre', to: 'coord_1', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true },
-                { id: 'e_coord_2', from: 'spectre', to: 'coord_2', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true },
-                { id: 'e_coord_3', from: 'spectre', to: 'coord_3', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true },
-                { id: 'e_coord_4', from: 'spectre', to: 'coord_4', color: { color: 'rgba(99,102,241,0.18)', highlight: 'rgba(6,182,212,0.8)' }, width: 1, dashes: true }
+                { id: 'e_coord_1', from: 'spectre', to: 'coord_1', color: { color: 'rgba(99,102,241,0.3)', highlight: 'rgba(6,182,212,0.9)' }, width: 1.5, dashes: true },
+                { id: 'e_coord_2', from: 'spectre', to: 'coord_2', color: { color: 'rgba(99,102,241,0.3)', highlight: 'rgba(6,182,212,0.9)' }, width: 1.5, dashes: true },
+                { id: 'e_coord_3', from: 'spectre', to: 'coord_3', color: { color: 'rgba(99,102,241,0.3)', highlight: 'rgba(6,182,212,0.9)' }, width: 1.5, dashes: true },
+                { id: 'e_coord_4', from: 'spectre', to: 'coord_4', color: { color: 'rgba(99,102,241,0.3)', highlight: 'rgba(6,182,212,0.9)' }, width: 1.5, dashes: true }
             ])
         };
 
         const options = {
             physics: {
-                stabilization: { iterations: 120 },
-                barnesHut: { gravitationalConstant: -3600, springLength: 110, springConstant: 0.04, damping: 0.09 }
+                stabilization: { iterations: 140 },
+                barnesHut: { gravitationalConstant: -4200, springLength: 145, springConstant: 0.045, damping: 0.09 }
             },
-            interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true }
+            interaction: { hover: true, tooltipDelay: 80, zoomView: true, dragView: true }
         };
 
         networkGraph = new vis.Network(container, data, options);
         updateGraphNodeCount();
+
+        // Fit gracefully after layout stabilization
+        setTimeout(() => {
+            if (networkGraph) {
+                networkGraph.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
+            }
+        }, 150);
 
         // Subtle Mouse Parallax on Stage
         const stage = document.getElementById('spatial-graph-stage');
@@ -1200,15 +1207,18 @@
             });
         }
 
-        // Node Hover: Edge brightening and subtle scale
+        // Node Hover: Edge brightening, neighbor shadow aura & cursor
         networkGraph.on('hoverNode', function (params) {
             container.style.cursor = 'pointer';
             const nodeId = params.node;
             try {
                 const connectedEdges = networkGraph.getConnectedEdges(nodeId);
-                // Highlight connected edges
                 connectedEdges.forEach(eid => {
-                    networkGraph.body.data.edges.update({ id: eid, width: 2.5, color: { color: '#06b6d4', opacity: 1 } });
+                    networkGraph.body.data.edges.update({ id: eid, width: 3, color: { color: '#06b6d4', opacity: 1 } });
+                });
+                const connectedNodes = networkGraph.getConnectedNodes(nodeId);
+                connectedNodes.forEach(nid => {
+                    networkGraph.body.data.nodes.update({ id: nid, shadow: { enabled: true, color: '#06b6d4', size: 10 } });
                 });
             } catch (e) {}
         });
@@ -1219,7 +1229,11 @@
             try {
                 const connectedEdges = networkGraph.getConnectedEdges(nodeId);
                 connectedEdges.forEach(eid => {
-                    networkGraph.body.data.edges.update({ id: eid, width: 1, color: { color: 'rgba(99,102,241,0.25)', opacity: 0.5 } });
+                    networkGraph.body.data.edges.update({ id: eid, width: 1.5, color: { color: 'rgba(99,102,241,0.3)', opacity: 0.5 } });
+                });
+                const connectedNodes = networkGraph.getConnectedNodes(nodeId);
+                connectedNodes.forEach(nid => {
+                    networkGraph.body.data.nodes.update({ id: nid, shadow: { enabled: false } });
                 });
             } catch (e) {}
         });
@@ -1254,7 +1268,7 @@
             try {
                 const allEdges = networkGraph.body.data.edges.get();
                 allEdges.forEach(edge => {
-                    networkGraph.body.data.edges.update({ id: edge.id, width: 1, color: { color: 'rgba(99,102,241,0.25)', opacity: 0.5 } });
+                    networkGraph.body.data.edges.update({ id: edge.id, width: 1.5, color: { color: 'rgba(99,102,241,0.3)', opacity: 0.5 } });
                 });
             } catch (e) {}
         });
@@ -1304,7 +1318,9 @@
             btnAutoRotate.addEventListener('click', () => {
                 autoRotate = !autoRotate;
                 btnAutoRotate.classList.toggle('active', autoRotate);
-                if (lblAutoRotate) lblAutoRotate.textContent = autoRotate ? 'Rotate: On' : 'Rotate: Off';
+                if (lblAutoRotate) {
+                    lblAutoRotate.innerHTML = autoRotate ? `<span class="pulse-dot"></span> Rotate: On` : `Rotate: Off`;
+                }
                 if (autoRotate) {
                     playTone(750, 'sine', 0.06);
                     showToast('Auto-Rotate Engaged', 'fas fa-arrows-rotate');
