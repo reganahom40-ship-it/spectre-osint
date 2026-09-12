@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPECTRE — Secure Credential Checkout</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v4">
+    <link rel="stylesheet" href="/static/css/checkout.css?v=20260912_chk_v1">
+</head>
+<body class="checkout-body">
+
+    <div class="landing-ambient-bg">
+        <div class="ambient-orb orb-top-left"></div>
+        <div class="ambient-orb orb-mid-right"></div>
+    </div>
+
+    <header class="checkout-header">
+        <div class="checkout-header-inner">
+            <a href="/" class="checkout-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="brand-text">
+                    SPECTRE <span class="brand-badge">SECURE CHECKOUT</span>
+                </div>
+            </a>
+
+            <div class="checkout-nav-right">
+                <div class="security-badge">
+                    <i class="fas fa-shield-halved text-cyan"></i>
+                    <span>256-BIT ENCRYPTED CUSTODIAL GATEWAY</span>
+                </div>
+                <a href="/" class="btn-return-link">
+                    <i class="fas fa-arrow-left"></i> Return to Site
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="checkout-main">
+        <div class="checkout-split-grid">
+            
+            <div class="checkout-summary-col">
+                <div class="summary-card">
+                    <div class="summary-pill">
+                        <span class="dot"></span>
+                        <span id="summary-plan-badge">{% if plan.id == 'lifetime' %}LIFETIME CLEARANCE{% else %}PRO MONTHLY{% endif %}</span>
+                    </div>
+
+                    <h2 class="summary-plan-title" id="summary-plan-name">{{ plan.name or 'Lifetime Master Pass' }}</h2>
+                    <p class="summary-plan-desc" id="summary-plan-desc">{{ plan.description or 'Permanent uncapped access to all OSINT intelligence engines' }}</p>
+
+                    <div class="summary-price-box">
+                        {% if plan.id == 'lifetime' %}
+                        <div class="price-strikethrough-row">
+                            <span class="strikethrough-val">$299.00 USD</span>
+                            <span class="save-badge">SAVE $200 TODAY</span>
+                        </div>
+                        {% endif %}
+                        <div class="price-current-row">
+                            <span class="currency-symbol">$</span>
+                            <span class="price-val" id="summary-price-num">{{ plan.price|int if plan.price else 99 }}</span>
+                            <span class="price-period" id="summary-period">{% if plan.billing_period == 'one-time' %}USD (ONE-TIME){% else %}/ month{% endif %}</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-features-list">
+                        <div class="sfeature-item">
+                            <i class="fas fa-check-circle text-cyan"></i>
+                            <span><strong>Unlimited Parallel Cascades</strong> across all 10 recon vectors</span>
+                        </div>
+                        <div class="sfeature-item">
+                            <i class="fas fa-check-circle text-cyan"></i>
+                            <span><strong>Deep BGP & ASN Mapping</strong> with prefix hijacks & route cartography</span>
+                        </div>
+                        <div class="sfeature-item">
+                            <i class="fas fa-check-circle text-cyan"></i>
+                            <span><strong>Darkweb Breach Intelligence</strong> with credential dump correlation</span>
+                        </div>
+                        <div class="sfeature-item">
+                            <i class="fas fa-check-circle text-cyan"></i>
+                            <span><strong>3D Spatial Topology Graph</strong> with interactive node physics</span>
+                        </div>
+                        <div class="sfeature-item">
+                            <i class="fas fa-check-circle text-cyan"></i>
+                            <span><strong>Raw JSON / Markdown Dossier Exports</strong> for case files</span>
+                        </div>
+                    </div>
+
+                    <div class="checkout-trust-banner">
+                        <div class="trust-badge-row">
+                            <i class="fas fa-bolt text-amber"></i>
+                            <div>
+                                <div class="tbr-title">Rapid Sub-2s Automated Verification</div>
+                                <div class="tbr-sub">Zero waiting for manual approval. Ledgers and proofs confirm in seconds.</div>
+                            </div>
+                        </div>
+                        <div class="trust-badge-row" style="margin-top:10px;">
+                            <i class="fas fa-vault text-emerald"></i>
+                            <div>
+                                <div class="tbr-title">100% Dedicated Custodial Vault</div>
+                                <div class="tbr-sub">Elliptic-curve keypair dynamically derived with AES-256 encryption.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-footer-meta">
+                        <span><i class="fas fa-lock text-cyan"></i> Airgapped Infrastructure</span>
+                        <span><i class="fas fa-circle-check text-emerald"></i> Instant Credential Delivery</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkout-form-col">
+                <div class="terminal-card">
+
+                    <div class="checkout-pipeline">
+                        <div class="pipeline-step active" id="chk-step-ind-1">
+                            <span class="step-circle">1</span>
+                            <span class="step-title">Select Rail</span>
+                        </div>
+                        <div class="pipeline-line" id="chk-step-line-1"></div>
+                        <div class="pipeline-step" id="chk-step-ind-2">
+                            <span class="step-circle">2</span>
+                            <span class="step-title">Deposit Funds</span>
+                        </div>
+                        <div class="pipeline-line" id="chk-step-line-2"></div>
+                        <div class="pipeline-step" id="chk-step-ind-3">
+                            <span class="step-circle">3</span>
+                            <span class="step-title">Instant Clearance</span>
+                        </div>
+                    </div>
+
+                    <div class="chk-pane" id="chk-pane-1">
+                        <h3 class="pane-title">Configure Settlement Rail</h3>
+                        <p class="pane-sub">Choose your preferred transaction settlement rail and account email.</p>
+
+                        <div class="input-group">
+                            <label class="input-label"><i class="fas fa-envelope text-cyan"></i> Operator Account Email</label>
+                            <input type="email" class="terminal-input" id="chk-email-input" placeholder="operator@spectre.io" value="{% if user %}{{ user.email }}{% endif %}">
+                            <small class="input-hint">Your clearance token and access will be activated for this email.</small>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 18px;">
+                            <label class="input-label"><i class="fas fa-network-wired text-amber"></i> Choose Settlement Rail</label>
+                            <div class="rails-grid">
+                                <button type="button" class="rail-btn active" data-rail="ltc" onclick="selectRail('ltc')">
+                                    <i class="fa-solid fa-coins" style="color:#00f0ff;"></i>
+                                    <div class="rail-name">Litecoin (LTC)</div>
+                                    <div class="rail-meta" style="color:#00f0ff;">Instant • $0.01 Fee</div>
+                                </button>
+
+                                <button type="button" class="rail-btn" data-rail="paypal" onclick="selectRail('paypal')">
+                                    <i class="fa-brands fa-paypal" style="color:#818cf8;"></i>
+                                    <div class="rail-name">PayPal</div>
+                                    <div class="rail-meta">Direct Card / Balance</div>
+                                </button>
+
+                                <button type="button" class="rail-btn" data-rail="btc" onclick="selectRail('btc')">
+                                    <i class="fa-brands fa-bitcoin" style="color:#f59e0b;"></i>
+                                    <div class="rail-name">Bitcoin (BTC)</div>
+                                    <div class="rail-meta">Native SegWit</div>
+                                </button>
+
+                                <button type="button" class="rail-btn" data-rail="eth" onclick="selectRail('eth')">
+                                    <i class="fa-brands fa-ethereum" style="color:#c084fc;"></i>
+                                    <div class="rail-name">ETH / USDT</div>
+                                    <div class="rail-meta">ERC-20 / L2</div>
+                                </button>
+
+                                <button type="button" class="rail-btn" data-rail="cashapp" onclick="selectRail('cashapp')">
+                                    <i class="fas fa-dollar-sign" style="color:#10b981;"></i>
+                                    <div class="rail-name">Cash App</div>
+                                    <div class="rail-meta">$Cashtag Direct</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="amount-preview-card">
+                            <span class="ap-label">Estimated Settlement Required:</span>
+                            <span class="ap-val" id="chk-estimated-amount">1.1647 LTC (~$85 USD/LTC)</span>
+                        </div>
+
+                        <button type="button" class="btn-terminal-primary" id="btn-create-chk-order" onclick="generateOrderVault()">
+                            <span>Generate Custodial Vault & Deposit Address</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="chk-pane" id="chk-pane-2" style="display:none;">
+                        <div class="pane-header-row">
+                            <div>
+                                <h3 class="pane-title">Complete Transfer</h3>
+                                <p class="pane-sub">Order Reference: <strong class="text-cyan font-mono" id="chk-order-id-display">SPEC-XXXXXXXX</strong></p>
+                            </div>
+                            <div class="countdown-clock">
+                                <i class="fas fa-clock text-amber"></i>
+                                <span class="font-mono" id="chk-countdown-timer">29:59</span>
+                            </div>
+                        </div>
+
+                        <div class="qr-target-frame" id="chk-qr-wrapper">
+                            <div class="qr-box" id="chk-qrcode-target"></div>
+                            <div class="qr-note"><i class="fas fa-qrcode text-cyan"></i> Scan with mobile wallet or copy coordinates below</div>
+                        </div>
+
+                        <div class="transfer-spec-box">
+                            <div class="ts-label">SEND EXACT SETTLEMENT AMOUNT:</div>
+                            <div class="ts-row">
+                                <span class="ts-val font-mono" id="chk-display-amount">1.1647 LTC</span>
+                                <button type="button" class="btn-tactile-copy" id="btn-copy-chk-amt" onclick="copyDynamicText('chk-display-amount', 'btn-copy-chk-amt', 'Amount')">
+                                    <i class="fas fa-copy"></i> Copy Amount
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="transfer-spec-box" style="margin-top:12px;">
+                            <div class="ts-label" id="chk-display-addr-label">LITECOIN VAULT DESTINATION ADDRESS:</div>
+                            <div class="ts-row">
+                                <code class="ts-addr font-mono" id="chk-display-addr">...</code>
+                                <button type="button" class="btn-tactile-copy" id="btn-copy-chk-addr" onclick="copyDynamicText('chk-display-addr', 'btn-copy-chk-addr', 'Address')">
+                                    <i class="fas fa-copy"></i> Copy Address
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="direct-link-box" id="chk-direct-link-box" style="display:none; margin-top:12px;">
+                            <a href="#" target="_blank" class="btn-direct-external" id="chk-external-pay-link">
+                                <i class="fas fa-arrow-up-right-from-square"></i> Open Direct Payment Portal
+                            </a>
+                        </div>
+
+                        <div class="proof-submit-section">
+                            <label class="input-label" id="chk-proof-label"><i class="fas fa-receipt text-cyan"></i> Enter Transaction Hash (TXID) or Transfer ID</label>
+                            <div class="proof-input-row">
+                                <input type="text" class="terminal-input" id="chk-proof-input" placeholder="e.g. 9b8d0... or PayPal/CashApp ID">
+                                <button type="button" class="btn-verify-action" id="btn-submit-chk-proof" onclick="submitProofFast()">
+                                    <i class="fas fa-shield-check"></i> Verify Settlement
+                                </button>
+                            </div>
+                            <div class="error-banner" id="chk-proof-err" style="display:none;"></div>
+                        </div>
+
+                        <div class="rapid-monitor-bar">
+                            <div class="rm-left">
+                                <span class="pulse-dot"></span>
+                                <span>Ledger Monitor Active • Checking blockchain every 1.2s</span>
+                            </div>
+                            <button type="button" class="btn-check-now" onclick="verifyOnChainFast()">
+                                <i class="fas fa-sync-alt"></i> Check Ledger Now
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chk-pane" id="chk-pane-3" style="display:none; text-align:center; padding: 40px 10px;">
+                        <div class="clearance-success-orb">
+                            <i class="fas fa-check"></i>
+                        </div>
+
+                        <div class="clearance-pill">PAYMENT VERIFIED & APPROVED</div>
+
+                        <h2 class="clearance-title">Clearance Elevated to <span class="text-cyan font-mono" id="chk-confirmed-tier">LIFETIME</span></h2>
+                        <p class="clearance-desc">Your cryptographic clearance token is now active. Launching the SPECTRE Intelligence Command Console...</p>
+
+                        <div class="clearance-actions">
+                            <a href="/app" class="btn-launch-console" id="btn-launch-app">
+                                <span>Enter Intelligence Console</span>
+                                <i class="fas fa-terminal"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        window.INITIAL_PLAN_ID = '{{ plan.id or "lifetime" }}';
+        window.INITIAL_PRICE = {{ plan.price if plan.price else 99 }};
+    </script>
+    <script src="/static/js/landing.js?v=20260912_paywall_v4"></script>
+    <script src="/static/js/checkout.js?v=20260912_chk_v1"></script>
+</body>
+</html>

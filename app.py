@@ -133,6 +133,19 @@ def landing_page():
     user = get_current_user()
     return render_template('landing.html', user=user)
 
+@app.route('/checkout', methods=['GET'])
+def dedicated_checkout():
+    plan_id = (request.args.get('plan') or 'lifetime').lower()
+    plan = get_plan(plan_id) or {
+        'id': 'lifetime',
+        'name': 'Lifetime Master Pass',
+        'price': 99.0,
+        'billing_period': 'one-time',
+        'description': 'Permanent uncapped access to all OSINT intelligence engines'
+    }
+    user = get_current_user()
+    return render_template('checkout.html', plan=plan, plan_id=plan_id, user=user)
+
 @app.route('/logout', methods=['GET', 'POST'])
 def direct_logout():
     logout_user()

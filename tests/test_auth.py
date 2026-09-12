@@ -159,6 +159,8 @@ def test_payment_checkout_flow():
 def test_order_rejection_flow():
     client = app.test_client()
     bogus_email = "fake_buyer_99@spectre.io"
+    if get_user_by_email(bogus_email):
+        update_user_tier(bogus_email, 'free')
 
     # 1. Create order
     create_resp = client.post('/api/payment/create-order', json={
@@ -236,6 +238,19 @@ def test_landing_page_routes():
     # Explicit /landing route
     explicit_landing = client.get('/landing')
     assert explicit_landing.status_code == 200
+
+def test_dedicated_checkout_page_route():
+    client = app.test_client()
+    # Check default lifetime plan
+    chk_resp = client.get('/checkout')
+    assert chk_resp.status_code == 200
+    assert b'CUSTODIAL VAULT' in chk_resp.data or b'CHECKOUT' in chk_resp.data
+    assert b'Lifetime Master Pass' in chk_resp.data or b'SPECTRE' in chk_resp.data
+
+    # Check premium plan query
+    chk_prem = client.get('/checkout?plan=premium')
+    assert chk_prem.status_code == 200
+    assert b'Pro Tactical' in chk_prem.data or b'19' in chk_prem.data
 
 def test_logout_route_and_session_clearing():
     client = app.test_client()

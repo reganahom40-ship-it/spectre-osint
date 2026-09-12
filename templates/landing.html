@@ -61,7 +61,7 @@
                     <i class="fas fa-power-off"></i> Logout
                 </a>
                 {% elif user %}
-                <button class="btn-nav-cta" onclick="openCheckoutModal('lifetime')">
+                <button class="btn-nav-cta" onclick="window.open('/checkout?plan=lifetime', '_blank')">
                     <i class="fas fa-crown"></i> Upgrade
                 </button>
                 <a href="/logout" class="btn-nav-logout">
@@ -71,7 +71,7 @@
                 <button class="btn-nav-signin" onclick="openAuthModal('login')">
                     Operator Sign In
                 </button>
-                <button class="btn-nav-cta" onclick="openCheckoutModal('lifetime')">
+                <button class="btn-nav-cta" onclick="window.open('/checkout?plan=lifetime', '_blank')">
                     Get Access
                 </button>
                 {% endif %}
@@ -100,12 +100,12 @@
                 </p>
 
                 <div class="hero-actions">
-                    <button class="btn-hero-primary" onclick="openCheckoutModal('lifetime')">
+                    <button class="btn-hero-primary" onclick="window.open('/checkout?plan=lifetime', '_blank')">
                         <i class="fas fa-bolt"></i>
                         <span>Get Lifetime Access ($99)</span>
                         <i class="fas fa-arrow-right arrow-icon"></i>
                     </button>
-                    <button class="btn-hero-secondary" onclick="openCheckoutModal('premium')">
+                    <button class="btn-hero-secondary" onclick="window.open('/checkout?plan=premium', '_blank')">
                         <span>Pro Monthly ($19/mo)</span>
                     </button>
                 </div>
@@ -341,7 +341,7 @@
                         <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Instant JSON & Markdown Dossier Exports</strong> for case management</span></li>
                     </ul>
 
-                    <button class="btn-select-plan btn-plan-pro" onclick="openCheckoutModal('premium')">
+                    <button class="btn-select-plan btn-plan-pro" onclick="window.open('/checkout?plan=premium', '_blank')">
                         <span>Activate Pro Monthly ($19/mo)</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
@@ -377,7 +377,7 @@
                         <li><i class="fas fa-shield-check text-amber"></i> <span><strong>VIP Direct Operator Telegram Channel Access</strong> for custom requests</span></li>
                     </ul>
 
-                    <button class="btn-select-plan btn-plan-lifetime" onclick="openCheckoutModal('lifetime')">
+                    <button class="btn-select-plan btn-plan-lifetime" onclick="window.open('/checkout?plan=lifetime', '_blank')">
                         <i class="fas fa-bolt"></i>
                         <span>Acquire Lifetime Access ($99)</span>
                         <i class="fas fa-arrow-right"></i>
@@ -424,9 +424,14 @@
                         <span>Secure Credential Gateway</span>
                     </h3>
                 </div>
-                <button class="btn-modal-close" onclick="closeCheckoutModal()">
-                    <i class="fas fa-xmark"></i>
-                </button>
+                <div class="modal-header-actions" style="display:flex; align-items:center; gap:10px;">
+                    <a href="/checkout?plan=lifetime" id="btn-modal-open-newtab" target="_blank" class="btn-modal-open-tab" title="Open Dedicated Checkout in New Tab" style="color:var(--accent-cyan); font-size:0.75rem; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:4px; border:1px solid rgba(0,240,255,0.3); background:rgba(0,240,255,0.08); transition:all 0.2s ease;">
+                        <i class="fas fa-arrow-up-right-from-square"></i> <span>Open in New Tab</span>
+                    </a>
+                    <button class="btn-modal-close" onclick="closeCheckoutModal()">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Step Progress Indicator -->

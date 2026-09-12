@@ -322,6 +322,7 @@
                 goToStep(4);
                 showToast('Proof submitted! Node verification monitor active.', 'check');
                 startStatusPolling(activeOrder.id);
+                setTimeout(() => { checkCurrentOrderStatus(false); }, 400);
             } else {
                 if (errBox) {
                     errBox.textContent = data.error || 'Failed to submit proof.';
@@ -341,14 +342,14 @@
         }
     };
 
-    // Step 4: Real-time Radar Status Poller
+    // Step 4: Real-time Radar Status Poller (sub-2s rapid verification)
     function startStatusPolling(orderId) {
         if (statusPollInterval) clearInterval(statusPollInterval);
 
         checkCurrentOrderStatus(false);
         statusPollInterval = setInterval(() => {
             checkCurrentOrderStatus(false);
-        }, 3500);
+        }, 1200);
     }
 
     window.checkCurrentOrderStatus = async function(isManual = false) {
@@ -593,7 +594,7 @@
                         ${featuresList}
                     </ul>
 
-                    <button class="btn-select-plan ${isFeatured ? 'btn-plan-lifetime' : 'btn-plan-pro'}" onclick="openCheckoutModal('${escapeHtml(p.id)}', ${p.price}, '${escapeHtml(p.name)}')">
+                    <button class="btn-select-plan ${isFeatured ? 'btn-plan-lifetime' : 'btn-plan-pro'}" onclick="window.open('/checkout?plan=' + encodeURIComponent('${escapeHtml(p.id)}'), '_blank')">
                         <i class="fas ${isFeatured ? 'fa-bolt' : 'fa-arrow-right'}"></i>
                         <span>Get ${escapeHtml(p.name)} (${priceFormatted})</span>
                     </button>
@@ -615,11 +616,23 @@
         } else {
             currentAmount = (tier === 'lifetime') ? 99 : 19;
         }
+
+        // Open dedicated checkout experience in a new tab
+        try {
+            const win = window.open(`/checkout?plan=${encodeURIComponent(tier)}`, '_blank');
+            if (win) return;
+        } catch (e) {
+            console.warn('Popup blocked, falling back to modal:', e);
+        }
         
         const backdrop = document.getElementById('checkout-modal-backdrop');
         const planNameEl = document.getElementById('modal-plan-name');
         const planPriceEl = document.getElementById('modal-plan-price');
+        const openTabLink = document.getElementById('btn-modal-open-newtab');
         
+        if (openTabLink) {
+            openTabLink.href = `/checkout?plan=${encodeURIComponent(tier)}`;
+        }
         if (planNameEl) planNameEl.textContent = planName || (tier === 'lifetime' ? 'Lifetime Pass' : 'Pro Monthly');
         if (planPriceEl) planPriceEl.textContent = `$${Number(currentAmount).toFixed(2)} USD`;
         
