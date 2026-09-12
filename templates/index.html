@@ -76,6 +76,10 @@
                     <i class="fas fa-eye"></i>
                     <span>LANDING</span>
                 </a>
+                <button class="btn-nav-admin-panel" id="btn-navbar-admin" {% if not user or user.get('tier') != 'admin' %}style="display:none;"{% endif %} title="Master Admin Control Panel">
+                    <i class="fas fa-shield-halved text-emerald"></i>
+                    <span>ADMIN</span>
+                </button>
                 <a href="/logout" class="btn-nav-direct-logout" id="btn-direct-logout" title="Sign Out of SPECTRE Session">
                     <i class="fas fa-arrow-right-from-bracket"></i>
                     <span>LOGOUT</span>
@@ -1009,44 +1013,172 @@
     <!-- ==============================================
          MASTER ADMIN UPGRADE PORTAL MODAL
          ============================================== -->
+    <!-- ==============================================
+         MASTER ADMIN UPGRADE & MANAGEMENT CONSOLE
+         ============================================== -->
     <div class="spectre-modal-backdrop" id="admin-modal-backdrop">
         <div class="spectre-modal admin-modal" id="admin-modal">
             <div class="modal-header-row">
-                <h3><i class="fas fa-terminal text-rose"></i> Master Admin Control Console</h3>
+                <h3><i class="fas fa-shield-halved text-emerald"></i> Master Admin Control Console</h3>
                 <button class="btn-close-modal" id="btn-close-admin"><i class="fas fa-xmark"></i></button>
             </div>
 
-            <!-- Instant User Upgrade By Email Form -->
-            <form id="admin-upgrade-form" class="admin-upgrade-form" onsubmit="return false;">
-                <input type="email" id="admin-target-email" placeholder="Enter target user email (e.g. user@target.com)" required list="registered-emails-list">
-                <datalist id="registered-emails-list"></datalist>
-                <select id="admin-target-tier">
-                    <option value="lifetime" selected>Lifetime Tier</option>
-                    <option value="premium">Premium Tier</option>
-                    <option value="free">Free Tier</option>
-                    <option value="admin">Master Admin</option>
-                </select>
-                <button type="submit" class="btn-admin-submit" id="btn-admin-submit-upgrade">
-                    <i class="fas fa-arrow-up-right-from-square"></i> Upgrade User
+            <!-- Admin Navigation Tabs -->
+            <div class="admin-tabs-bar">
+                <button class="admin-tab-btn active" id="tab-btn-admin-pay" onclick="window.SPECTRE_AUTH.switchAdminTab('pay')">
+                    <i class="fas fa-wallet text-cyan"></i> Payment Wallets & Accounts
                 </button>
-            </form>
+                <button class="admin-tab-btn" id="tab-btn-admin-plans" onclick="window.SPECTRE_AUTH.switchAdminTab('plans')">
+                    <i class="fas fa-tags text-amber"></i> Pricing & Custom Plans
+                </button>
+                <button class="admin-tab-btn" id="tab-btn-admin-users" onclick="window.SPECTRE_AUTH.switchAdminTab('users')">
+                    <i class="fas fa-users text-rose"></i> Operator Registry & Upgrades
+                </button>
+            </div>
 
-            <!-- Live Registered Users Table -->
-            <div class="admin-users-table-box">
-                <table class="admin-users-table" id="admin-users-table">
-                    <thead>
-                        <tr>
-                            <th>User Email</th>
-                            <th>Current Tier</th>
-                            <th>Probes</th>
-                            <th>Registered</th>
-                            <th>Quick Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-users-tbody">
-                        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
-                    </tbody>
-                </table>
+            <!-- TAB 1: Payment Wallets & Accounts -->
+            <div class="admin-tab-pane active" id="tab-pane-admin-pay">
+                <div class="admin-pane-desc">
+                    Configure your direct settlement addresses and accounts. All checkout requests across the landing page and member deck route directly to these destinations.
+                </div>
+                <form id="admin-payments-form" class="admin-form-grid" onsubmit="return false;">
+                    <div class="admin-form-group">
+                        <label><i class="fab fa-litecoin text-cyan"></i> Litecoin (LTC) Address</label>
+                        <input type="text" id="adm-ltc" placeholder="e.g. ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8">
+                        <small>Native SegWit or Legacy LTC wallet address</small>
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fab fa-paypal text-sky"></i> PayPal Account Email</label>
+                        <input type="email" id="adm-paypal-email" placeholder="e.g. payments@yourdomain.com">
+                        <small>Your PayPal Business or Personal receiver email</small>
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fas fa-link text-sky"></i> PayPal.me URL</label>
+                        <input type="url" id="adm-paypal-link" placeholder="e.g. https://paypal.me/YourHandle">
+                        <small>Direct instant 1-click PayPal payment link</small>
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fab fa-bitcoin text-amber"></i> Bitcoin (BTC) Address</label>
+                        <input type="text" id="adm-btc" placeholder="e.g. bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8">
+                        <small>Native SegWit (bc1q) or Standard BTC address</small>
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fab fa-ethereum text-purple"></i> Ethereum / USDT Address</label>
+                        <input type="text" id="adm-eth" placeholder="e.g. 0x71C7656EC7ab88b098defB751B7401B5f6d8976F">
+                        <small>ERC-20, Arbitrum, or Base settlement wallet</small>
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fas fa-dollar-sign text-emerald"></i> CashApp $Cashtag</label>
+                        <input type="text" id="adm-cashapp" placeholder="e.g. $YourCashtag">
+                        <small>Your direct CashApp operator identifier</small>
+                    </div>
+                    <div class="admin-form-actions">
+                        <button type="button" class="btn-admin-submit" id="btn-save-admin-payments">
+                            <i class="fas fa-floppy-disk"></i> Save Payment Routing
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 2: Pricing & Custom Plans -->
+            <div class="admin-tab-pane" id="tab-pane-admin-plans" style="display:none;">
+                <div class="admin-pane-desc">
+                    Modify existing plan prices (Pro / Lifetime) or add new custom access tiers (e.g. Day Pass, Team, Enterprise).
+                </div>
+                
+                <!-- Live Plans Table -->
+                <div class="admin-plans-table-box">
+                    <table class="admin-users-table" id="admin-plans-table">
+                        <thead>
+                            <tr>
+                                <th>Plan ID</th>
+                                <th>Name</th>
+                                <th>Price (USD)</th>
+                                <th>Billing</th>
+                                <th>Badge</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-plans-tbody">
+                            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading plans...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add / Edit Plan Box -->
+                <div class="admin-subbox-title"><i class="fas fa-plus-circle text-amber"></i> Add New Pricing Plan / Tier</div>
+                <form id="admin-new-plan-form" class="admin-form-grid" onsubmit="return false;">
+                    <div class="admin-form-group">
+                        <label>Plan Identifier (Unique ID)</label>
+                        <input type="text" id="adm-plan-id" placeholder="e.g. enterprise, annual, daily" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label>Display Name</label>
+                        <input type="text" id="adm-plan-name" placeholder="e.g. Enterprise Intelligence Suite" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label>Price (USD)</label>
+                        <input type="number" step="0.01" id="adm-plan-price" placeholder="e.g. 199.00" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label>Billing Period</label>
+                        <input type="text" id="adm-plan-period" placeholder="e.g. / month, / year, one-time" value="one-time" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label>Badge Tag</label>
+                        <input type="text" id="adm-plan-badge" placeholder="e.g. ENTERPRISE, EXCLUSIVE">
+                    </div>
+                    <div class="admin-form-group">
+                        <label>Description</label>
+                        <input type="text" id="adm-plan-desc" placeholder="Short value summary">
+                    </div>
+                    <div class="admin-form-group" style="grid-column: 1 / -1;">
+                        <label>Key Features (One feature per line)</label>
+                        <textarea id="adm-plan-features" rows="3" class="form-input" style="width:100%;font-family:var(--font-mono);font-size:0.8rem;background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;" placeholder="Full 6 OSINT vectors&#10;Unlimited Graph Queries&#10;Priority Circuit Breakers"></textarea>
+                    </div>
+                    <div class="admin-form-actions">
+                        <button type="button" class="btn-admin-submit" id="btn-save-new-plan">
+                            <i class="fas fa-plus"></i> Save Pricing Plan
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 3: Operator Registry & Upgrades -->
+            <div class="admin-tab-pane" id="tab-pane-admin-users" style="display:none;">
+                <!-- Instant User Upgrade By Email Form -->
+                <form id="admin-upgrade-form" class="admin-upgrade-form" onsubmit="return false;">
+                    <input type="email" id="admin-target-email" placeholder="Enter target user email (e.g. user@target.com)" required list="registered-emails-list">
+                    <datalist id="registered-emails-list"></datalist>
+                    <select id="admin-target-tier">
+                        <option value="lifetime" selected>Lifetime Tier</option>
+                        <option value="premium">Premium Tier</option>
+                        <option value="free">Free Tier</option>
+                        <option value="admin">Master Admin</option>
+                    </select>
+                    <button type="submit" class="btn-admin-submit" id="btn-admin-submit-upgrade">
+                        <i class="fas fa-arrow-up-right-from-square"></i> Upgrade User
+                    </button>
+                </form>
+
+                <!-- Live Registered Users Table -->
+                <div class="admin-users-table-box">
+                    <table class="admin-users-table" id="admin-users-table">
+                        <thead>
+                            <tr>
+                                <th>User Email</th>
+                                <th>Current Tier</th>
+                                <th>Probes</th>
+                                <th>Registered</th>
+                                <th>Quick Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-tbody">
+                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

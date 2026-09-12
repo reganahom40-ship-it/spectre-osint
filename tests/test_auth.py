@@ -146,3 +146,52 @@ def test_logout_route_and_session_clearing():
     assert logout_resp.status_code == 200
     # 4. Now root renders landing page
     assert b'CONFIDENTIAL // OPERATOR ACCESS ONLY' in logout_resp.data or b'RESTRICTED OPERATOR' in logout_resp.data
+
+def test_admin_settings_and_plans_api():
+    client = app.test_client()
+    # 1. Login as admin
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+
+    # 2. Get settings
+    s_resp = client.get('/api/admin/settings')
+    assert s_resp.status_code == 200
+    s_data = json.loads(s_resp.data)
+    assert 'LTC_ADDRESS' in s_data['settings']
+
+    # 3. Update settings
+    up_s_resp = client.post('/api/admin/settings', json={
+        'LTC_ADDRESS': 'ltc1qcustomwallet777test',
+        'PAYPAL_EMAIL': 'newmerchant@spectre.io'
+    })
+    assert up_s_resp.status_code == 200
+    up_s_data = json.loads(up_s_resp.data)
+    assert up_s_data['settings']['LTC_ADDRESS'] == 'ltc1qcustomwallet777test'
+    assert up_s_data['settings']['PAYPAL_EMAIL'] == 'newmerchant@spectre.io'
+
+    # 4. Public plans endpoint
+    pub_plans = client.get('/api/public/plans')
+    assert pub_plans.status_code == 200
+    pub_data = json.loads(pub_plans.data)
+    assert len(pub_data['plans']) >= 2
+
+    # 5. Admin create custom plan
+    new_plan_resp = client.post('/api/admin/plans', json={
+        'id': 'test_enterprise',
+        'name': 'Enterprise Tactical',
+        'price': 299.0,
+        'billing_period': 'one-time',
+        'badge': 'ENTERPRISE',
+        'description': 'Custom test plan',
+        'features': ['Custom feature 1', 'Custom feature 2']
+    })
+    assert new_plan_resp.status_code == 200
+    p_data = json.loads(new_plan_resp.data)
+    assert p_data['plan']['id'] == 'test_enterprise'
+    assert p_data['plan']['price'] == 299.0
+
+    # 6. Admin delete plan
+    del_resp = client.delete('/api/admin/plans/test_enterprise')
+    assert del_resp.status_code == 200

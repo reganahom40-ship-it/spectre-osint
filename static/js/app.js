@@ -2673,16 +2673,166 @@
             }
         },
 
+        switchAdminTab(tab) {
+            const tabs = ['pay', 'plans', 'users'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-admin-${t}`);
+                const pane = document.getElementById(`tab-pane-admin-${t}`);
+                if (btn) btn.classList.toggle('active', t === tab);
+                if (pane) pane.style.display = t === tab ? 'block' : 'none';
+            });
+            if (tab === 'pay') this.loadAdminSettings();
+            if (tab === 'plans') this.loadAdminPlans();
+            if (tab === 'users') this.loadAdminUsers();
+        },
+
         openAdminModal() {
             const backdrop = document.getElementById('admin-modal-backdrop');
             if (!backdrop) return;
             backdrop.style.display = 'flex';
-            this.loadAdminUsers();
+            this.switchAdminTab('pay');
         },
 
         closeAdminModal() {
             const backdrop = document.getElementById('admin-modal-backdrop');
             if (backdrop) backdrop.style.display = 'none';
+        },
+
+        async loadAdminSettings() {
+            try {
+                const resp = await fetch('/api/admin/settings');
+                const data = await resp.json();
+                if (resp.ok && data.settings) {
+                    const s = data.settings;
+                    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                    setVal('adm-ltc', s.LTC_ADDRESS);
+                    setVal('adm-btc', s.BTC_ADDRESS);
+                    setVal('adm-eth', s.ETH_ADDRESS);
+                    setVal('adm-paypal-email', s.PAYPAL_EMAIL);
+                    setVal('adm-paypal-link', s.PAYPAL_LINK);
+                    setVal('adm-cashapp', s.CASHAPP_TAG);
+                }
+            } catch (err) {
+                showToast(`Failed loading settings: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
+            }
+        },
+
+        async saveAdminSettings() {
+            const getVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+            const payload = {
+                LTC_ADDRESS: getVal('adm-ltc'),
+                BTC_ADDRESS: getVal('adm-btc'),
+                ETH_ADDRESS: getVal('adm-eth'),
+                PAYPAL_EMAIL: getVal('adm-paypal-email'),
+                PAYPAL_LINK: getVal('adm-paypal-link'),
+                CASHAPP_TAG: getVal('adm-cashapp')
+            };
+
+            try {
+                const resp = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    showToast('Payment Routing Saved Live!', 'fas fa-check-circle text-emerald');
+                    playTone(880, 'sine', 0.15);
+                } else {
+                    showToast(data.error || 'Failed saving payment routing', 'fas fa-circle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
+            }
+        },
+
+        async loadAdminPlans() {
+            const tbody = document.getElementById('admin-plans-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading pricing plans...</td></tr>`;
+
+            try {
+                const resp = await fetch('/api/admin/plans');
+                const data = await resp.json();
+                if (resp.ok && data.plans) {
+                    if (data.plans.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No plans found.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = data.plans.map(p => `
+                        <tr>
+                            <td><code>${escapeHtml(p.id)}</code></td>
+                            <td><strong style="color:var(--text-primary);">${escapeHtml(p.name)}</strong></td>
+                            <td><strong style="color:#10b981;">$${Number(p.price).toFixed(2)}</strong></td>
+                            <td style="font-size:0.75rem;color:var(--text-muted);">${escapeHtml(p.billing_period)}</td>
+                            <td><span style="font-size:0.7rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:#fbbf24;">${escapeHtml(p.badge || '—')}</span></td>
+                            <td><span style="font-size:0.7rem;color:${p.is_active ? '#34d399' : '#f43f5e'};">${p.is_active ? 'ACTIVE' : 'INACTIVE'}</span></td>
+                            <td>
+                                <button onclick="window.SPECTRE_AUTH.deleteAdminPlan('${escapeHtml(p.id)}')" style="background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.4);color:#f43f5e;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:0.7rem;" title="Delete or Deactivate Plan">Remove</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--accent-rose);">Error: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        },
+
+        async saveAdminPlan() {
+            const planId = document.getElementById('adm-plan-id')?.value.trim();
+            const name = document.getElementById('adm-plan-name')?.value.trim();
+            const price = parseFloat(document.getElementById('adm-plan-price')?.value || 0);
+            const billingPeriod = document.getElementById('adm-plan-period')?.value.trim() || 'one-time';
+            const badge = document.getElementById('adm-plan-badge')?.value.trim() || '';
+            const desc = document.getElementById('adm-plan-desc')?.value.trim() || '';
+            const features = document.getElementById('adm-plan-features')?.value.trim() || '';
+
+            if (!planId || !name) {
+                showToast('Plan ID and Display Name are required', 'fas fa-triangle-exclamation text-amber');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/admin/plans', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: planId,
+                        name: name,
+                        price: price,
+                        billing_period: billingPeriod,
+                        badge: badge,
+                        description: desc,
+                        features: features
+                    })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    showToast(`Plan ${name} saved!`, 'fas fa-check-circle text-emerald');
+                    this.loadAdminPlans();
+                    document.getElementById('admin-new-plan-form')?.reset();
+                } else {
+                    showToast(data.error || 'Failed saving plan', 'fas fa-circle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation');
+            }
+        },
+
+        async deleteAdminPlan(planId) {
+            if (!confirm(`Are you sure you want to remove or deactivate plan '${planId}'?`)) return;
+            try {
+                const resp = await fetch(`/api/admin/plans/${encodeURIComponent(planId)}`, { method: 'DELETE' });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    showToast(`Plan ${planId} removed/deactivated`, 'fas fa-check');
+                    this.loadAdminPlans();
+                } else {
+                    showToast(data.error || 'Failed to remove plan', 'fas fa-circle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation');
+            }
         },
 
         async loadAdminUsers() {
@@ -2795,10 +2945,16 @@
                 if (adminMenuItem) {
                     adminMenuItem.style.display = (user.role === 'admin' || user.tier === 'admin') ? 'flex' : 'none';
                 }
+                const btnNavbarAdmin = document.getElementById('btn-navbar-admin');
+                if (btnNavbarAdmin) {
+                    btnNavbarAdmin.style.display = (user.role === 'admin' || user.tier === 'admin') ? 'inline-flex' : 'none';
+                }
             } else {
                 if (btnOpenAuth) btnOpenAuth.style.display = 'inline-flex';
                 if (profileWidget) profileWidget.style.display = 'none';
                 if (adminMenuItem) adminMenuItem.style.display = 'none';
+                const btnNavbarAdmin = document.getElementById('btn-navbar-admin');
+                if (btnNavbarAdmin) btnNavbarAdmin.style.display = 'none';
             }
         }
     };
@@ -2810,6 +2966,21 @@
         const btnOpenPricing = document.getElementById('btn-open-pricing');
         if (btnOpenPricing) {
             btnOpenPricing.addEventListener('click', () => auth.openUpgradeModal('lifetime'));
+        }
+
+        const btnNavbarAdmin = document.getElementById('btn-navbar-admin');
+        if (btnNavbarAdmin) {
+            btnNavbarAdmin.addEventListener('click', () => auth.openAdminModal());
+        }
+
+        const btnSavePayments = document.getElementById('btn-save-admin-payments');
+        if (btnSavePayments) {
+            btnSavePayments.addEventListener('click', () => auth.saveAdminSettings());
+        }
+
+        const btnSavePlan = document.getElementById('btn-save-new-plan');
+        if (btnSavePlan) {
+            btnSavePlan.addEventListener('click', () => auth.saveAdminPlan());
         }
 
         const btnOpenAuth = document.getElementById('btn-open-auth');

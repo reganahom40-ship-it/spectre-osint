@@ -20,7 +20,8 @@ from modules.logging_config import setup_logging, log_investigation_summary
 from modules.payment_config import get_payment_config
 from modules.db import (
     init_db, create_user, authenticate_user, update_user_tier,
-    list_all_users, record_payment, increment_user_searches, get_user_by_email
+    list_all_users, record_payment, increment_user_searches, get_user_by_email,
+    get_all_settings, set_setting, list_plans, get_plan, save_plan, delete_plan
 )
 from modules.auth import (
     get_current_user, login_user, logout_user, is_admin,
@@ -85,7 +86,7 @@ def make_response_json(success, module, query, data=None, error=None):
         'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
     })
 
-PUBLIC_API_PREFIXES = ('/api/auth/', '/api/payment/', '/health', '/api/health')
+PUBLIC_API_PREFIXES = ('/api/auth/', '/api/payment/', '/api/public/', '/health', '/api/health')
 
 @app.before_request
 def before_request_access_guard():
@@ -289,6 +290,73 @@ def api_admin_upgrade():
         return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': f"Failed to upgrade user: {str(e)}"}), 500
+
+@app.route('/api/public/plans', methods=['GET', 'OPTIONS'])
+def api_public_plans():
+    if request.method == 'OPTIONS':
+        return '', 204
+    plans = list_plans(include_inactive=False)
+    return jsonify({'success': True, 'plans': plans}), 200
+
+@app.route('/api/admin/settings', methods=['GET', 'POST', 'OPTIONS'])
+@admin_required
+def api_admin_settings():
+    if request.method == 'OPTIONS':
+        return '', 204
+    if request.method == 'GET':
+        return jsonify({
+            'success': True,
+            'settings': get_payment_config()
+        }), 200
+    
+    # Update payment addresses & cashtags
+    keys = ['LTC_ADDRESS', 'BTC_ADDRESS', 'ETH_ADDRESS', 'PAYPAL_EMAIL', 'PAYPAL_LINK', 'CASHAPP_TAG']
+    for k in keys:
+        val = get_param(k)
+        if val is not None and val != '':
+            set_setting(k, val)
+    return jsonify({
+        'success': True,
+        'message': 'Payment settings and settlement routing updated successfully.',
+        'settings': get_payment_config()
+    }), 200
+
+@app.route('/api/admin/plans', methods=['GET', 'POST', 'OPTIONS'])
+@admin_required
+def api_admin_plans():
+    if request.method == 'OPTIONS':
+        return '', 204
+    if request.method == 'GET':
+        plans = list_plans(include_inactive=True)
+        return jsonify({'success': True, 'plans': plans}), 200
+
+    plan_id = (get_param('id') or get_param('plan_id') or '').strip().lower()
+    name = get_param('name').strip()
+    price = float(get_param('price') or 0.0)
+    billing_period = get_param('billing_period') or 'one-time'
+    description = get_param('description') or ''
+    badge = get_param('badge') or ''
+    features_raw = get_param('features') or ''
+    is_active = int(get_param('is_active') or 1)
+    display_order = int(get_param('display_order') or 0)
+
+    if not plan_id or not name:
+        return jsonify({'success': False, 'error': 'Plan ID and Name are required.'}), 400
+
+    saved = save_plan(plan_id, name, price, billing_period, description, badge, features_raw, is_active, display_order)
+    return jsonify({'success': True, 'message': f'Plan {name} saved successfully.', 'plan': saved}), 200
+
+@app.route('/api/admin/plans/<plan_id>', methods=['DELETE', 'OPTIONS'])
+@admin_required
+def api_admin_delete_plan(plan_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    if plan_id in ('premium', 'lifetime'):
+        # For base default plans, deactivate rather than purge
+        save_plan(plan_id, name=plan_id.title(), price=0.0, billing_period='', is_active=0)
+        return jsonify({'success': True, 'message': f'Plan {plan_id} deactivated.'}), 200
+    deleted = delete_plan(plan_id)
+    return jsonify({'success': deleted, 'message': f'Plan {plan_id} deleted.' if deleted else 'Plan not found.'}), 200
 
 # =========================================================================
 # OMNI-RECON AUTO-DETECTION ENGINE (TIER GATED)

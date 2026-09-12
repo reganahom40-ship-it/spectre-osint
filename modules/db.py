@@ -6,6 +6,7 @@ Zero external dependencies.
 import sqlite3
 import os
 import time
+import json
 import logging
 from typing import Optional, Dict, Any, List
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -22,7 +23,7 @@ def get_db_connection() -> sqlite3.Connection:
     return conn
 
 def init_db():
-    """Initializes schema for users, subscriptions, and transactions."""
+    """Initializes schema for users, subscriptions, settings, plans, and transactions."""
     with get_db_connection() as conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS users (
@@ -48,12 +49,32 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users (id)
             );
 
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS pricing_plans (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                price REAL NOT NULL,
+                billing_period TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                badge TEXT DEFAULT '',
+                features TEXT DEFAULT '[]',
+                is_active INTEGER DEFAULT 1,
+                display_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
         """)
         conn.commit()
 
-    # Automatically bootstrap default master admin if configured or none exists
+    # Automatically bootstrap default master admin and plans
     bootstrap_admin()
+    seed_default_plans_and_settings()
 
 def bootstrap_admin():
     """Ensures at least one administrator account exists."""
@@ -201,3 +222,144 @@ def record_payment(user_id: int, amount: float, method: str, tier_granted: str) 
         )
         conn.commit()
         return cursor.lastrowid
+
+# =========================================================================
+# SYSTEM SETTINGS & PAYMENT CONFIGURATION
+# =========================================================================
+def get_setting(key: str, default: Optional[str] = None) -> Optional[str]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM system_settings WHERE key = ?", (key,))
+        row = cursor.fetchone()
+        return row['value'] if row else default
+
+def set_setting(key: str, value: str):
+    with get_db_connection() as conn:
+        conn.execute(
+            "INSERT INTO system_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP",
+            (key, str(value).strip())
+        )
+        conn.commit()
+
+def get_all_settings() -> Dict[str, str]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM system_settings")
+        return {row['key']: row['value'] for row in cursor.fetchall()}
+
+# =========================================================================
+# PRICING PLANS & MONETIZATION PACKAGES
+# =========================================================================
+def list_plans(include_inactive: bool = False) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if include_inactive:
+            cursor.execute("SELECT * FROM pricing_plans ORDER BY display_order ASC, price ASC")
+        else:
+            cursor.execute("SELECT * FROM pricing_plans WHERE is_active = 1 ORDER BY display_order ASC, price ASC")
+        
+        plans = []
+        for r in cursor.fetchall():
+            p = dict(r)
+            try:
+                p['features'] = json.loads(p['features']) if p['features'] else []
+            except Exception:
+                p['features'] = []
+            plans.append(p)
+        return plans
+
+def get_plan(plan_id: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pricing_plans WHERE id = ?", (plan_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        p = dict(row)
+        try:
+            p['features'] = json.loads(p['features']) if p['features'] else []
+        except Exception:
+            p['features'] = []
+        return p
+
+def save_plan(plan_id: str, name: str, price: float, billing_period: str, description: str = '',
+              badge: str = '', features: Any = None, is_active: int = 1, display_order: int = 0) -> Dict[str, Any]:
+    if isinstance(features, (list, tuple)):
+        features_json = json.dumps(features)
+    elif isinstance(features, str):
+        try:
+            json.loads(features)
+            features_json = features
+        except Exception:
+            features_json = json.dumps([f.strip() for f in features.split('\n') if f.strip()])
+    else:
+        features_json = '[]'
+
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                price = excluded.price,
+                billing_period = excluded.billing_period,
+                description = excluded.description,
+                badge = excluded.badge,
+                features = excluded.features,
+                is_active = excluded.is_active,
+                display_order = excluded.display_order
+        """, (plan_id, name, float(price), billing_period, description, badge, features_json, int(is_active), int(display_order)))
+        conn.commit()
+    return get_plan(plan_id)
+
+def delete_plan(plan_id: str) -> bool:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM pricing_plans WHERE id = ?", (plan_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+
+def seed_default_plans_and_settings():
+    """Initializes default payment routing and default pricing tiers if empty."""
+    default_settings = {
+        'LTC_ADDRESS': os.environ.get('LTC_ADDRESS', 'ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8'),
+        'BTC_ADDRESS': os.environ.get('BTC_ADDRESS', 'bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8'),
+        'ETH_ADDRESS': os.environ.get('ETH_ADDRESS', '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'),
+        'PAYPAL_EMAIL': os.environ.get('PAYPAL_EMAIL', 'payments@spectre.io'),
+        'PAYPAL_LINK': os.environ.get('PAYPAL_LINK', 'https://paypal.me/SpectreIntel'),
+        'CASHAPP_TAG': os.environ.get('CASHAPP_TAG', '$SpectreIntel'),
+    }
+    with get_db_connection() as conn:
+        for k, v in default_settings.items():
+            conn.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES (?, ?)", (k, v))
+
+        # Check existing plans
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as cnt FROM pricing_plans")
+        if cursor.fetchone()['cnt'] == 0:
+            default_pro_features = json.dumps([
+                "All 6 Deep Recon Vectors (IP, Domain, BGP, Phone, Social, Hash)",
+                "Live BGP Routing & Autonomous System Intelligence",
+                "Breach & Compromise Feed Correlation (HIBP)",
+                "Interactive 3D Graph Studio & Clustering",
+                "Full Unredacted Intelligence Dossier Exports",
+                "High-Speed Priority Circuit Breakers"
+            ])
+            default_lifetime_features = json.dumps([
+                "Everything in Pro Tier Forever",
+                "Zero Recurring Subscriptions or Expirations",
+                "Unlimited Concurrent Graph Query Engines",
+                "Direct Raw JSON/Markdown API Token Access",
+                "All Future Recon Modules & Zero-Day Feeds",
+                "VIP Direct Telegram & Operator Channel Access"
+            ])
+            conn.execute("""
+                INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
+                VALUES ('premium', 'Pro Operator', 19.00, '/ month', 'Professional grade intelligence suite for active investigators.', 'POPULAR', ?, 1, 1)
+            """, (default_pro_features,))
+            conn.execute("""
+                INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
+                VALUES ('lifetime', 'Lifetime Operator', 99.00, 'one-time', 'Permanent uncapped intelligence command for elite operators.', 'BEST VALUE', ?, 1, 2)
+            """, (default_lifetime_features,))
+        conn.commit()
