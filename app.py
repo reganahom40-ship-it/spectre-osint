@@ -18,10 +18,12 @@ from modules.number_forensics import analyze_number
 from modules.engine import InvestigationEngine
 from modules.logging_config import setup_logging, log_investigation_summary
 from modules.payment_config import get_payment_config
+from modules.crypto_rates import calculate_crypto_amount, get_crypto_rate
 from modules.db import (
     init_db, create_user, authenticate_user, update_user_tier,
     list_all_users, record_payment, increment_user_searches, get_user_by_email,
-    get_all_settings, set_setting, list_plans, get_plan, save_plan, delete_plan
+    get_all_settings, set_setting, list_plans, get_plan, save_plan, delete_plan,
+    create_order, get_order, update_order_proof, list_orders, approve_order, reject_order
 )
 from modules.auth import (
     get_current_user, login_user, logout_user, is_admin,
@@ -219,37 +221,134 @@ def api_payment_config():
         return '', 204
     return jsonify(get_payment_config()), 200
 
+@app.route('/api/payment/create-order', methods=['POST', 'OPTIONS'])
+def api_payment_create_order():
+    if request.method == 'OPTIONS':
+        return '', 204
+    
+    email = (get_param('email') or '').strip().lower()
+    user = get_current_user()
+    if not email and user:
+        email = user['email']
+    
+    if not email or '@' not in email or '.' not in email:
+        return jsonify({'success': False, 'error': 'A valid operator email address is required.'}), 400
+
+    plan_id = (get_param('plan_id') or get_param('tier') or 'lifetime').strip().lower()
+    method = (get_param('method') or get_param('payment_method') or 'ltc').strip().lower()
+
+    # Determine price from plan or fallback
+    plan = get_plan(plan_id)
+    if plan:
+        amount = float(plan['price'])
+        plan_name = plan['name']
+    else:
+        amount = 99.0 if plan_id == 'lifetime' else 19.0
+        plan_name = 'Lifetime Operator' if plan_id == 'lifetime' else 'Pro Analyst'
+
+    cfg = get_payment_config()
+    crypto_amount = 0.0
+    deposit_address = ''
+
+    if method == 'ltc':
+        deposit_address = cfg.get('LTC_ADDRESS', '')
+        crypto_amount = calculate_crypto_amount(amount, 'ltc')
+    elif method == 'btc':
+        deposit_address = cfg.get('BTC_ADDRESS', '')
+        crypto_amount = calculate_crypto_amount(amount, 'btc')
+    elif method == 'eth':
+        deposit_address = cfg.get('ETH_ADDRESS', '')
+        crypto_amount = calculate_crypto_amount(amount, 'eth')
+    elif method == 'paypal':
+        deposit_address = cfg.get('PAYPAL_EMAIL', '')
+    elif method == 'cashapp':
+        deposit_address = cfg.get('CASHAPP_TAG', '')
+    elif method == 'card':
+        deposit_address = 'Credit/Debit Gateway'
+
+    order = create_order(
+        email=email,
+        plan_id=plan_id,
+        amount=amount,
+        payment_method=method,
+        crypto_amount=crypto_amount,
+        deposit_address=deposit_address,
+        expires_minutes=45
+    )
+
+    return jsonify({
+        'success': True,
+        'order': order,
+        'payment_instructions': {
+            'order_id': order['id'],
+            'email': email,
+            'plan_id': plan_id,
+            'plan_name': plan_name,
+            'amount_usd': amount,
+            'crypto_amount': crypto_amount,
+            'method': method,
+            'deposit_address': deposit_address,
+            'paypal_link': cfg.get('PAYPAL_LINK', ''),
+            'paypal_email': cfg.get('PAYPAL_EMAIL', ''),
+            'cashapp_tag': cfg.get('CASHAPP_TAG', ''),
+            'expires_at': order['expires_at']
+        }
+    }), 200
+
+@app.route('/api/payment/submit-proof', methods=['POST', 'OPTIONS'])
+def api_payment_submit_proof():
+    if request.method == 'OPTIONS':
+        return '', 204
+    
+    order_id = (get_param('order_id') or '').strip().upper()
+    tx_hash = (get_param('tx_hash') or get_param('hash') or get_param('proof') or '').strip()
+    notes = (get_param('notes') or '').strip()
+
+    if not order_id:
+        return jsonify({'success': False, 'error': 'Order ID is required.'}), 400
+    
+    order = get_order(order_id)
+    if not order:
+        return jsonify({'success': False, 'error': f'Order {order_id} was not found.'}), 404
+
+    if not tx_hash or len(tx_hash) < 5:
+        return jsonify({'success': False, 'error': 'Please provide a valid transaction hash (TXID) or transfer reference identifier.'}), 400
+
+    updated = update_order_proof(order_id, tx_hash, notes)
+    return jsonify({
+        'success': True,
+        'message': 'Payment proof submitted. Order is now queued for network verification and operator clearance.',
+        'order': updated
+    }), 200
+
+@app.route('/api/payment/order-status/<order_id>', methods=['GET', 'OPTIONS'])
+def api_payment_order_status(order_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    order_id = (order_id or '').strip().upper()
+    order = get_order(order_id)
+    if not order:
+        return jsonify({'success': False, 'error': 'Order not found'}), 404
+
+    is_approved = (order['status'] == 'approved')
+    if is_approved:
+        user = get_user_by_email(order['email'])
+        if user:
+            login_user(user)
+
+    return jsonify({
+        'success': True,
+        'order': order,
+        'approved': is_approved,
+        'redirect': '/app' if is_approved else None
+    }), 200
+
 @app.route('/api/payment/checkout', methods=['POST', 'OPTIONS'])
 def api_payment_checkout():
     if request.method == 'OPTIONS':
         return '', 204
-    user = get_current_user()
-    tier = get_param('tier') or 'premium'
-    method = get_param('method') or 'card'
-    amount = float(get_param('amount') or (99.0 if tier == 'lifetime' else 19.0))
-
-    if not user:
-        email = get_param('email')
-        if not email:
-            # Check if there is an active session or fallback to guest buyer account
-            email = f"guest_{int(time.time())}@spectre.io"
-        user = get_user_by_email(email)
-        if not user:
-            user = create_user(email, 'spectre_temp_' + str(int(time.time())), tier=tier)
-
-    # Apply tier upgrade and record payment
-    update_user_tier(user['email'], tier, f"Upgraded via checkout ({method})")
-    record_payment(user['id'], amount, method, tier)
-
-    # Refresh session tier
-    login_user(get_user_by_email(user['email']))
-
-    return jsonify({
-        'success': True,
-        'message': f'Payment confirmed! Account upgraded to {tier.upper()} access.',
-        'tier': tier,
-        'user': get_user_by_email(user['email'])
-    }), 200
+    # Real checkout redirects to create-order to avoid fake instant upgrades
+    return api_payment_create_order()
 
 # =========================================================================
 # MASTER ADMIN MANAGEMENT PORTAL
@@ -357,6 +456,60 @@ def api_admin_delete_plan(plan_id):
         return jsonify({'success': True, 'message': f'Plan {plan_id} deactivated.'}), 200
     deleted = delete_plan(plan_id)
     return jsonify({'success': deleted, 'message': f'Plan {plan_id} deleted.' if deleted else 'Plan not found.'}), 200
+
+# =========================================================================
+# ADMIN ORDERS & PAYMENT VERIFICATION QUEUE
+# =========================================================================
+@app.route('/api/admin/orders', methods=['GET', 'OPTIONS'])
+@admin_required
+def api_admin_orders():
+    if request.method == 'OPTIONS':
+        return '', 204
+    status_filter = get_param('status')
+    orders = list_orders(status_filter)
+    return jsonify({
+        'success': True,
+        'orders': orders,
+        'count': len(orders)
+    }), 200
+
+@app.route('/api/admin/orders/<order_id>/approve', methods=['POST', 'OPTIONS'])
+@admin_required
+def api_admin_approve_order(order_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    order_id = (order_id or '').strip().upper()
+    admin_notes = get_param('notes') or 'Verified by Admin'
+    try:
+        approved = approve_order(order_id, admin_notes)
+        return jsonify({
+            'success': True,
+            'message': f"Order {order_id} approved. Account {approved['email']} elevated to {approved['plan_id'].upper()}.",
+            'order': approved
+        }), 200
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Failed to approve order: {str(e)}"}), 500
+
+@app.route('/api/admin/orders/<order_id>/reject', methods=['POST', 'OPTIONS'])
+@admin_required
+def api_admin_reject_order(order_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    order_id = (order_id or '').strip().upper()
+    reason = get_param('reason') or 'Transaction hash invalid or unconfirmed'
+    try:
+        rejected = reject_order(order_id, reason)
+        return jsonify({
+            'success': True,
+            'message': f"Order {order_id} marked as rejected.",
+            'order': rejected
+        }), 200
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Failed to reject order: {str(e)}"}), 500
 
 # =========================================================================
 # OMNI-RECON AUTO-DETECTION ENGINE (TIER GATED)

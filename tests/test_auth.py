@@ -79,16 +79,124 @@ def test_admin_upgrade_api_routes():
     assert target_email in emails
 
 def test_payment_checkout_flow():
+    import uuid
     client = app.test_client()
-    pay_resp = client.post('/api/payment/checkout', json={
-        'tier': 'lifetime',
-        'method': 'ltc',
-        'amount': 99
+    buyer_email = f"buyer_{uuid.uuid4().hex[:8]}@spectre.io"
+
+    # 1. Initiate order creation (Step 1 -> Step 2)
+    create_resp = client.post('/api/payment/create-order', json={
+        'email': buyer_email,
+        'plan_id': 'lifetime',
+        'method': 'ltc'
     })
-    assert pay_resp.status_code == 200, f"Checkout failed: {pay_resp.data}"
-    pay_data = json.loads(pay_resp.data)
-    assert pay_data.get('success') is True
-    assert pay_data.get('tier') == 'lifetime'
+    assert create_resp.status_code == 200, f"Order creation failed: {create_resp.data}"
+    order_data = json.loads(create_resp.data)
+    assert order_data.get('success') is True
+    order = order_data.get('order')
+    assert order is not None
+    order_id = order['id']
+    assert order_id.startswith('SPEC-')
+    assert order['status'] == 'pending'
+    assert order['crypto_amount'] > 0
+    assert 'LTC' in order_data['payment_instructions']['method'].upper()
+
+    # 2. Strict Anti-Bypass Check: User must NOT be auto-upgraded simply by creating an order!
+    user_before = get_user_by_email(buyer_email)
+    assert (user_before is None) or (user_before['tier'] not in ('lifetime', 'premium', 'admin')), "Security violation: user was auto-upgraded without verified payment!"
+
+    # 3. Submit Invalid TXID Proof (Must reject short/bogus strings)
+    short_proof_resp = client.post('/api/payment/submit-proof', json={
+        'order_id': order_id,
+        'tx_hash': '12'
+    })
+    assert short_proof_resp.status_code == 400
+
+    # 4. Submit Valid TXID Proof (Step 3 -> Step 4)
+    valid_txid = "8f3b9c02e5a14d7e6f8b9a0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e"
+    proof_resp = client.post('/api/payment/submit-proof', json={
+        'order_id': order_id,
+        'tx_hash': valid_txid,
+        'notes': 'Test LTC transfer from Electrum'
+    })
+    assert proof_resp.status_code == 200
+    p_data = json.loads(proof_resp.data)
+    assert p_data['order']['status'] == 'verifying'
+    assert p_data['order']['tx_hash'] == valid_txid
+
+    # 5. Admin Login & Order Queue Approval
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+
+    # Verify order is in admin queue
+    orders_resp = client.get('/api/admin/orders')
+    assert orders_resp.status_code == 200
+    orders_list = json.loads(orders_resp.data).get('orders', [])
+    target_in_list = any(o['id'] == order_id for o in orders_list)
+    assert target_in_list, f"Order {order_id} not visible in admin orders queue"
+
+    # Admin approves order
+    approve_resp = client.post(f'/api/admin/orders/{order_id}/approve', json={
+        'notes': 'Verified on Blockchair'
+    })
+    assert approve_resp.status_code == 200
+    appr_data = json.loads(approve_resp.data)
+    assert appr_data['order']['status'] == 'approved'
+
+    # 6. Verify buyer account is now elevated to lifetime!
+    user_after = get_user_by_email(buyer_email)
+    assert user_after is not None
+    assert user_after['tier'] == 'lifetime', "User was not elevated after order approval!"
+
+    # 7. Check order status endpoint
+    status_resp = client.get(f'/api/payment/order-status/{order_id}')
+    assert status_resp.status_code == 200
+    s_data = json.loads(status_resp.data)
+    assert s_data['approved'] is True
+    assert s_data['redirect'] == '/app'
+
+def test_order_rejection_flow():
+    client = app.test_client()
+    bogus_email = "fake_buyer_99@spectre.io"
+
+    # 1. Create order
+    create_resp = client.post('/api/payment/create-order', json={
+        'email': bogus_email,
+        'plan_id': 'lifetime',
+        'method': 'btc'
+    })
+    assert create_resp.status_code == 200
+    order_id = json.loads(create_resp.data)['order']['id']
+
+    # 2. Submit fake hash
+    proof_resp = client.post('/api/payment/submit-proof', json={
+        'order_id': order_id,
+        'tx_hash': '0000000000000fakehash12345'
+    })
+    assert proof_resp.status_code == 200
+
+    # 3. Admin logs in and rejects order
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+    reject_resp = client.post(f'/api/admin/orders/{order_id}/reject', json={
+        'reason': 'TXID does not exist on Bitcoin mempool'
+    })
+    assert reject_resp.status_code == 200
+    r_data = json.loads(reject_resp.data)
+    assert r_data['order']['status'] == 'rejected'
+
+    # 4. Confirm user remains non-elevated
+    user = get_user_by_email(bogus_email)
+    assert user is None or user['tier'] not in ('lifetime', 'premium', 'admin')
+
+    # 5. Order status check confirms rejected
+    status_resp = client.get(f'/api/payment/order-status/{order_id}')
+    assert status_resp.status_code == 200
+    assert json.loads(status_resp.data)['order']['status'] == 'rejected'
+    assert json.loads(status_resp.data)['approved'] is False
 
 def test_payment_config_endpoint():
     client = app.test_client()

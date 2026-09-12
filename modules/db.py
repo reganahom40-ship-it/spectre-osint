@@ -8,6 +8,8 @@ import os
 import time
 import json
 import logging
+import uuid
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -68,7 +70,27 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS orders (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER,
+                email TEXT NOT NULL,
+                plan_id TEXT NOT NULL,
+                amount REAL NOT NULL,
+                currency TEXT DEFAULT 'USD',
+                payment_method TEXT NOT NULL,
+                crypto_amount REAL DEFAULT 0,
+                deposit_address TEXT DEFAULT '',
+                tx_hash TEXT DEFAULT '',
+                status TEXT DEFAULT 'pending', -- 'pending', 'verifying', 'approved', 'rejected', 'expired'
+                notes TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP,
+                approved_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            );
+
             CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+            CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
         """)
         conn.commit()
 
@@ -363,3 +385,99 @@ def seed_default_plans_and_settings():
                 VALUES ('lifetime', 'Lifetime Operator', 99.00, 'one-time', 'Permanent uncapped intelligence command for elite operators.', 'BEST VALUE', ?, 1, 2)
             """, (default_lifetime_features,))
         conn.commit()
+
+# =========================================================================
+# ORDERS & PAYMENT VERIFICATION PIPELINE
+# =========================================================================
+def create_order(email: str, plan_id: str, amount: float, payment_method: str,
+                 crypto_amount: float = 0.0, deposit_address: str = '', expires_minutes: int = 45) -> Dict[str, Any]:
+    email = email.strip().lower()
+    user = get_user_by_email(email)
+    user_id = user['id'] if user else None
+    
+    order_id = f"SPEC-{uuid.uuid4().hex[:8].upper()}"
+    now = datetime.utcnow()
+    expires_at = (now + timedelta(minutes=expires_minutes)).strftime('%Y-%m-%d %H:%M:%SZ')
+    created_at = now.strftime('%Y-%m-%d %H:%M:%SZ')
+
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT INTO orders (id, user_id, email, plan_id, amount, currency, payment_method,
+                                crypto_amount, deposit_address, status, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?, 'USD', ?, ?, ?, 'pending', ?, ?)
+        """, (order_id, user_id, email, plan_id, float(amount), payment_method,
+              float(crypto_amount), deposit_address, created_at, expires_at))
+        conn.commit()
+    return get_order(order_id)
+
+def get_order(order_id: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def update_order_proof(order_id: str, tx_hash: str, user_notes: str = '') -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE orders
+            SET tx_hash = ?, notes = ?, status = 'verifying'
+            WHERE id = ?
+        """, (tx_hash.strip(), user_notes.strip(), order_id))
+        conn.commit()
+    return get_order(order_id)
+
+def list_orders(status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if status_filter:
+            cursor.execute("SELECT * FROM orders WHERE status = ? ORDER BY id DESC", (status_filter,))
+        else:
+            cursor.execute("SELECT * FROM orders ORDER BY id DESC")
+        return [dict(row) for row in cursor.fetchall()]
+
+def approve_order(order_id: str, admin_notes: str = '') -> Dict[str, Any]:
+    order = get_order(order_id)
+    if not order:
+        raise ValueError(f"Order {order_id} not found.")
+
+    email = order['email']
+    plan_id = order['plan_id']
+    amount = order['amount']
+    method = order['payment_method']
+    
+    # Ensure user exists
+    user = get_user_by_email(email)
+    if not user:
+        user = create_user(email, f"spectre_order_{int(time.time())}", tier=plan_id)
+    
+    # Apply tier upgrade
+    update_user_tier(email, plan_id, f"Order {order_id} approved. {admin_notes}")
+    record_payment(user['id'], amount, method, plan_id)
+
+    now_str = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%SZ')
+    with get_db_connection() as conn:
+        conn.execute("""
+            UPDATE orders
+            SET status = 'approved', approved_at = ?, notes = ?
+            WHERE id = ?
+        """, (now_str, f"Approved by admin. {admin_notes}".strip(), order_id))
+        conn.commit()
+
+    return get_order(order_id)
+
+def reject_order(order_id: str, reason: str = '') -> Dict[str, Any]:
+    order = get_order(order_id)
+    if not order:
+        raise ValueError(f"Order {order_id} not found.")
+
+    with get_db_connection() as conn:
+        conn.execute("""
+            UPDATE orders
+            SET status = 'rejected', notes = ?
+            WHERE id = ?
+        """, (f"Rejected: {reason}".strip(), order_id))
+        conn.commit()
+
+    return get_order(order_id)

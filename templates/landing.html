@@ -13,8 +13,11 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    <!-- QRCode Generator Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v1">
+    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v2">
 </head>
 <body>
 
@@ -315,146 +318,243 @@
     </main>
 
     <!-- =========================================================================
-         MULTI-RAIL CHECKOUT MODAL (LTC, PAYPAL, BTC, ETH, CARD, CASHAPP)
+         MULTI-RAIL VERIFIED CHECKOUT TERMINAL (LTC, PAYPAL, BTC, ETH, CASHAPP)
          ========================================================================= -->
     <div class="spectre-modal-backdrop" id="checkout-modal-backdrop">
-        <div class="spectre-modal">
+        <div class="spectre-modal checkout-modal" id="checkout-modal" style="max-width: 580px;">
             <div class="modal-header">
                 <h3>
-                    <i class="fas fa-crown text-amber"></i>
-                    <span>Unlock SPECTRE Access</span>
+                    <i class="fas fa-shield-halved text-cyan"></i>
+                    <span>Secure Access Credential Gateway</span>
                 </h3>
                 <button class="btn-modal-close" onclick="closeCheckoutModal()">
                     <i class="fas fa-xmark"></i>
                 </button>
             </div>
 
+            <!-- Step Progress Indicator -->
+            <div class="checkout-steps-bar">
+                <div class="checkout-step-item active" id="step-indicator-1">
+                    <span class="step-num">1</span>
+                    <span class="step-label">Select Rail</span>
+                </div>
+                <div class="checkout-step-line" id="step-line-1"></div>
+                <div class="checkout-step-item" id="step-indicator-2">
+                    <span class="step-num">2</span>
+                    <span class="step-label">Deposit</span>
+                </div>
+                <div class="checkout-step-line" id="step-line-2"></div>
+                <div class="checkout-step-item" id="step-indicator-3">
+                    <span class="step-num">3</span>
+                    <span class="step-label">Submit Proof</span>
+                </div>
+                <div class="checkout-step-line" id="step-line-3"></div>
+                <div class="checkout-step-item" id="step-indicator-4">
+                    <span class="step-num">4</span>
+                    <span class="step-label">Clearance</span>
+                </div>
+            </div>
+
             <div class="modal-body">
-                <!-- Selected Plan Summary -->
-                <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:8px;padding:12px 16px;margin-bottom:18px;">
-                    <div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono);">SELECTED PLAN</div>
-                        <strong id="modal-plan-name" style="font-size:1.1rem;color:#ffffff;">Lifetime Pass</strong>
+                <!-- STEP 1: PLAN & RAIL CONFIGURATION -->
+                <div class="checkout-step-pane active" id="pane-step-1">
+                    <!-- Selected Plan Banner -->
+                    <div class="plan-summary-banner">
+                        <div class="ps-left">
+                            <div class="ps-tag">TARGET CREDENTIAL</div>
+                            <strong id="modal-plan-name">Lifetime Pass</strong>
+                            <div class="ps-desc" id="modal-plan-desc">Permanent uncapped access to all OSINT intelligence engines</div>
+                        </div>
+                        <div class="ps-right">
+                            <div class="ps-price" id="modal-plan-price">$99.00 USD</div>
+                            <div class="ps-period" id="modal-plan-period">ONE-TIME SETTLEMENT</div>
+                        </div>
                     </div>
-                    <div style="text-align:right;">
-                        <strong id="modal-plan-price" style="font-size:1.25rem;color:var(--accent-amber);font-family:var(--font-heading);">$99.00 USD</strong>
+
+                    <!-- Operator Email -->
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-envelope text-cyan"></i> Operator Account Email</label>
+                        <input type="email" id="checkout-email-input" class="form-input" placeholder="operator@spectre.io" required>
+                        <span class="form-hint">Your clearance token and intelligence access will be linked to this email.</span>
                     </div>
-                </div>
 
-                <!-- Operator Email -->
-                <div class="form-group">
-                    <label class="form-label">Operator Email Address (Access Credential)</label>
-                    <input type="email" id="checkout-email-input" class="form-input" placeholder="operator@spectre.io" required>
-                </div>
+                    <!-- Payment Rail Selector Tabs -->
+                    <label class="form-label"><i class="fas fa-network-wired text-amber"></i> Choose Settlement Rail</label>
+                    <div class="pmethods-tabs">
+                        <button type="button" class="pmethod-tab active" data-method="ltc" onclick="selectPaymentMethod('ltc')">
+                            <i class="fa-solid fa-coins" style="color:#06b6d4;"></i>
+                            <span>Litecoin (LTC)</span>
+                            <small class="tab-subtext">Instant • Low Fee</small>
+                        </button>
+                        <button type="button" class="pmethod-tab" data-method="paypal" onclick="selectPaymentMethod('paypal')">
+                            <i class="fa-brands fa-paypal" style="color:#6366f1;"></i>
+                            <span>PayPal</span>
+                            <small class="tab-subtext">Direct Payout</small>
+                        </button>
+                        <button type="button" class="pmethod-tab" data-method="btc" onclick="selectPaymentMethod('btc')">
+                            <i class="fa-brands fa-bitcoin" style="color:#f59e0b;"></i>
+                            <span>Bitcoin (BTC)</span>
+                            <small class="tab-subtext">Native SegWit</small>
+                        </button>
+                        <button type="button" class="pmethod-tab" data-method="eth" onclick="selectPaymentMethod('eth')">
+                            <i class="fa-brands fa-ethereum" style="color:#a855f7;"></i>
+                            <span>ETH / USDT</span>
+                            <small class="tab-subtext">ERC-20 / L2</small>
+                        </button>
+                        <button type="button" class="pmethod-tab" data-method="cashapp" onclick="selectPaymentMethod('cashapp')">
+                            <i class="fas fa-dollar-sign" style="color:#10b981;"></i>
+                            <span>CashApp</span>
+                            <small class="tab-subtext">$Cashtag</small>
+                        </button>
+                    </div>
 
-                <!-- Payment Rail Selector Tabs -->
-                <label class="form-label">Choose Payment Rail</label>
-                <div class="pmethods-tabs">
-                    <button class="pmethod-tab active" data-method="ltc" onclick="selectPaymentMethod('ltc')">
-                        <i class="fa-solid fa-coins" style="color:#06b6d4;"></i>
-                        <span>Litecoin (LTC)</span>
+                    <!-- Live Conversion Estimator Preview -->
+                    <div class="deposit-estimate-box" id="deposit-estimate-box">
+                        <div class="deb-row">
+                            <span class="deb-label">Estimated Settlement Amount:</span>
+                            <span class="deb-val" id="estimated-crypto-amount"><i class="fas fa-circle-notch fa-spin"></i> Calculating...</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="button" class="btn-submit-action btn-action-primary" id="btn-create-order" onclick="startOrderCreation()">
+                        <span>Generate Deposit Address & Order Reference</span>
+                        <i class="fas fa-arrow-right"></i>
                     </button>
-                    <button class="pmethod-tab" data-method="paypal" onclick="selectPaymentMethod('paypal')">
-                        <i class="fa-brands fa-paypal" style="color:#6366f1;"></i>
-                        <span>PayPal</span>
-                    </button>
-                    <button class="pmethod-tab" data-method="btc" onclick="selectPaymentMethod('btc')">
-                        <i class="fa-brands fa-bitcoin" style="color:#f59e0b;"></i>
-                        <span>Bitcoin (BTC)</span>
-                    </button>
-                    <button class="pmethod-tab" data-method="eth" onclick="selectPaymentMethod('eth')">
-                        <i class="fa-brands fa-ethereum" style="color:#a855f7;"></i>
-                        <span>ETH / USDT</span>
-                    </button>
-                    <button class="pmethod-tab" data-method="cashapp" onclick="selectPaymentMethod('cashapp')">
-                        <i class="fas fa-dollar-sign" style="color:#10b981;"></i>
-                        <span>CashApp</span>
-                    </button>
-                    <button class="pmethod-tab" data-method="card" onclick="selectPaymentMethod('card')">
-                        <i class="fas fa-credit-card" style="color:#38bdf8;"></i>
-                        <span>Card</span>
-                    </button>
                 </div>
 
-                <!-- Panel 1: Litecoin (LTC) -->
-                <div class="pmethod-content-panel" id="panel-ltc">
-                    <div class="payment-details-box">
-                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND EXACT AMOUNT TO LITECOIN ADDRESS:</div>
-                        <div class="wallet-copy-row">
-                            <code id="cfg-ltc-addr">ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code>
-                            <button class="btn-copy-address" onclick="copyText('cfg-ltc-addr', 'Litecoin address')">Copy</button>
+                <!-- STEP 2: DEPOSIT & QR TERMINAL -->
+                <div class="checkout-step-pane" id="pane-step-2" style="display: none;">
+                    <!-- Order Reference & Timer Bar -->
+                    <div class="order-meta-bar">
+                        <div class="omb-id">
+                            <span class="omb-lbl">ORDER REF:</span>
+                            <code class="omb-code" id="display-order-id">SPEC-INIT</code>
                         </div>
-                        <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">
-                            <i class="fas fa-bolt text-cyan"></i> Fast confirmations with lowest transaction fees.
+                        <div class="omb-timer" id="display-countdown-box">
+                            <i class="fas fa-clock text-amber"></i>
+                            <span id="display-countdown-timer">45:00</span>
                         </div>
+                    </div>
+
+                    <!-- QR Code and Dynamic Instructions -->
+                    <div class="deposit-terminal-container">
+                        <!-- QR Code Frame (Used for Crypto) -->
+                        <div class="qrcode-wrapper" id="crypto-qrcode-wrapper">
+                            <div class="qrcode-canvas-box" id="qrcode-target"></div>
+                            <div class="qrcode-hint"><i class="fas fa-qrcode"></i> Scan with mobile wallet</div>
+                        </div>
+
+                        <!-- Amount to Send Box -->
+                        <div class="deposit-amount-highlight" id="deposit-amount-highlight">
+                            <div class="dah-label">SEND EXACT AMOUNT:</div>
+                            <div class="dah-val-row">
+                                <span class="dah-num" id="display-send-amount">1.164 LTC</span>
+                                <button type="button" class="btn-copy-address" onclick="copyDynamicText('display-send-amount', 'Amount')">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Destination Address / Link -->
+                        <div class="deposit-dest-box">
+                            <div class="ddb-label" id="display-dest-label">LITECOIN DESTINATION ADDRESS:</div>
+                            <div class="wallet-copy-row">
+                                <code id="display-dest-address">...</code>
+                                <button type="button" class="btn-copy-address" onclick="copyDynamicText('display-dest-address', 'Address')">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <div id="paypal-direct-link-container" style="display:none; margin-top:10px;">
+                                <a id="display-paypal-link" href="#" target="_blank" rel="noopener" class="btn-external-pay">
+                                    <i class="fa-brands fa-paypal"></i> Open PayPal.me Transfer Link <i class="fas fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="transfer-warning-banner">
+                        <i class="fas fa-info-circle text-cyan"></i>
+                        <span>Transfer the required funds now. Once broadcasted, click below to provide your transaction hash (TXID) or transfer ID.</span>
+                    </div>
+
+                    <div class="step-nav-buttons">
+                        <button type="button" class="btn-nav-back" onclick="goToStep(1)">
+                            <i class="fas fa-arrow-left"></i> Change Method
+                        </button>
+                        <button type="button" class="btn-submit-action btn-action-primary" onclick="goToStep(3)" style="flex:1;">
+                            <span>I Have Sent Payment — Submit Proof</span>
+                            <i class="fas fa-check"></i>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Panel 2: PayPal -->
-                <div class="pmethod-content-panel" id="panel-paypal" style="display:none;">
-                    <div class="payment-details-box">
-                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND VIA PAYPAL TO:</div>
-                        <div class="wallet-copy-row">
-                            <code id="cfg-paypal-email">payments@spectre.io</code>
-                            <button class="btn-copy-address" onclick="copyText('cfg-paypal-email', 'PayPal email')">Copy</button>
-                        </div>
-                        <div style="margin-top:10px;">
-                            <a id="cfg-paypal-link" href="https://paypal.me/SpectreIntel" target="_blank" rel="noopener" style="font-size:0.8rem;color:var(--accent-cyan);text-decoration:none;font-weight:600;">
-                                <i class="fas fa-arrow-up-right-from-square"></i> Open PayPal.me Link
-                            </a>
-                        </div>
+                <!-- STEP 3: SUBMIT TRANSACTION PROOF -->
+                <div class="checkout-step-pane" id="pane-step-3" style="display: none;">
+                    <div class="step3-header">
+                        <i class="fas fa-file-invoice-dollar text-emerald" style="font-size:2rem;"></i>
+                        <h4>Submit Proof of Settlement</h4>
+                        <p>Provide your on-chain Transaction Hash (TXID) or payment reference identifier for real-time node confirmation.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-fingerprint text-cyan"></i> Transaction Hash (TXID) / Payment Identifier</label>
+                        <input type="text" id="tx-hash-input" class="form-input form-input-mono" placeholder="e.g. 5d9f0a7b4c2e... or PayPal Transaction ID" required>
+                        <span class="form-hint">Found in your wallet or receipt under "Transaction ID", "Hash", or "View on Explorer".</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-comment-dots text-secondary"></i> Sender Notes / Handle (Optional)</label>
+                        <input type="text" id="tx-notes-input" class="form-input" placeholder="e.g. Sent from Exodus wallet / CashApp name">
+                    </div>
+
+                    <div id="proof-error-msg" style="display:none; color:var(--accent-rose); font-size:0.8rem; margin-bottom:12px;"></div>
+
+                    <div class="step-nav-buttons">
+                        <button type="button" class="btn-nav-back" onclick="goToStep(2)">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button type="button" class="btn-submit-action btn-action-primary" id="btn-submit-proof" onclick="submitOrderProof()" style="flex:1;">
+                            <i class="fas fa-shield-check"></i>
+                            <span>Verify Settlement & Request Clearance</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Panel 3: Bitcoin (BTC) -->
-                <div class="pmethod-content-panel" id="panel-btc" style="display:none;">
-                    <div class="payment-details-box">
-                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND TO NATIVE SEGWIT BITCOIN ADDRESS:</div>
-                        <div class="wallet-copy-row">
-                            <code id="cfg-btc-addr">bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code>
-                            <button class="btn-copy-address" onclick="copyText('cfg-btc-addr', 'Bitcoin address')">Copy</button>
+                <!-- STEP 4: LIVE VERIFICATION & CLEARANCE RADAR -->
+                <div class="checkout-step-pane" id="pane-step-4" style="display: none;">
+                    <div class="verification-radar-container">
+                        <!-- Radar Scanner Animation -->
+                        <div class="radar-circle-glow">
+                            <div class="radar-sweep"></div>
+                            <div class="radar-core"><i class="fas fa-satellite-dish"></i></div>
+                        </div>
+
+                        <div class="vr-title" id="vr-status-title">AWAITING BLOCKCHAIN CONFIRMATIONS</div>
+                        <div class="vr-desc" id="vr-status-desc">
+                            Your transaction proof for Order <strong id="vr-order-id">SPEC-...</strong> has been logged into the settlement queue. Monitoring block explorer and operator console for clearance...
+                        </div>
+
+                        <div class="vr-live-status-pill" id="vr-status-pill">
+                            <span class="vr-dot pulsing"></span>
+                            <span id="vr-pill-text">STATUS: VERIFYING (Awaiting Network Confirmation)</span>
+                        </div>
+
+                        <div class="vr-txid-box">
+                            <span class="vr-txid-lbl">TXID:</span>
+                            <code id="vr-txid-display">...</code>
+                        </div>
+
+                        <div class="vr-actions">
+                            <button type="button" class="btn-manual-poll" onclick="checkCurrentOrderStatus(true)">
+                                <i class="fas fa-rotate"></i> Refresh Status
+                            </button>
+                            <button type="button" class="btn-continue-bg" onclick="closeCheckoutModal()">
+                                <i class="fas fa-hourglass-half"></i> Close & Wait in Background
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                <!-- Panel 4: ETH / USDT -->
-                <div class="pmethod-content-panel" id="panel-eth" style="display:none;">
-                    <div class="payment-details-box">
-                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND TO ETH / USDT (ERC-20, ARB, BASE):</div>
-                        <div class="wallet-copy-row">
-                            <code id="cfg-eth-addr">0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code>
-                            <button class="btn-copy-address" onclick="copyText('cfg-eth-addr', 'Ethereum address')">Copy</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Panel 5: CashApp -->
-                <div class="pmethod-content-panel" id="panel-cashapp" style="display:none;">
-                    <div class="payment-details-box">
-                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND VIA CASHAPP CASHTAG:</div>
-                        <div class="wallet-copy-row">
-                            <code id="cfg-cashapp-tag">$SpectreIntel</code>
-                            <button class="btn-copy-address" onclick="copyText('cfg-cashapp-tag', 'CashApp tag')">Copy</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Panel 6: Card -->
-                <div class="pmethod-content-panel" id="panel-card" style="display:none;">
-                    <div class="payment-details-box">
-                        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;">
-                            <input type="text" class="form-input" placeholder="Card Number (4242 ••••)" value="4242 •••• •••• 4242">
-                            <input type="text" class="form-input" placeholder="MM/YY" value="12/28">
-                            <input type="text" class="form-input" placeholder="CVC" value="999">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Button -->
-                <button class="btn-submit-action btn-action-primary" id="btn-confirm-checkout" onclick="executeCheckout()">
-                    <i class="fas fa-lock"></i>
-                    <span>Confirm Payment & Activate Access</span>
-                </button>
             </div>
         </div>
     </div>
@@ -529,6 +629,9 @@
                 </button>
                 <button class="pmethod-tab" id="tab-btn-admin-plans" onclick="switchAdminTab('plans')">
                     <i class="fas fa-tags text-amber"></i> Pricing & Plans
+                </button>
+                <button class="pmethod-tab" id="tab-btn-admin-orders" onclick="switchAdminTab('orders')">
+                    <i class="fas fa-list-check text-cyan"></i> Incoming Orders <span class="order-badge-counter" id="admin-orders-counter" style="display:none;">0</span>
                 </button>
                 <button class="pmethod-tab" id="tab-btn-admin-users" onclick="switchAdminTab('users')">
                     <i class="fas fa-users text-rose"></i> User Registry
@@ -621,7 +724,38 @@
                     </form>
                 </div>
 
-                <!-- TAB 3: User Registry -->
+                <!-- TAB 3: Incoming Orders Queue -->
+                <div class="admin-tab-pane" id="tab-pane-admin-orders" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div style="font-size:0.8rem; color:var(--text-secondary);">
+                            Review incoming crypto transfers and PayPal/CashApp proofs. Approving activates the operator account instantly.
+                        </div>
+                        <button type="button" class="btn-copy-address" onclick="loadAdminOrders()" style="padding:6px 12px;">
+                            <i class="fas fa-rotate"></i> Refresh Queue
+                        </button>
+                    </div>
+
+                    <div style="max-height:280px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:6px; margin-bottom:12px;">
+                        <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
+                            <thead>
+                                <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
+                                    <th style="padding:8px 8px;">Order Ref</th>
+                                    <th style="padding:8px 8px;">Operator</th>
+                                    <th style="padding:8px 8px;">Plan / USD</th>
+                                    <th style="padding:8px 8px;">Rail / Crypto</th>
+                                    <th style="padding:8px 8px;">TXID / Proof</th>
+                                    <th style="padding:8px 8px;">Status</th>
+                                    <th style="padding:8px 8px; text-align:right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-orders-tbody">
+                                <tr><td colspan="7" style="padding:14px; text-align:center; color:var(--text-muted);">Loading settlement queue...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 4: User Registry -->
                 <div class="admin-tab-pane" id="tab-pane-admin-users" style="display:none;">
                     <form id="admin-upgrade-form" onsubmit="return false;" style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
                         <input type="email" id="admin-target-email" class="form-input" style="flex:1; min-width:200px;" placeholder="Target user email (e.g. user@target.com)" required list="registered-emails-list">

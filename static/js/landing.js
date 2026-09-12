@@ -9,6 +9,19 @@
     let currentMethod = 'ltc';
     let paymentConfig = null;
 
+    // Order state machine
+    let activeOrder = null;
+    let countdownInterval = null;
+    let statusPollInterval = null;
+    let qrcodeInstance = null;
+
+    // Crypto market cache fallback
+    const cryptoRates = {
+        'ltc': 85.0,
+        'btc': 65000.0,
+        'eth': 2600.0
+    };
+
     // Load active payment configuration from server
     async function loadPaymentConfig() {
         try {
@@ -44,70 +57,358 @@
 
         const cashEl = document.getElementById('cfg-cashapp-tag');
         if (cashEl && cfg.CASHAPP_TAG) cashEl.textContent = cfg.CASHAPP_TAG;
+
+        updateEstimatedAmount();
     }
 
-    // Modal Controllers
-    window.openCheckoutModal = function(tier = 'lifetime') {
-        currentTier = tier;
-        currentAmount = (tier === 'lifetime') ? 99 : 19;
-        
-        const backdrop = document.getElementById('checkout-modal-backdrop');
-        const planNameEl = document.getElementById('modal-plan-name');
-        const planPriceEl = document.getElementById('modal-plan-price');
-        
-        if (planNameEl) planNameEl.textContent = tier === 'lifetime' ? 'Lifetime Pass' : 'Pro Monthly';
-        if (planPriceEl) planPriceEl.textContent = `$${currentAmount}.00 USD`;
-        
-        if (backdrop) {
-            backdrop.style.display = 'flex';
-        }
-        selectPaymentMethod(currentMethod);
-    };
+    function updateEstimatedAmount() {
+        const estEl = document.getElementById('estimated-crypto-amount');
+        if (!estEl) return;
 
-    window.closeCheckoutModal = function() {
-        const backdrop = document.getElementById('checkout-modal-backdrop');
-        if (backdrop) backdrop.style.display = 'none';
-    };
-
-    window.openAuthModal = function(mode = 'login') {
-        const backdrop = document.getElementById('auth-modal-backdrop');
-        const tabLogin = document.getElementById('tab-login');
-        const tabRegister = document.getElementById('tab-register');
-        const submitBtn = document.getElementById('btn-auth-submit');
-        const form = document.getElementById('landing-auth-form');
-
-        if (mode === 'register') {
-            if (tabRegister) tabRegister.classList.add('active');
-            if (tabLogin) tabLogin.classList.remove('active');
-            if (submitBtn) submitBtn.textContent = 'Create Account';
-            if (form) form.dataset.mode = 'register';
+        if (currentMethod === 'ltc') {
+            const val = (currentAmount / (cryptoRates.ltc || 85.0)).toFixed(4);
+            estEl.innerHTML = `<span style="color:#06b6d4;">${val} LTC</span> <span style="font-size:0.75rem;color:var(--text-muted);">(~${cryptoRates.ltc} USD/LTC)</span>`;
+        } else if (currentMethod === 'btc') {
+            const val = (currentAmount / (cryptoRates.btc || 65000.0)).toFixed(6);
+            estEl.innerHTML = `<span style="color:#f59e0b;">${val} BTC</span> <span style="font-size:0.75rem;color:var(--text-muted);">(~${cryptoRates.btc} USD/BTC)</span>`;
+        } else if (currentMethod === 'eth') {
+            const val = (currentAmount / (cryptoRates.eth || 2600.0)).toFixed(5);
+            estEl.innerHTML = `<span style="color:#a855f7;">${val} ETH</span> <span style="font-size:0.75rem;color:var(--text-muted);">(~${cryptoRates.eth} USD/ETH)</span>`;
+        } else if (currentMethod === 'paypal') {
+            estEl.innerHTML = `<span style="color:#6366f1;">$${Number(currentAmount).toFixed(2)} USD</span> <span style="font-size:0.75rem;color:var(--text-muted);">(Direct PayPal)</span>`;
+        } else if (currentMethod === 'cashapp') {
+            estEl.innerHTML = `<span style="color:#10b981;">$${Number(currentAmount).toFixed(2)} USD</span> <span style="font-size:0.75rem;color:var(--text-muted);">(CashApp Cashtag)</span>`;
         } else {
-            if (tabLogin) tabLogin.classList.add('active');
-            if (tabRegister) tabRegister.classList.remove('active');
-            if (submitBtn) submitBtn.textContent = 'Authenticate & Sign In';
-            if (form) form.dataset.mode = 'login';
+            estEl.innerHTML = `<span style="color:#38bdf8;">$${Number(currentAmount).toFixed(2)} USD</span>`;
         }
+    }
 
-        if (backdrop) backdrop.style.display = 'flex';
-    };
+    // Step Navigation
+    window.goToStep = function(step) {
+        for (let s = 1; s <= 4; s++) {
+            const pane = document.getElementById(`pane-step-${s}`);
+            const indicator = document.getElementById(`step-indicator-${s}`);
+            const line = document.getElementById(`step-line-${s}`);
 
-    window.closeAuthModal = function() {
-        const backdrop = document.getElementById('auth-modal-backdrop');
-        if (backdrop) backdrop.style.display = 'none';
-        const err = document.getElementById('auth-error-msg');
-        if (err) err.style.display = 'none';
+            if (pane) {
+                pane.style.display = (s === step) ? 'block' : 'none';
+            }
+            if (indicator) {
+                indicator.classList.toggle('active', s === step);
+                indicator.classList.toggle('completed', s < step);
+            }
+            if (line) {
+                line.classList.toggle('active', s < step);
+            }
+        }
     };
 
     window.selectPaymentMethod = function(method) {
         currentMethod = method;
         const tabs = document.querySelectorAll('.pmethod-tab');
         tabs.forEach(t => t.classList.toggle('active', t.dataset.method === method));
-
-        const panels = document.querySelectorAll('.pmethod-content-panel');
-        panels.forEach(p => p.style.display = (p.id === `panel-${method}`) ? 'block' : 'none');
+        updateEstimatedAmount();
     };
 
-    window.copyText = function(elementId, label = 'Address') {
+    // Step 1 -> Step 2: Create Order in DB & Generate Deposit Instructions
+    window.startOrderCreation = async function() {
+        const emailInput = document.getElementById('checkout-email-input');
+        const email = emailInput ? emailInput.value.trim() : '';
+
+        if (!email || !email.includes('@') || !email.includes('.')) {
+            showToast('Please enter a valid operator email address.', 'warning');
+            if (emailInput) emailInput.focus();
+            return;
+        }
+
+        const btn = document.getElementById('btn-create-order');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Initializing Settlement Channel...`;
+        }
+
+        try {
+            const resp = await fetch('/api/payment/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email,
+                    plan_id: currentTier,
+                    method: currentMethod
+                })
+            });
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+                activeOrder = data.order;
+                const instr = data.payment_instructions;
+
+                // Populate Step 2 details
+                const orderIdEl = document.getElementById('display-order-id');
+                if (orderIdEl) orderIdEl.textContent = instr.order_id;
+
+                const sendAmtEl = document.getElementById('display-send-amount');
+                if (sendAmtEl) {
+                    if (['ltc', 'btc', 'eth'].includes(currentMethod)) {
+                        sendAmtEl.textContent = `${instr.crypto_amount} ${currentMethod.toUpperCase()}`;
+                    } else {
+                        sendAmtEl.textContent = `$${Number(instr.amount_usd).toFixed(2)} USD`;
+                    }
+                }
+
+                const destLblEl = document.getElementById('display-dest-label');
+                if (destLblEl) {
+                    destLblEl.textContent = `${currentMethod.toUpperCase()} DESTINATION / RECIPIENT:`;
+                }
+
+                const destAddrEl = document.getElementById('display-dest-address');
+                if (destAddrEl) {
+                    destAddrEl.textContent = instr.deposit_address || 'Check instructions below';
+                }
+
+                const ppLinkContainer = document.getElementById('paypal-direct-link-container');
+                const ppLinkA = document.getElementById('display-paypal-link');
+                if (currentMethod === 'paypal' && instr.paypal_link) {
+                    if (ppLinkContainer) ppLinkContainer.style.display = 'block';
+                    if (ppLinkA) ppLinkA.href = instr.paypal_link;
+                } else if (ppLinkContainer) {
+                    ppLinkContainer.style.display = 'none';
+                }
+
+                // Render Dynamic QR Code
+                renderDynamicQRCode(instr);
+
+                // Start 45-min live countdown
+                startCountdown(instr.expires_at);
+
+                // Start status polling
+                startStatusPolling(instr.order_id);
+
+                goToStep(2);
+                showToast(`Order ${instr.order_id} generated. Awaiting transfer.`, 'check');
+            } else {
+                showToast(data.error || 'Failed to initialize order channel.', 'error');
+            }
+        } catch (err) {
+            showToast(`Connection error: ${err.message}`, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Generate Deposit Address & Order Reference</span> <i class="fas fa-arrow-right"></i>`;
+            }
+        }
+    };
+
+    function renderDynamicQRCode(instr) {
+        const qrContainer = document.getElementById('qrcode-target');
+        if (!qrContainer) return;
+        qrContainer.innerHTML = '';
+
+        let qrString = '';
+        if (instr.method === 'ltc') {
+            qrString = `litecoin:${instr.deposit_address}?amount=${instr.crypto_amount}`;
+        } else if (instr.method === 'btc') {
+            qrString = `bitcoin:${instr.deposit_address}?amount=${instr.crypto_amount}`;
+        } else if (instr.method === 'eth') {
+            qrString = `ethereum:${instr.deposit_address}?value=${instr.crypto_amount}`;
+        } else if (instr.method === 'paypal') {
+            qrString = instr.paypal_link || `mailto:${instr.paypal_email}`;
+        } else if (instr.method === 'cashapp') {
+            qrString = `https://cash.app/${instr.cashapp_tag.replace('$', '')}`;
+        } else {
+            qrString = instr.deposit_address || instr.order_id;
+        }
+
+        try {
+            if (typeof QRCode !== 'undefined') {
+                qrcodeInstance = new QRCode(qrContainer, {
+                    text: qrString,
+                    width: 150,
+                    height: 150,
+                    colorDark: '#06b6d4',
+                    colorLight: '#0d1117',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } else {
+                const img = document.createElement('img');
+                img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrString)}&color=06b6d4&bgcolor=0d1117`;
+                img.alt = 'Scan Settlement Address';
+                img.style.width = '150px';
+                img.style.height = '150px';
+                qrContainer.appendChild(img);
+            }
+        } catch (e) {
+            console.warn('QR Code generation error:', e);
+        }
+    }
+
+    function startCountdown(expiresAtStr) {
+        if (countdownInterval) clearInterval(countdownInterval);
+        const timerEl = document.getElementById('display-countdown-timer');
+
+        let targetTime = expiresAtStr ? new Date(expiresAtStr).getTime() : (Date.now() + 45 * 60 * 1000);
+
+        function tick() {
+            const now = Date.now();
+            const diff = targetTime - now;
+
+            if (diff <= 0) {
+                if (timerEl) timerEl.textContent = 'EXPIRED';
+                clearInterval(countdownInterval);
+                return;
+            }
+
+            const mins = Math.floor(diff / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+            if (timerEl) {
+                timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        tick();
+        countdownInterval = setInterval(tick, 1000);
+    }
+
+    // Step 3 -> Submit Proof
+    window.submitOrderProof = async function() {
+        if (!activeOrder) {
+            showToast('No active order reference found.', 'error');
+            goToStep(1);
+            return;
+        }
+
+        const txInput = document.getElementById('tx-hash-input');
+        const notesInput = document.getElementById('tx-notes-input');
+        const errBox = document.getElementById('proof-error-msg');
+        const txHash = txInput ? txInput.value.trim() : '';
+        const notes = notesInput ? notesInput.value.trim() : '';
+
+        if (errBox) errBox.style.display = 'none';
+
+        if (!txHash || txHash.length < 5) {
+            if (errBox) {
+                errBox.textContent = 'Please enter a valid Transaction Hash (TXID) or transfer reference number.';
+                errBox.style.display = 'block';
+            }
+            if (txInput) txInput.focus();
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-proof');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Submitting to Clearance Node...`;
+        }
+
+        try {
+            const resp = await fetch('/api/payment/submit-proof', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: activeOrder.id,
+                    tx_hash: txHash,
+                    notes: notes
+                })
+            });
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+                activeOrder = data.order;
+                const vrOrderEl = document.getElementById('vr-order-id');
+                const vrTxEl = document.getElementById('vr-txid-display');
+                if (vrOrderEl) vrOrderEl.textContent = activeOrder.id;
+                if (vrTxEl) vrTxEl.textContent = txHash;
+
+                goToStep(4);
+                showToast('Proof submitted! Node verification monitor active.', 'check');
+                startStatusPolling(activeOrder.id);
+            } else {
+                if (errBox) {
+                    errBox.textContent = data.error || 'Failed to submit proof.';
+                    errBox.style.display = 'block';
+                }
+            }
+        } catch (err) {
+            if (errBox) {
+                errBox.textContent = `Error: ${err.message}`;
+                errBox.style.display = 'block';
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-shield-check"></i> <span>Verify Settlement & Request Clearance</span>`;
+            }
+        }
+    };
+
+    // Step 4: Real-time Radar Status Poller
+    function startStatusPolling(orderId) {
+        if (statusPollInterval) clearInterval(statusPollInterval);
+
+        checkCurrentOrderStatus(false);
+        statusPollInterval = setInterval(() => {
+            checkCurrentOrderStatus(false);
+        }, 3500);
+    }
+
+    window.checkCurrentOrderStatus = async function(isManual = false) {
+        if (!activeOrder || !activeOrder.id) return;
+
+        try {
+            const resp = await fetch(`/api/payment/order-status/${encodeURIComponent(activeOrder.id)}`);
+            if (!resp.ok) return;
+
+            const data = await resp.json();
+            if (data.success && data.order) {
+                activeOrder = data.order;
+                const status = activeOrder.status;
+
+                const pill = document.getElementById('vr-status-pill');
+                const pillText = document.getElementById('vr-pill-text');
+                const title = document.getElementById('vr-status-title');
+                const desc = document.getElementById('vr-status-desc');
+
+                if (status === 'approved') {
+                    if (statusPollInterval) clearInterval(statusPollInterval);
+                    if (countdownInterval) clearInterval(countdownInterval);
+
+                    if (pill) {
+                        pill.style.background = 'rgba(16, 185, 129, 0.18)';
+                        pill.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+                        pill.style.color = '#34d399';
+                    }
+                    if (pillText) pillText.textContent = 'STATUS: CONFIRMED // ACCESS GRANTED';
+                    if (title) title.innerHTML = '<span style="color:#10b981;">PAYMENT CONFIRMED & APPROVED</span>';
+                    if (desc) desc.textContent = 'Your credential has been elevated. Launching intelligence command console...';
+
+                    showToast('Clearance verified! Launching console...', 'check');
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/app';
+                    }, 1500);
+                } else if (status === 'rejected') {
+                    if (statusPollInterval) clearInterval(statusPollInterval);
+                    if (pill) {
+                        pill.style.background = 'rgba(244, 63, 94, 0.18)';
+                        pill.style.borderColor = 'rgba(244, 63, 94, 0.5)';
+                        pill.style.color = '#f43f5e';
+                    }
+                    if (pillText) pillText.textContent = 'STATUS: REJECTED';
+                    if (title) title.innerHTML = '<span style="color:#f43f5e;">VERIFICATION REJECTED</span>';
+                    if (desc) desc.textContent = `The transaction hash could not be confirmed: ${activeOrder.notes || 'Unconfirmed settlement'}`;
+                } else if (status === 'verifying') {
+                    if (pillText) pillText.textContent = 'STATUS: VERIFYING (Awaiting Operator Clearance)';
+                    if (isManual) showToast('Order is in queue awaiting network confirmation.', 'info');
+                } else {
+                    if (pillText) pillText.textContent = 'STATUS: PENDING DEPOSIT';
+                    if (isManual) showToast('Awaiting deposit transfer.', 'info');
+                }
+            }
+        } catch (e) {
+            // Quiet network retry
+        }
+    };
+
+    window.copyDynamicText = function(elementId, label = 'Data') {
         const el = document.getElementById(elementId);
         if (el) {
             navigator.clipboard.writeText(el.textContent.trim()).then(() => {
@@ -116,54 +417,8 @@
         }
     };
 
-    window.executeCheckout = async function() {
-        const emailInput = document.getElementById('checkout-email-input');
-        const email = emailInput ? emailInput.value.trim() : '';
-
-        if (!email || !email.includes('@')) {
-            showToast('Please enter a valid operator email', 'warning');
-            if (emailInput) emailInput.focus();
-            return;
-        }
-
-        const btn = document.getElementById('btn-confirm-checkout');
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'Processing Payment...';
-        }
-
-        try {
-            const resp = await fetch('/api/payment/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: email,
-                    tier: currentTier,
-                    amount: currentAmount,
-                    method: currentMethod
-                })
-            });
-            const data = await resp.json();
-
-            if (resp.ok && data.success) {
-                showToast(`Payment Confirmed! Account upgraded to ${currentTier.toUpperCase()}.`, 'check');
-                setTimeout(() => {
-                    window.location.href = '/app';
-                }, 1000);
-            } else {
-                showToast(data.error || 'Payment failed to process', 'error');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = 'Confirm & Activate Access';
-                }
-            }
-        } catch (err) {
-            showToast(`Error: ${err.message}`, 'error');
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'Confirm & Activate Access';
-            }
-        }
+    window.copyText = function(elementId, label = 'Address') {
+        window.copyDynamicText(elementId, label);
     };
 
     function showToast(message, type = 'info') {
@@ -251,6 +506,10 @@
         if (planNameEl) planNameEl.textContent = planName || (tier === 'lifetime' ? 'Lifetime Pass' : 'Pro Monthly');
         if (planPriceEl) planPriceEl.textContent = `$${Number(currentAmount).toFixed(2)} USD`;
         
+        if (!activeOrder || activeOrder.status === 'approved' || activeOrder.status === 'rejected') {
+            goToStep(1);
+        }
+
         if (backdrop) {
             backdrop.style.display = 'flex';
         }
@@ -276,7 +535,7 @@
     };
 
     window.switchAdminTab = function(tab) {
-        const tabs = ['pay', 'plans', 'users'];
+        const tabs = ['pay', 'plans', 'orders', 'users'];
         tabs.forEach(t => {
             const btn = document.getElementById(`tab-btn-admin-${t}`);
             const pane = document.getElementById(`tab-pane-admin-${t}`);
@@ -285,7 +544,117 @@
         });
         if (tab === 'pay') loadAdminSettings();
         if (tab === 'plans') loadAdminPlans();
+        if (tab === 'orders') loadAdminOrders();
         if (tab === 'users') loadAdminUsers();
+    };
+
+    // Admin Orders Management
+    window.loadAdminOrders = async function() {
+        const tbody = document.getElementById('admin-orders-tbody');
+        const badge = document.getElementById('admin-orders-counter');
+        if (!tbody) return;
+
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--text-muted);"><i class="fas fa-circle-notch fa-spin"></i> Loading settlement queue...</td></tr>`;
+
+        try {
+            const resp = await fetch('/api/admin/orders');
+            const data = await resp.json();
+
+            if (resp.ok && data.orders) {
+                const orders = data.orders;
+
+                // Update badge counter
+                const pendingCount = orders.filter(o => o.status === 'verifying' || o.status === 'pending').length;
+                if (badge) {
+                    badge.textContent = pendingCount;
+                    badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+                }
+
+                if (orders.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--text-muted);">No orders found in database.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = orders.map(o => {
+                    const statusClass = `status-${o.status}`;
+                    const txSnippet = o.tx_hash ? `${o.tx_hash.substring(0, 12)}...` : '<span style="color:var(--text-muted);font-style:italic;">None</span>';
+                    const isActionable = o.status !== 'approved';
+
+                    return `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                            <td style="padding:8px 8px;"><code>${escapeHtml(o.id)}</code></td>
+                            <td style="padding:8px 8px;font-weight:600;color:var(--text-primary);">${escapeHtml(o.email)}</td>
+                            <td style="padding:8px 8px;"><strong style="color:#fcd34d;">$${Number(o.amount).toFixed(2)}</strong> <span style="font-size:0.7rem;color:var(--text-muted);">(${escapeHtml(o.plan_id)})</span></td>
+                            <td style="padding:8px 8px;"><span style="color:var(--accent-cyan);font-weight:700;">${escapeHtml(o.payment_method.toUpperCase())}</span> ${o.crypto_amount > 0 ? `<br><code style="font-size:0.7rem;">${o.crypto_amount}</code>` : ''}</td>
+                            <td style="padding:8px 8px;">
+                                <span title="${escapeHtml(o.tx_hash)}">${txSnippet}</span>
+                                ${o.notes ? `<br><small style="color:var(--text-muted);">${escapeHtml(o.notes)}</small>` : ''}
+                            </td>
+                            <td style="padding:8px 8px;">
+                                <span class="status-badge ${statusClass}">${escapeHtml(o.status)}</span>
+                            </td>
+                            <td style="padding:8px 8px; text-align:right; white-space:nowrap;">
+                                ${isActionable ? `
+                                    <button type="button" class="btn-admin-approve" onclick="adminApproveOrder('${escapeHtml(o.id)}')">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                    <button type="button" class="btn-admin-reject" onclick="adminRejectOrder('${escapeHtml(o.id)}')">
+                                        <i class="fas fa-xmark"></i> Reject
+                                    </button>
+                                ` : `<span style="color:var(--accent-emerald);font-weight:700;font-size:0.72rem;"><i class="fas fa-circle-check"></i> Activated</span>`}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--accent-rose);">Error loading orders: ${escapeHtml(err.message)}</td></tr>`;
+        }
+    };
+
+    window.adminApproveOrder = async function(orderId) {
+        if (!confirm(`Approve order ${orderId} and activate account access?`)) return;
+
+        try {
+            const resp = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notes: 'Confirmed on blockchain explorer / payment merchant' })
+            });
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+                showToast(`Order ${orderId} approved and account elevated!`, 'check');
+                loadAdminOrders();
+            } else {
+                showToast(data.error || 'Failed to approve order', 'error');
+            }
+        } catch (err) {
+            showToast(`Error: ${err.message}`, 'error');
+        }
+    };
+
+    window.adminRejectOrder = async function(orderId) {
+        const reason = prompt(`Reason for rejecting order ${orderId}:`, 'Unverified transaction / TXID not found');
+        if (reason === null) return;
+
+        try {
+            const resp = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason })
+            });
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+                showToast(`Order ${orderId} marked as rejected.`, 'info');
+                loadAdminOrders();
+            } else {
+                showToast(data.error || 'Failed to reject order', 'error');
+            }
+        } catch (err) {
+            showToast(`Error: ${err.message}`, 'error');
+        }
     };
 
     window.loadAdminSettings = async function() {

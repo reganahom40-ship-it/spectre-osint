@@ -2674,7 +2674,7 @@
         },
 
         switchAdminTab(tab) {
-            const tabs = ['pay', 'plans', 'users'];
+            const tabs = ['pay', 'plans', 'orders', 'users'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-admin-${t}`);
                 const pane = document.getElementById(`tab-pane-admin-${t}`);
@@ -2683,7 +2683,112 @@
             });
             if (tab === 'pay') this.loadAdminSettings();
             if (tab === 'plans') this.loadAdminPlans();
+            if (tab === 'orders') this.loadAdminOrders();
             if (tab === 'users') this.loadAdminUsers();
+        },
+
+        async loadAdminOrders() {
+            const tbody = document.getElementById('admin-orders-tbody-app');
+            const badge = document.getElementById('admin-orders-counter-app');
+            if (!tbody) return;
+
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading order queue...</td></tr>`;
+
+            try {
+                const resp = await fetch('/api/admin/orders');
+                const data = await resp.json();
+
+                if (resp.ok && data.orders) {
+                    const orders = data.orders;
+                    const pendingCount = orders.filter(o => o.status === 'verifying' || o.status === 'pending').length;
+                    if (badge) {
+                        badge.textContent = pendingCount;
+                        badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+                    }
+
+                    if (orders.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No orders found.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = orders.map(o => {
+                        const statusClass = `status-${o.status}`;
+                        const txSnippet = o.tx_hash ? `${o.tx_hash.substring(0, 12)}...` : '<span style="color:var(--text-muted);font-style:italic;">None</span>';
+                        const isActionable = o.status !== 'approved';
+
+                        return `
+                            <tr>
+                                <td><code>${escapeHtml(o.id)}</code></td>
+                                <td><strong style="color:var(--text-primary);">${escapeHtml(o.email)}</strong></td>
+                                <td><strong style="color:#fcd34d;">$${Number(o.amount).toFixed(2)}</strong> <small style="color:var(--text-muted);">(${escapeHtml(o.plan_id)})</small></td>
+                                <td><span style="color:var(--accent-cyan);font-weight:700;">${escapeHtml(o.payment_method.toUpperCase())}</span> ${o.crypto_amount > 0 ? `<br><code style="font-size:0.7rem;">${o.crypto_amount}</code>` : ''}</td>
+                                <td>
+                                    <span title="${escapeHtml(o.tx_hash)}">${txSnippet}</span>
+                                    ${o.notes ? `<br><small style="color:var(--text-muted);">${escapeHtml(o.notes)}</small>` : ''}
+                                </td>
+                                <td>
+                                    <span class="status-badge ${statusClass}">${escapeHtml(o.status)}</span>
+                                </td>
+                                <td style="text-align:right; white-space:nowrap;">
+                                    ${isActionable ? `
+                                        <button type="button" class="btn-admin-approve" onclick="window.SPECTRE_AUTH.adminApproveOrder('${escapeHtml(o.id)}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button type="button" class="btn-admin-reject" onclick="window.SPECTRE_AUTH.adminRejectOrder('${escapeHtml(o.id)}')">
+                                            <i class="fas fa-xmark"></i> Reject
+                                        </button>
+                                    ` : `<span style="color:var(--accent-emerald);font-weight:700;font-size:0.72rem;"><i class="fas fa-circle-check"></i> Activated</span>`}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--accent-rose);">Error: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        },
+
+        async adminApproveOrder(orderId) {
+            if (!confirm(`Approve order ${orderId} and elevate account?`)) return;
+            try {
+                const resp = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes: 'Confirmed via App Admin Console' })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    showToast(`Order ${orderId} approved!`, 'fas fa-check-circle text-emerald');
+                    playTone(880, 'sine', 0.2);
+                    this.loadAdminOrders();
+                    this.loadAdminUsers();
+                } else {
+                    showToast(data.error || 'Approval failed', 'fas fa-triangle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
+            }
+        },
+
+        async adminRejectOrder(orderId) {
+            const reason = prompt(`Reason for rejection:`, 'Unverified transaction hash');
+            if (reason === null) return;
+            try {
+                const resp = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    showToast(`Order ${orderId} rejected`, 'fas fa-info-circle text-sky');
+                    this.loadAdminOrders();
+                } else {
+                    showToast(data.error || 'Rejection failed', 'fas fa-triangle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
+            }
         },
 
         openAdminModal() {
