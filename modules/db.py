@@ -85,16 +85,16 @@ def bootstrap_admin():
         cursor = conn.cursor()
         cursor.execute("SELECT id, tier FROM users WHERE email = ?", (admin_email,))
         user = cursor.fetchone()
+        pw_hash = generate_password_hash(admin_pass)
         if not user:
-            pw_hash = generate_password_hash(admin_pass)
             cursor.execute(
                 "INSERT INTO users (email, password_hash, tier, notes) VALUES (?, ?, 'admin', 'Default Master Administrator')",
                 (admin_email, pw_hash)
             )
             conn.commit()
             logger.info(f"Bootstrapped master admin user: {admin_email}")
-        elif user['tier'] != 'admin':
-            cursor.execute("UPDATE users SET tier = 'admin' WHERE id = ?", (user['id'],))
+        else:
+            cursor.execute("UPDATE users SET tier = 'admin', password_hash = ? WHERE id = ?", (pw_hash, user['id']))
             conn.commit()
 
 def create_user(email: str, password: str, tier: str = 'free') -> Dict[str, Any]:
