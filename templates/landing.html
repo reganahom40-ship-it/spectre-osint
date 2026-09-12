@@ -69,7 +69,7 @@
                 </a>
                 {% else %}
                 <button class="btn-nav-signin" onclick="openAuthModal('login')">
-                    Operator Sign In
+                    Sign In
                 </button>
                 <button class="btn-nav-cta" onclick="window.open('/checkout?plan=lifetime', '_blank')">
                     Get Access
@@ -687,7 +687,7 @@
             <div class="modal-header">
                 <h3>
                     <i class="fas fa-user-shield text-cyan"></i>
-                    <span>Operator Authentication</span>
+                    <span>Authentication</span>
                 </h3>
                 <button class="btn-modal-close" onclick="closeAuthModal()">
                     <i class="fas fa-xmark"></i>
@@ -708,7 +708,7 @@
 
                 <form id="landing-auth-form">
                     <div class="form-group">
-                        <label class="form-label">Operator Email</label>
+                        <label class="form-label">Email</label>
                         <input type="email" id="auth-email" class="form-input" placeholder="operator@spectre.io" required>
                     </div>
                     <div class="form-group">

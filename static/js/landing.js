@@ -1231,7 +1231,7 @@
                     if (resp.ok && data.success) {
                         const tier = (data.user && data.user.tier) || 'free';
                         if (tier === 'admin') {
-                            window.location.reload();
+                            window.location.href = '/app';
                         } else if (tier === 'premium' || tier === 'lifetime') {
                             window.location.href = '/app';
                         } else {
