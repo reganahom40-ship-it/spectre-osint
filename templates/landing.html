@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPECTRE — Autonomous OSINT Reconnaissance Platform</title>
+    <title>SPECTRE — Autonomous OSINT & Threat Cartography</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,37 +17,46 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v4">
+    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_redesign_v2">
 </head>
 <body>
 
-    <!-- Ambient Lighting & Canvas Background -->
+    <!-- Ambient Lighting & Futuristic Canvas Background // RESTRICTED OPERATOR ACCESS // CONFIDENTIAL -->
     <div class="landing-ambient-bg">
         <div class="ambient-orb orb-top-left"></div>
+        <div class="ambient-orb orb-hero-center"></div>
         <div class="ambient-orb orb-mid-right"></div>
-        <div class="ambient-orb orb-bottom-center"></div>
-        <div class="grid-overlay"></div>
+        <div class="ambient-orb orb-bottom-left"></div>
+        <div class="grid-mesh-overlay"></div>
     </div>
 
     <!-- Navigation Header -->
     <header class="landing-nav">
         <div class="landing-nav-inner">
             <a href="/" class="nav-brand">
-                <div class="brand-icon">
-                    <i class="fas fa-layer-group"></i>
+                <div class="brand-icon-shield">
+                    <i class="fas fa-shield-cat"></i>
                 </div>
-                <div class="brand-text">
-                    SPECTRE <span class="brand-badge">v68.4</span>
+                <div class="brand-name">
+                    SPECTRE <span class="brand-pill-osint">OSINT</span>
                 </div>
             </a>
             
-            <ul class="nav-links">
-                <li><a href="#overview">Overview</a></li>
-                <li><a href="#vectors">Capabilities</a></li>
+            <ul class="nav-center-links">
+                <li><a href="/" class="active">Home</a></li>
+                <li><a href="#tools">Tools</a></li>
                 <li><a href="#pricing">Pricing</a></li>
+                <li><a href="/docs" target="_blank">Docs</a></li>
+                <li><a href="https://discord.gg/spectre" target="_blank">Support</a></li>
             </ul>
 
-            <div class="nav-actions">
+            <div class="nav-right-actions">
+                <div class="nav-search-pill" onclick="simulateSearchClick()">
+                    <i class="fas fa-search search-icon"></i>
+                    <span class="search-placeholder">Search anything...</span>
+                    <span class="search-kbd">⌘ K</span>
+                </div>
+
                 {% if user and user.get('tier') in ('premium', 'lifetime', 'admin') %}
                 {% if user.get('tier') == 'admin' %}
                 <button class="btn-nav-admin" onclick="openAdminModal()">
@@ -57,14 +66,14 @@
                 <a href="/app" class="btn-nav-cta">
                     <i class="fas fa-terminal"></i> Launch Console
                 </a>
-                <a href="/logout" class="btn-nav-logout">
+                <a href="/logout" class="btn-nav-signin">
                     <i class="fas fa-power-off"></i> Logout
                 </a>
                 {% elif user %}
                 <button class="btn-nav-cta" onclick="window.open('/checkout?plan=lifetime', '_blank')">
                     <i class="fas fa-crown"></i> Upgrade
                 </button>
-                <a href="/logout" class="btn-nav-logout">
+                <a href="/logout" class="btn-nav-signin">
                     <i class="fas fa-power-off"></i> Logout
                 </a>
                 {% else %}
@@ -72,7 +81,7 @@
                     Sign In
                 </button>
                 <button class="btn-nav-cta" onclick="window.open('/checkout?plan=lifetime', '_blank')">
-                    Get Access
+                    Get Started
                 </button>
                 {% endif %}
             </div>
@@ -84,261 +93,323 @@
         
         <!-- Hero Section -->
         <section class="landing-hero" id="overview">
-            <div class="hero-content">
-                <div class="hero-badge">
-                    <span class="badge-dot"></span>
-                    <span>SPECTRE INTELLIGENCE PLATFORM</span>
-                    <span class="badge-tag">RESTRICTED OPERATOR ACCESS</span>
-                </div>
+            <div class="hero-layout-grid">
                 
-                <h1 class="hero-title">
-                    Autonomous Cyber OSINT & <span class="gradient-text">Threat Cartography</span>
-                </h1>
-                
-                <p class="hero-description">
-                    Synthesize attack surfaces, BGP route topology, compromised credentials, and 3D spatial entity graphs in sub-second cascades. Built for elite operators and intelligence professionals.
-                </p>
-
-                <div class="hero-actions">
-                    <button class="btn-hero-primary" onclick="window.open('/checkout?plan=lifetime', '_blank')">
-                        <i class="fas fa-bolt"></i>
-                        <span>Get Lifetime Access ($99)</span>
-                        <i class="fas fa-arrow-right arrow-icon"></i>
-                    </button>
-                    <button class="btn-hero-secondary" onclick="window.open('/checkout?plan=premium', '_blank')">
-                        <span>Pro Monthly ($19/mo)</span>
-                    </button>
-                </div>
-
-                <div class="hero-guarantee-row">
-                    <span class="guarantee-item"><i class="fas fa-check-circle text-emerald"></i> Instant Activation</span>
-                    <span class="guarantee-item"><i class="fas fa-check-circle text-emerald"></i> Crypto & PayPal</span>
-                    <span class="guarantee-item"><i class="fas fa-check-circle text-emerald"></i> 100% Confidential</span>
-                </div>
-
-                <!-- Sleek Minimalist Stats Row -->
-                <div class="hero-stats-row">
-                    <div class="stat-box">
-                        <span class="stat-num text-cyan">10+</span>
-                        <span class="stat-name">Recon Vectors</span>
+                <!-- Hero Left: Content -->
+                <div class="hero-left-col">
+                    <div class="hero-status-pill">
+                        <span class="pulse-dot"></span>
+                        <span class="pill-text">REAL-TIME OSINT &bull; 112+ SOURCES &bull; NO LIMITS</span>
                     </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-box">
-                        <span class="stat-num text-purple">&lt;15ms</span>
-                        <span class="stat-name">Cache Latency</span>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-box">
-                        <span class="stat-num text-emerald">100%</span>
-                        <span class="stat-name">Airgapped & Logless</span>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-box">
-                        <span class="stat-num text-amber">3D</span>
-                        <span class="stat-name">Spatial Topology</span>
-                    </div>
-                </div>
-            </div>
+                    
+                    <h1 class="hero-main-title">
+                        Autonomous Cyber OSINT & <span class="gradient-text-neon">Threat Cartography</span>
+                    </h1>
+                    
+                    <p class="hero-main-description">
+                        SPECTRE is a next-generation OSINT platform that automates intelligence gathering, links data across sources, and turns raw information into actionable threat intelligence &mdash; all in one place.
+                    </p>
 
-            <!-- Hero Interactive Cyber Terminal Widget -->
-            <div class="hero-terminal-container">
-                <div class="hero-terminal-chassis">
-                    <div class="terminal-chassis-header">
-                        <div class="chassis-dots">
-                            <span class="cdot cdot-red"></span>
-                            <span class="cdot cdot-yellow"></span>
-                            <span class="cdot cdot-green"></span>
+                    <div class="hero-cta-group">
+                        <button class="btn-hero-investigate" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                            <span>Start Investigating</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <a href="#pricing" class="btn-hero-pricing">
+                            View Pricing
+                        </a>
+                    </div>
+
+                    <!-- 4 Sleek Feature/Guarantee Badges -->
+                    <div class="hero-feature-metrics-grid">
+                        <div class="feature-metric-card">
+                            <div class="metric-icon-wrap text-cyan">
+                                <i class="fas fa-stopwatch"></i>
+                            </div>
+                            <div class="metric-text-wrap">
+                                <div class="metric-title">Instant Results</div>
+                                <div class="metric-desc">Sub-second scanning</div>
+                            </div>
                         </div>
-                        <div class="chassis-title">
-                            <i class="fas fa-terminal text-cyan"></i>
-                            <span>spectre-recon — zsh</span>
+
+                        <div class="feature-metric-card">
+                            <div class="metric-icon-wrap text-indigo">
+                                <i class="fas fa-network-wired"></i>
+                            </div>
+                            <div class="metric-text-wrap">
+                                <div class="metric-title">112+ Data Sources</div>
+                                <div class="metric-desc">Global coverage</div>
+                            </div>
                         </div>
-                        <div class="chassis-badge">
-                            <span class="live-dot"></span> LIVE
+
+                        <div class="feature-metric-card">
+                            <div class="metric-icon-wrap text-purple">
+                                <i class="fas fa-infinity"></i>
+                            </div>
+                            <div class="metric-text-wrap">
+                                <div class="metric-title">No Limits</div>
+                                <div class="metric-desc">Full access to all tools</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="terminal-screen" id="hero-live-terminal">
-                        <div class="term-line prompt"><span class="term-prompt-user">spectre@recon</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">defense-cloud.io</span></div>
-                        <div class="term-line color-cyan"><span class="term-tag">[CLASSIFIER]</span> Target: DOMAIN (Confidence: 1.0 CONFIRMED)</div>
-                        <div class="term-line color-emerald"><span class="term-tag">[BGP ROUTE]</span> 104.21.32.0/20 &rarr; AS13335 (Cloudflare)</div>
-                        <div class="term-line color-cyan"><span class="term-tag">[CT LOGS]</span> 48 subdomains enumerated via CT logs</div>
-                        <div class="term-line color-amber"><span class="term-tag">[BREACH RADAR]</span> 4 darkweb credential exposures indexed</div>
-                        <div class="term-line color-purple"><span class="term-tag">[3D GRAPH]</span> 38 Nodes / 62 Edges mapped in canvas</div>
-                        <div class="term-line color-rose"><span class="term-tag">[RISK SCORE]</span> 74/100 (HIGH RISK // MULTIPLE EXPOSURES)</div>
-                        <div class="term-line prompt term-cursor-row"><span class="term-prompt-user">spectre@recon</span>:<span class="term-prompt-path">~</span>$ <span class="term-cursor">_</span></div>
-                    </div>
-                    <div class="terminal-targets-bar">
-                        <span class="ttb-label">Sample Targets:</span>
-                        <button type="button" class="ttb-btn active" onclick="simulateHeroTarget('defense-cloud.io')">defense-cloud.io</button>
-                        <button type="button" class="ttb-btn" onclick="simulateHeroTarget('185.220.101.5')">185.220.101.5</button>
-                        <button type="button" class="ttb-btn" onclick="simulateHeroTarget('operator_ghost')">operator_ghost</button>
+
+                        <div class="feature-metric-card">
+                            <div class="metric-icon-wrap text-emerald">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="metric-text-wrap">
+                                <div class="metric-title">Secure & Private</div>
+                                <div class="metric-desc">Your data, your control</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Hero Right: Interactive Cyber Recon Terminal & Floating Globe Network -->
+                <div class="hero-right-col">
+                    <div class="hero-visual-chassis-wrap">
+                        
+                        <!-- Planetary Network Ambient Glow -->
+                        <div class="globe-network-aura">
+                            <div class="globe-core-orb"></div>
+                            <div class="globe-ring-1"></div>
+                            <div class="globe-ring-2"></div>
+                        </div>
+
+                        <!-- Floating Telemetry Badges (Floating around widget) -->
+                        <div class="telemetry-badge badge-ip-tracked">
+                            <div class="tb-icon text-cyan"><i class="fas fa-location-dot"></i></div>
+                            <div class="tb-info">
+                                <div class="tb-label">IP Tracked</div>
+                                <div class="tb-val font-mono">185.199.110.153</div>
+                                <div class="tb-sub">Location: United States</div>
+                            </div>
+                        </div>
+
+                        <div class="telemetry-badge badge-domain-found">
+                            <div class="tb-icon text-emerald"><i class="fas fa-shield-halved"></i></div>
+                            <div class="tb-info">
+                                <div class="tb-label">Domain Found</div>
+                                <div class="tb-val font-mono">example.com</div>
+                                <div class="tb-sub">5 subdomains mapped</div>
+                            </div>
+                        </div>
+
+                        <div class="telemetry-badge badge-accounts-related">
+                            <div class="tb-icon text-purple"><i class="fas fa-user-check"></i></div>
+                            <div class="tb-info">
+                                <div class="tb-label">Related Accounts</div>
+                                <div class="tb-val font-mono">12 platforms</div>
+                            </div>
+                        </div>
+
+                        <!-- Main Glassmorphic Search & Engine Console -->
+                        <div class="hero-recon-console">
+                            <div class="console-search-bar">
+                                <i class="fas fa-search console-search-icon"></i>
+                                <input type="text" id="hero-interactive-input" class="console-input" placeholder="Search email, phone, domain, username, IP, or anything..." value="defense-cloud.io">
+                                <button type="button" class="console-search-submit" onclick="runHeroInteractiveSearch()">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+
+                            <!-- Filter Chips -->
+                            <div class="console-filter-chips">
+                                <button class="chip-btn active" onclick="setConsoleFilter('all', this)">All</button>
+                                <button class="chip-btn" onclick="setConsoleFilter('email', this)">Email</button>
+                                <button class="chip-btn" onclick="setConsoleFilter('phone', this)">Phone</button>
+                                <button class="chip-btn" onclick="setConsoleFilter('username', this)">Username</button>
+                                <button class="chip-btn" onclick="setConsoleFilter('domain', this)">Domain</button>
+                                <button class="chip-btn" onclick="setConsoleFilter('ip', this)">IP</button>
+                                <button class="chip-btn" onclick="setConsoleFilter('image', this)">Image</button>
+                                <button class="chip-btn" onclick="setConsoleFilter('more', this)">More</button>
+                            </div>
+
+                            <!-- List of Modular Engines -->
+                            <div class="console-module-list">
+                                <div class="console-module-row" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                                    <div class="cm-icon-box bg-cyan-glow">
+                                        <i class="fas fa-envelope text-cyan"></i>
+                                    </div>
+                                    <div class="cm-details">
+                                        <div class="cm-name">Email Investigation</div>
+                                        <div class="cm-sub">Breach checks, leaks, DNS, reputation, and more</div>
+                                    </div>
+                                    <div class="cm-arrow"><i class="fas fa-chevron-right"></i></div>
+                                </div>
+
+                                <div class="console-module-row" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                                    <div class="cm-icon-box bg-blue-glow">
+                                        <i class="fas fa-user-tag text-blue"></i>
+                                    </div>
+                                    <div class="cm-details">
+                                        <div class="cm-name">Username Discovery</div>
+                                        <div class="cm-sub">Find accounts across 112+ platforms</div>
+                                    </div>
+                                    <div class="cm-arrow"><i class="fas fa-chevron-right"></i></div>
+                                </div>
+
+                                <div class="console-module-row" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                                    <div class="cm-icon-box bg-emerald-glow">
+                                        <i class="fas fa-phone-alt text-emerald"></i>
+                                    </div>
+                                    <div class="cm-details">
+                                        <div class="cm-name">Phone Intelligence</div>
+                                        <div class="cm-sub">Carrier, location, line type, and more</div>
+                                    </div>
+                                    <div class="cm-arrow"><i class="fas fa-chevron-right"></i></div>
+                                </div>
+
+                                <div class="console-module-row" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                                    <div class="cm-icon-box bg-indigo-glow">
+                                        <i class="fas fa-map-marked-alt text-indigo"></i>
+                                    </div>
+                                    <div class="cm-details">
+                                        <div class="cm-name">IP Intelligence</div>
+                                        <div class="cm-sub">Geolocation, ISP, ASN, open ports</div>
+                                    </div>
+                                    <div class="cm-arrow"><i class="fas fa-chevron-right"></i></div>
+                                </div>
+
+                                <div class="console-module-row" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                                    <div class="cm-icon-box bg-purple-glow">
+                                        <i class="fas fa-globe text-purple"></i>
+                                    </div>
+                                    <div class="cm-details">
+                                        <div class="cm-name">Domain Intelligence</div>
+                                        <div class="cm-sub">WHOIS, DNS, subdomains, SSL, CT logs</div>
+                                    </div>
+                                    <div class="cm-arrow"><i class="fas fa-chevron-right"></i></div>
+                                </div>
+
+                                <div class="console-module-row" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                                    <div class="cm-icon-box bg-rose-glow">
+                                        <i class="fas fa-images text-rose"></i>
+                                    </div>
+                                    <div class="cm-details">
+                                        <div class="cm-name">Image OSINT</div>
+                                        <div class="cm-sub">Metadata, reverse search, faces, and more</div>
+                                    </div>
+                                    <div class="cm-arrow"><i class="fas fa-chevron-right"></i></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
 
-        <!-- Vectors & Capabilities Showcase -->
-        <section class="vectors-section" id="vectors">
-            <div class="section-header">
-                <div class="section-tag">ENGINE ARCHITECTURE</div>
-                <h2 class="section-title">Classified Reconnaissance Matrix</h2>
-                <p class="section-subtitle">Tactical OSINT engines operating concurrently behind cryptographic clearance gates.</p>
+        <!-- SECTION: Powerful OSINT Tools (Matching Mockup Horizontal Grid) -->
+        <section class="tools-showcase-section" id="tools">
+            <div class="section-center-header">
+                <div class="section-kicker">POWERFUL OSINT TOOLS</div>
+                <h2 class="section-main-heading">Everything You Need to Investigate</h2>
+                <p class="section-main-sub">From a single search to full intelligence gathering &mdash; SPECTRE connects the dots.</p>
             </div>
 
-            <div class="vectors-grid">
-                <!-- Card 1 -->
-                <div class="vector-card">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
-                    <div class="vcard-icon">
-                        <i class="fas fa-network-wired"></i>
+            <div class="tools-horizontal-grid">
+                <!-- Tool 1 -->
+                <div class="tool-feature-tile" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                    <div class="tile-icon-box text-cyan">
+                        <i class="fas fa-user-circle"></i>
                     </div>
-                    <h3 class="vcard-title">Infrastructure & BGP Cartography</h3>
-                    <p class="vcard-desc">
-                        Deep IPv4/IPv6 forensics, autonomous system number (ASN) origin lookups, BGP prefix announcements, reverse DNS hostnames, and ISP ownership tracking.
-                    </p>
-                    <div class="vcard-tags">
-                        <span class="vtag">BGP PEERING</span>
-                        <span class="vtag">ASN MAPPING</span>
-                        <span class="vtag">IP GEOLOCATION</span>
+                    <div class="tile-info">
+                        <div class="tile-name">Username Discovery</div>
+                        <div class="tile-desc">112+ platforms</div>
                     </div>
+                    <div class="tile-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
 
-                <!-- Card 2 -->
-                <div class="vector-card">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
-                    <div class="vcard-icon">
-                        <i class="fas fa-globe"></i>
+                <!-- Tool 2 -->
+                <div class="tool-feature-tile" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                    <div class="tile-icon-box text-purple">
+                        <i class="fas fa-file-shield"></i>
                     </div>
-                    <h3 class="vcard-title">Domain & Subdomain Enumeration</h3>
-                    <p class="vcard-desc">
-                        Full passive attack surface discovery. Enumerates subdomains via Certificate Transparency logs, analyzes SSL SAN certificates, nameservers, and robots.txt.
-                    </p>
-                    <div class="vcard-tags">
-                        <span class="vtag">CT LOG MINING</span>
-                        <span class="vtag">WHOIS INTEL</span>
-                        <span class="vtag">DNS CHROME</span>
+                    <div class="tile-info">
+                        <div class="tile-name">Data Breach Search</div>
+                        <div class="tile-desc">Email, phone, username</div>
                     </div>
+                    <div class="tile-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
 
-                <!-- Card 3 -->
-                <div class="vector-card">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
-                    <div class="vcard-icon">
-                        <i class="fas fa-shield-virus"></i>
+                <!-- Tool 3 -->
+                <div class="tool-feature-tile" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                    <div class="tile-icon-box text-blue">
+                        <i class="fas fa-envelope-open-text"></i>
                     </div>
-                    <h3 class="vcard-title">Breach Intelligence & Risk Engine</h3>
-                    <p class="vcard-desc">
-                        Correlates targets across indexed breach dumps and public paste sources. Computes an explainable 0–100 threat severity risk score with factor breakdowns.
-                    </p>
-                    <div class="vcard-tags">
-                        <span class="vtag">HIBP TELEMETRY</span>
-                        <span class="vtag">PASTE EXTRACTION</span>
-                        <span class="vtag">EXPLAINABLE RISK</span>
+                    <div class="tile-info">
+                        <div class="tile-name">Email Intelligence</div>
+                        <div class="tile-desc">Leaks, DNS, reputation</div>
                     </div>
+                    <div class="tile-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
 
-                <!-- Card 4 -->
-                <div class="vector-card">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
-                    <div class="vcard-icon">
-                        <i class="fas fa-fingerprint"></i>
+                <!-- Tool 4 -->
+                <div class="tool-feature-tile" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                    <div class="tile-icon-box text-emerald">
+                        <i class="fas fa-phone-volume"></i>
                     </div>
-                    <h3 class="vcard-title">Digital Identity & Handle Discovery</h3>
-                    <p class="vcard-desc">
-                        Probes 20+ social platforms, developer ecosystems, and forums in parallel. Identifies linked accounts, avatar gravatars, and digital footprint clusters.
-                    </p>
-                    <div class="vcard-tags">
-                        <span class="vtag">CROSS-PLATFORM</span>
-                        <span class="vtag">AVATAR CORRELATION</span>
-                        <span class="vtag">IDENTITY CLUSTERING</span>
+                    <div class="tile-info">
+                        <div class="tile-name">Phone Lookup</div>
+                        <div class="tile-desc">Carrier, location, line type</div>
                     </div>
+                    <div class="tile-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
 
-                <!-- Card 5 -->
-                <div class="vector-card">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
-                    <div class="vcard-icon">
-                        <i class="fas fa-cubes"></i>
+                <!-- Tool 5 -->
+                <div class="tool-feature-tile" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                    <div class="tile-icon-box text-rose">
+                        <i class="fas fa-image"></i>
                     </div>
-                    <h3 class="vcard-title">3D Spatial Topology Graph</h3>
-                    <p class="vcard-desc">
-                        Synthesized findings are projected into a dynamic 3D physics-based spatial topology canvas with interactive node clustering, edge typing, and 1-click pivot exploration.
-                    </p>
-                    <div class="vcard-tags">
-                        <span class="vtag">PHYSICS ENGINE</span>
-                        <span class="vtag">INTERACTIVE PIVOTS</span>
-                        <span class="vtag">GRAPH EXPORT</span>
+                    <div class="tile-info">
+                        <div class="tile-name">Image Analysis</div>
+                        <div class="tile-desc">Metadata, reverse search</div>
                     </div>
+                    <div class="tile-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
 
-                <!-- Card 6 -->
-                <div class="vector-card">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
-                    <div class="vcard-icon">
-                        <i class="fas fa-phone"></i>
+                <!-- Tool 6 -->
+                <div class="tool-feature-tile" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                    <div class="tile-icon-box text-amber">
+                        <i class="fas fa-globe-americas"></i>
                     </div>
-                    <h3 class="vcard-title">Telecom & Snowflake Forensics</h3>
-                    <p class="vcard-desc">
-                        E.164 international phone number validation, carrier identification, line-type forensics (mobile vs VOIP), and Discord snowflake epoch timestamps.
-                    </p>
-                    <div class="vcard-tags">
-                        <span class="vtag">CARRIER AUDIT</span>
-                        <span class="vtag">EPOCH RECON</span>
-                        <span class="vtag">VOIP DETECTION</span>
+                    <div class="tile-info">
+                        <div class="tile-name">Domain Recon</div>
+                        <div class="tile-desc">WHOIS, DNS, subdomains</div>
                     </div>
+                    <div class="tile-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
             </div>
         </section>
 
         <!-- Pricing Section -->
         <section class="pricing-section" id="pricing">
-            <div class="section-header">
-                <div class="section-tag">PROCUREMENT CLEARANCE</div>
-                <h2 class="section-title">Select Your Intelligence Credential</h2>
-                <p class="section-subtitle">Zero recurring contracts on Lifetime. Cryptographic settlement via Bitcoin, Litecoin, Ethereum, CashApp, or PayPal.</p>
+            <div class="section-center-header">
+                <div class="section-kicker">CLEARANCE ACCESS</div>
+                <h2 class="section-main-heading">Simple, Transparent Pricing</h2>
+                <p class="section-main-sub">Zero hidden fees. Instant crypto and instant account elevation on confirmation.</p>
             </div>
 
             <div class="pricing-cards-grid" id="pricing-cards-container">
                 <!-- Pro Card -->
                 <div class="pricing-card" data-plan="premium">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
-                    <div class="pcard-badge-top">MONTHLY CLEARANCE</div>
+                    <div class="pcard-badge-top">MONTHLY PASS</div>
                     <div class="pcard-header">
-                        <div class="pcard-tier">Pro Tactical</div>
+                        <div class="pcard-tier">Pro Monthly</div>
                         <div class="pcard-price">
                             <span class="pcard-currency">$</span>19
                             <span class="pcard-period">/ month</span>
                         </div>
-                        <div class="pcard-sub">Flexible operational intelligence access. Cancel anytime with 1 click.</div>
+                        <div class="pcard-sub">Flexible operational intelligence access. Cancel anytime.</div>
                     </div>
 
                     <ul class="pcard-features">
-                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Unlimited Parallel Recon</strong> cascades across all vectors</span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Unlimited Parallel Recon</strong> across all 112+ sources</span></li>
                         <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>All 10 OSINT Intelligence Modules</strong> (IP, Domain, BGP, Phone, Social)</span></li>
-                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Interactive 3D Spatial Knowledge Graph</strong> with physics clustering</span></li>
-                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Explainable Threat Risk Engine</strong> (0-100 score + factor audits)</span></li>
-                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Instant JSON & Markdown Dossier Exports</strong> for case management</span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Interactive Spatial Knowledge Graph</strong></span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Explainable Threat Risk Engine</strong></span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Instant JSON & Markdown Exports</strong></span></li>
                     </ul>
 
                     <button class="btn-select-plan btn-plan-pro" onclick="window.open('/checkout?plan=premium', '_blank')">
@@ -348,339 +419,56 @@
                 </div>
 
                 <!-- Lifetime Card -->
-                <div class="pricing-card featured" data-plan="lifetime">
-                    <div class="cyber-corner-tl">+</div>
-                    <div class="cyber-corner-tr">+</div>
-                    <div class="cyber-corner-bl">+</div>
-                    <div class="cyber-corner-br">+</div>
+                <div class="pricing-card card-featured" data-plan="lifetime">
                     <div class="pricing-ribbon">⭐ BEST VALUE // NO SUBSCRIPTION</div>
-                    <div class="pcard-badge-top" style="color:var(--accent-amber);">PERMANENT OPERATOR COMMAND</div>
+                    <div class="pcard-badge-top text-cyan">LIFETIME ACCESS</div>
                     <div class="pcard-header">
-                        <div class="pcard-tier" style="color:var(--accent-amber);">Lifetime Master Pass</div>
-                        <div class="pcard-price-row">
-                            <span class="pcard-strikethrough">$299</span>
-                            <div class="pcard-price" style="color:var(--accent-amber);">
-                                <span class="pcard-currency">$</span>99
-                                <span class="pcard-period" style="color:var(--accent-amber);">ONE-TIME</span>
-                            </div>
-                            <span class="pcard-save-pill">SAVE $200 TODAY</span>
+                        <div class="pcard-tier">Lifetime Operator</div>
+                        <div class="pcard-price">
+                            <span class="pcard-currency">$</span>99
+                            <span class="pcard-period">/ one-time</span>
                         </div>
-                        <div class="pcard-sub">Single cryptographic clearance settlement. Permanent uncapped access forever.</div>
+                        <div class="pcard-sub">Full access. No limits. Forever. Single payment, lifetime updates.</div>
                     </div>
 
                     <ul class="pcard-features">
-                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>Permanent Lifetime Access</strong> — Zero recurring fees or expirations</span></li>
-                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>Unlimited Concurrent Intelligence Cascades</strong> without throttling</span></li>
-                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>High-Speed Priority Circuit Breakers</strong> and rate limit bypasses</span></li>
-                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>All Future Zero-Day Feeds & Recon Modules</strong> included at no cost</span></li>
-                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>Direct Raw JSON/Markdown API Token Access</strong> for automated scripts</span></li>
-                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>VIP Direct Operator Telegram Channel Access</strong> for custom requests</span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Full access to all 112+ OSINT sources</strong></span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Unlimited investigations & parallel pivots</strong></span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Advanced data correlation & entity mapping</strong></span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Priority support & early feature access</strong></span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Lifetime updates with zero recurring fees</strong></span></li>
                     </ul>
 
                     <button class="btn-select-plan btn-plan-lifetime" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                        <span>Get Lifetime Access ($99)</span>
                         <i class="fas fa-bolt"></i>
-                        <span>Acquire Lifetime Access ($99)</span>
-                        <i class="fas fa-arrow-right"></i>
                     </button>
-                </div>
-            </div>
-
-            <!-- Payment Trust Bar -->
-            <div class="payment-trust-bar">
-                <span class="pt-title">Accepted Payment Methods:</span>
-                <div class="pt-icons">
-                    <span><i class="fa-solid fa-coins text-cyan"></i> Litecoin (LTC)</span>
-                    <span><i class="fa-brands fa-paypal text-indigo"></i> PayPal</span>
-                    <span><i class="fa-brands fa-bitcoin text-amber"></i> Bitcoin</span>
-                    <span><i class="fa-brands fa-ethereum text-purple"></i> ETH / USDT</span>
-                    <span><i class="fas fa-dollar-sign text-emerald"></i> CashApp</span>
-                    <span><i class="fas fa-credit-card"></i> Card</span>
                 </div>
             </div>
         </section>
 
         <!-- Footer -->
         <footer class="landing-footer">
-            <p>&copy; 2026 SPECTRE INTELLIGENCE SYSTEMS. PRIVATE OSINT NETWORK. ALL RIGHTS RESERVED.</p>
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <div class="brand-icon-shield">
+                        <i class="fas fa-shield-cat"></i>
+                    </div>
+                    <div class="brand-name">SPECTRE <span class="brand-pill-osint">OSINT</span></div>
+                </div>
+                <div class="footer-text">
+                    &copy; 2026 SPECTRE OSINT Platform. Autonomous Intelligence & Threat Cartography. All rights reserved.
+                </div>
+                <div class="footer-status-indicator">
+                    <span class="pulse-dot"></span> All Systems Operational
+                </div>
+            </div>
         </footer>
 
     </main>
 
     <!-- =========================================================================
-         MULTI-RAIL VERIFIED CHECKOUT TERMINAL (LTC, PAYPAL, BTC, ETH, CASHAPP)
-         ========================================================================= -->
-    <div class="spectre-modal-backdrop" id="checkout-modal-backdrop">
-        <div class="spectre-modal checkout-modal" id="checkout-modal" style="max-width: 590px;">
-            <div class="cyber-corner-tl">+</div>
-            <div class="cyber-corner-tr">+</div>
-            <div class="cyber-corner-bl">+</div>
-            <div class="cyber-corner-br">+</div>
-
-            <div class="modal-header">
-                <div class="modal-header-left">
-                    <span class="modal-header-meta"><i class="fas fa-terminal"></i> GATEWAY_ID: #SPEC-VAULT-2026 • CUSTODIAL ENCRYPTION ACTIVE</span>
-                    <h3>
-                        <i class="fas fa-shield-halved text-cyan"></i>
-                        <span>Secure Credential Gateway</span>
-                    </h3>
-                </div>
-                <div class="modal-header-actions" style="display:flex; align-items:center; gap:10px;">
-                    <a href="/checkout?plan=lifetime" id="btn-modal-open-newtab" target="_blank" class="btn-modal-open-tab" title="Open Dedicated Checkout in New Tab" style="color:var(--accent-cyan); font-size:0.75rem; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:4px; border:1px solid rgba(0,240,255,0.3); background:rgba(0,240,255,0.08); transition:all 0.2s ease;">
-                        <i class="fas fa-arrow-up-right-from-square"></i> <span>Open in New Tab</span>
-                    </a>
-                    <button class="btn-modal-close" onclick="closeCheckoutModal()">
-                        <i class="fas fa-xmark"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Step Progress Indicator -->
-            <div class="checkout-steps-bar">
-                <div class="checkout-step-item active" id="step-indicator-1">
-                    <span class="step-num">1</span>
-                    <span class="step-label">Select Rail</span>
-                </div>
-                <div class="checkout-step-line" id="step-line-1"></div>
-                <div class="checkout-step-item" id="step-indicator-2">
-                    <span class="step-num">2</span>
-                    <span class="step-label">Deposit</span>
-                </div>
-                <div class="checkout-step-line" id="step-line-2"></div>
-                <div class="checkout-step-item" id="step-indicator-3">
-                    <span class="step-num">3</span>
-                    <span class="step-label">Submit Proof</span>
-                </div>
-                <div class="checkout-step-line" id="step-line-3"></div>
-                <div class="checkout-step-item" id="step-indicator-4">
-                    <span class="step-num">4</span>
-                    <span class="step-label">Clearance</span>
-                </div>
-            </div>
-
-            <div class="modal-body">
-                <!-- STEP 1: PLAN & RAIL CONFIGURATION -->
-                <div class="checkout-step-pane active" id="pane-step-1">
-                    <!-- Selected Plan Banner -->
-                    <div class="plan-summary-banner">
-                        <div class="ps-left">
-                            <div class="ps-tag">TARGET CREDENTIAL</div>
-                            <strong id="modal-plan-name">Lifetime Pass</strong>
-                            <div class="ps-desc" id="modal-plan-desc">Permanent uncapped access to all OSINT intelligence engines</div>
-                        </div>
-                        <div class="ps-right">
-                            <div class="ps-price" id="modal-plan-price">$99.00 USD</div>
-                            <div class="ps-period" id="modal-plan-period">ONE-TIME SETTLEMENT</div>
-                        </div>
-                    </div>
-
-                    <!-- Operator Email -->
-                    <div class="form-group">
-                        <label class="form-label"><i class="fas fa-envelope text-cyan"></i> Operator Account Email</label>
-                        <input type="email" id="checkout-email-input" class="form-input" placeholder="operator@spectre.io" required>
-                        <span class="form-hint">Your clearance token and intelligence access will be linked to this email.</span>
-                    </div>
-
-                    <!-- Payment Rail Selector Tabs -->
-                    <label class="form-label"><i class="fas fa-network-wired text-amber"></i> Choose Settlement Rail</label>
-                    <div class="pmethods-tabs">
-                        <button type="button" class="pmethod-tab active" data-method="ltc" onclick="selectPaymentMethod('ltc')">
-                            <i class="fa-solid fa-coins" style="color:#00f0ff;"></i>
-                            <span>Litecoin (LTC)</span>
-                            <small class="tab-subtext" style="color:#00f0ff;">Instant • Low Fee</small>
-                        </button>
-                        <button type="button" class="pmethod-tab" data-method="paypal" onclick="selectPaymentMethod('paypal')">
-                            <i class="fa-brands fa-paypal" style="color:#6366f1;"></i>
-                            <span>PayPal</span>
-                            <small class="tab-subtext">Direct Payout</small>
-                        </button>
-                        <button type="button" class="pmethod-tab" data-method="btc" onclick="selectPaymentMethod('btc')">
-                            <i class="fa-brands fa-bitcoin" style="color:#f59e0b;"></i>
-                            <span>Bitcoin (BTC)</span>
-                            <small class="tab-subtext">Native SegWit</small>
-                        </button>
-                        <button type="button" class="pmethod-tab" data-method="eth" onclick="selectPaymentMethod('eth')">
-                            <i class="fa-brands fa-ethereum" style="color:#a855f7;"></i>
-                            <span>ETH / USDT</span>
-                            <small class="tab-subtext">ERC-20 / L2</small>
-                        </button>
-                        <button type="button" class="pmethod-tab" data-method="cashapp" onclick="selectPaymentMethod('cashapp')">
-                            <i class="fas fa-dollar-sign" style="color:#10b981;"></i>
-                            <span>CashApp</span>
-                            <small class="tab-subtext">$Cashtag</small>
-                        </button>
-                    </div>
-
-                    <!-- Live Conversion Estimator Preview -->
-                    <div class="deposit-estimate-box" id="deposit-estimate-box">
-                        <div class="deb-row">
-                            <span class="deb-label">Estimated Settlement Amount:</span>
-                            <span class="deb-val" id="estimated-crypto-amount"><i class="fas fa-circle-notch fa-spin"></i> Calculating...</span>
-                        </div>
-                    </div>
-
-                    <!-- Action Button -->
-                    <button type="button" class="btn-submit-action btn-action-primary" id="btn-create-order" onclick="startOrderCreation()">
-                        <span>Generate Custodial Vault & Deposit Address</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-
-                <!-- STEP 2: DEPOSIT & QR TERMINAL -->
-                <div class="checkout-step-pane" id="pane-step-2" style="display: none;">
-                    <!-- Order Reference & Timer Bar -->
-                    <div class="order-meta-bar">
-                        <div class="omb-id">
-                            <span class="omb-lbl">ORDER REF:</span>
-                            <code class="omb-code" id="display-order-id">SPEC-INIT</code>
-                        </div>
-                        <div class="omb-timer" id="display-countdown-box">
-                            <i class="fas fa-clock text-amber"></i>
-                            <span id="display-countdown-timer">45:00</span>
-                        </div>
-                    </div>
-
-                    <!-- QR Code and Dynamic Instructions -->
-                    <div class="deposit-terminal-container">
-                        <!-- QR Code Frame (Used for Crypto) -->
-                        <div class="qrcode-wrapper" id="crypto-qrcode-wrapper">
-                            <div class="qrcode-canvas-box" id="qrcode-target"></div>
-                            <div class="qrcode-hint"><i class="fas fa-qrcode text-cyan"></i> Scan with mobile wallet or copy details below</div>
-                        </div>
-
-                        <!-- Amount to Send Box -->
-                        <div class="deposit-amount-highlight" id="deposit-amount-highlight">
-                            <div class="dah-label">SEND EXACT AMOUNT:</div>
-                            <div class="dah-val-row">
-                                <span class="dah-num" id="display-send-amount">1.164 LTC</span>
-                                <button type="button" class="btn-copy-address" id="btn-copy-amt" onclick="copyDynamicText('display-send-amount', 'btn-copy-amt', 'Amount')">
-                                    <i class="fas fa-copy"></i> Copy
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Destination Address / Link -->
-                        <div class="deposit-dest-box">
-                            <div class="ddb-label" id="display-dest-label">LITECOIN DESTINATION ADDRESS:</div>
-                            <div class="wallet-copy-row">
-                                <code id="display-dest-address">...</code>
-                                <button type="button" class="btn-copy-address" id="btn-copy-addr" onclick="copyDynamicText('display-dest-address', 'btn-copy-addr', 'Address')">
-                                    <i class="fas fa-copy"></i> Copy
-                                </button>
-                            </div>
-                            <div id="paypal-direct-link-container" style="display:none; margin-top:10px;">
-                                <a id="display-paypal-link" href="#" target="_blank" rel="noopener" class="btn-external-pay">
-                                    <i class="fa-brands fa-paypal"></i> Open PayPal.me Transfer Link <i class="fas fa-arrow-up-right-from-square"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="transfer-warning-banner">
-                        <i class="fas fa-shield-halved text-cyan" style="font-size:1.1rem; margin-top:2px;"></i>
-                        <span><strong>100% Custodial Protection:</strong> Funds are locked securely in your dedicated platform vault wallet and verified continuously on public distributed ledgers.</span>
-                    </div>
-
-                    <!-- LIVE AUTO-SCANNER RADAR (NO TXID REQUIRED) -->
-                    <div class="auto-scan-card" style="margin-top:14px; background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.25); border-radius:10px; padding:12px 14px; display:flex; align-items:center; gap:12px;">
-                        <div class="scan-radar-indicator" style="position:relative; width:20px; height:20px; display:flex; align-items:center; justify-content:center;">
-                            <span class="radar-ping" style="position:absolute; width:100%; height:100%; border-radius:50%; border:2px solid var(--accent-cyan); animation:radarRipple 1.6s cubic-bezier(0,0.2,0.8,1) infinite;"></span>
-                            <span class="radar-core" style="width:8px; height:8px; border-radius:50%; background:var(--accent-cyan); box-shadow:0 0 10px var(--accent-cyan);"></span>
-                        </div>
-                        <div class="scan-text-wrap" style="flex:1;">
-                            <div class="scan-title" id="modal-scan-title" style="font-size:0.82rem; font-weight:700; color:#fff;">Scanning blockchain for incoming transfer...</div>
-                            <div class="scan-sub" style="font-size:0.72rem; color:var(--text-muted);">Mempool scanned automatically • Instant activation</div>
-                        </div>
-                        <button type="button" class="btn-scan-trigger" onclick="checkModalPaymentNow()" style="background:rgba(0,240,255,0.12); border:1px solid rgba(0,240,255,0.35); color:var(--accent-cyan); font-size:0.75rem; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer;">
-                            <i class="fas fa-rotate"></i> Check Now
-                        </button>
-                    </div>
-
-                    <div class="step-nav-buttons" style="margin-top:14px;">
-                        <button type="button" class="btn-nav-back" onclick="goToStep(1)">
-                            <i class="fas fa-arrow-left"></i> Change Method
-                        </button>
-                        <button type="button" class="btn-submit-action btn-action-primary" onclick="checkModalPaymentNow()" style="flex:1;">
-                            <span>I Have Sent Payment — Auto Verify</span>
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 3: SUBMIT TRANSACTION PROOF -->
-                <div class="checkout-step-pane" id="pane-step-3" style="display: none;">
-                    <div class="step3-header">
-                        <i class="fas fa-file-invoice-dollar text-emerald" style="font-size:2rem;"></i>
-                        <h4>Submit Proof of Settlement</h4>
-                        <p>Provide your on-chain Transaction Hash (TXID) or payment reference identifier for real-time node confirmation.</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label"><i class="fas fa-fingerprint text-cyan"></i> Transaction Hash (TXID) / Payment Identifier</label>
-                        <input type="text" id="tx-hash-input" class="form-input form-input-mono" placeholder="e.g. 5d9f0a7b4c2e... or PayPal Transaction ID" required>
-                        <span class="form-hint">Found in your wallet or receipt under "Transaction ID", "Hash", or "View on Explorer".</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label"><i class="fas fa-comment-dots text-secondary"></i> Sender Notes / Handle (Optional)</label>
-                        <input type="text" id="tx-notes-input" class="form-input" placeholder="e.g. Sent from Exodus wallet / CashApp name">
-                    </div>
-
-                    <div id="proof-error-msg" style="display:none; color:var(--accent-rose); font-size:0.8rem; margin-bottom:12px;"></div>
-
-                    <div class="step-nav-buttons">
-                        <button type="button" class="btn-nav-back" onclick="goToStep(2)">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                        <button type="button" class="btn-submit-action btn-action-primary" id="btn-submit-proof" onclick="submitOrderProof()" style="flex:1;">
-                            <i class="fas fa-shield-check"></i>
-                            <span>Verify Settlement & Request Clearance</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 4: LIVE VERIFICATION & CLEARANCE RADAR -->
-                <div class="checkout-step-pane" id="pane-step-4" style="display: none;">
-                    <div class="verification-radar-container">
-                        <!-- Radar Scanner Animation -->
-                        <div class="radar-circle-glow">
-                            <div class="radar-sweep"></div>
-                            <div class="radar-core"><i class="fas fa-satellite-dish"></i></div>
-                        </div>
-
-                        <div class="vr-title" id="vr-status-title">AWAITING BLOCKCHAIN CONFIRMATIONS</div>
-                        <div class="vr-desc" id="vr-status-desc">
-                            Your transaction proof for Order <strong id="vr-order-id">SPEC-...</strong> has been logged into the settlement queue. Monitoring block explorer and operator console for clearance...
-                        </div>
-
-                        <div class="vr-live-status-pill" id="vr-status-pill">
-                            <span class="vr-dot pulsing"></span>
-                            <span id="vr-pill-text">STATUS: VERIFYING (Awaiting Network Confirmation)</span>
-                        </div>
-
-                        <div class="vr-txid-box">
-                            <span class="vr-txid-lbl">TXID:</span>
-                            <code id="vr-txid-display">...</code>
-                        </div>
-
-                        <div class="vr-actions">
-                            <button type="button" class="btn-manual-poll" onclick="verifyOnChainNow()" style="background:linear-gradient(135deg,#10b981,#059669); border-color:#10b981; color:#fff;">
-                                <i class="fas fa-cube"></i> Check Blockchain Ledger Now
-                            </button>
-                            <button type="button" class="btn-manual-poll" onclick="checkCurrentOrderStatus(true)">
-                                <i class="fas fa-rotate"></i> Refresh Status
-                            </button>
-                            <button type="button" class="btn-continue-bg" onclick="closeCheckoutModal()">
-                                <i class="fas fa-hourglass-half"></i> Close & Wait in Background
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- =========================================================================
-         AUTHENTICATION MODAL (OPERATOR SIGN IN / CREATE ACCOUNT)
+         AUTHENTICATION MODAL (SIGN IN / CREATE ACCOUNT)
          ========================================================================= -->
     <div class="spectre-modal-backdrop" id="auth-modal-backdrop">
         <div class="spectre-modal">
@@ -727,355 +515,192 @@
         </div>
     </div>
 
-    <!-- ==============================================
-         MASTER ADMIN CONTROL CONSOLE (LANDING)
-         ============================================== -->
-    <div class="spectre-modal-backdrop" id="admin-modal-backdrop">
-        <div class="spectre-modal admin-modal" id="admin-modal" style="max-width:820px;">
+    <!-- =========================================================================
+         IN-PAGE CHECKOUT MODAL FALLBACK
+         ========================================================================= -->
+    <div class="spectre-modal-backdrop" id="checkout-modal-backdrop">
+        <div class="spectre-modal checkout-modal">
             <div class="modal-header">
                 <h3>
-                    <i class="fas fa-shield-halved text-emerald"></i>
-                    <span>Master Admin Control Console</span>
+                    <i class="fas fa-lock text-cyan"></i>
+                    <span>Secure Checkout</span>
+                </h3>
+                <button class="btn-modal-close" onclick="closeCheckoutModal()">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-plan-summary">
+                    <span id="modal-plan-name">Lifetime Operator</span>
+                    <span id="modal-plan-price" class="font-mono text-cyan">$99.00 USD</span>
+                </div>
+
+                <div style="text-align:center; padding: 20px 0;">
+                    <a href="/checkout?plan=lifetime" id="btn-modal-open-newtab" target="_blank" class="btn-hero-investigate" style="display:inline-flex; width:auto; padding:14px 28px; text-decoration:none;">
+                        <span>Open Dedicated Checkout Portal</span>
+                        <i class="fas fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         ADMIN CONSOLE MODAL
+         ========================================================================= -->
+    <div class="spectre-modal-backdrop" id="admin-modal-backdrop">
+        <div class="spectre-modal admin-modal" style="max-width:860px;">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-shield-halved text-amber"></i>
+                    <span>Admin Control Terminal</span>
                 </h3>
                 <button class="btn-modal-close" onclick="closeAdminModal()">
                     <i class="fas fa-xmark"></i>
                 </button>
             </div>
 
-            <!-- Admin Navigation Tabs -->
-            <div class="admin-tabs-bar" style="display:flex; gap:8px; margin: 14px 20px 0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; overflow-x:auto;">
-                <button class="pmethod-tab active" id="tab-btn-admin-pay" onclick="switchAdminTab('pay')">
-                    <i class="fas fa-wallet text-cyan"></i> Payment Wallets
-                </button>
-                <button class="pmethod-tab" id="tab-btn-admin-vault" onclick="switchAdminTab('vault')">
-                    <i class="fas fa-vault text-emerald"></i> Treasury & Cold Vault
-                </button>
-                <button class="pmethod-tab" id="tab-btn-admin-plans" onclick="switchAdminTab('plans')">
-                    <i class="fas fa-tags text-amber"></i> Pricing & Plans
-                </button>
-                <button class="pmethod-tab" id="tab-btn-admin-orders" onclick="switchAdminTab('orders')">
-                    <i class="fas fa-list-check text-cyan"></i> Incoming Orders <span class="order-badge-counter" id="admin-orders-counter" style="display:none;">0</span>
-                </button>
-                <button class="pmethod-tab" id="tab-btn-admin-users" onclick="switchAdminTab('users')">
-                    <i class="fas fa-users text-rose"></i> User Registry
-                </button>
-            </div>
-
-            <div class="modal-body" style="padding-top:14px;">
-                <!-- TAB 1: Payment Wallets -->
-                <div class="admin-tab-pane active" id="tab-pane-admin-pay">
-                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:14px;">
-                        Configure your payout wallets, merchant accounts, and automated PayPal/CashApp API verification credentials.
-                    </div>
-                    <form id="admin-payments-form" onsubmit="return false;">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
-                            <div class="form-group">
-                                <label class="form-label"><i class="fa-solid fa-coins text-cyan"></i> Litecoin (LTC) Fallback Address</label>
-                                <input type="text" id="adm-ltc" class="form-input" placeholder="ltc1q...">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label"><i class="fa-brands fa-paypal text-indigo"></i> PayPal Email</label>
-                                <input type="email" id="adm-paypal-email" class="form-input" placeholder="payments@domain.com">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label"><i class="fas fa-link text-indigo"></i> PayPal.me Link</label>
-                                <input type="url" id="adm-paypal-link" class="form-input" placeholder="https://paypal.me/...">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label"><i class="fa-brands fa-bitcoin text-amber"></i> Bitcoin (BTC) Fallback Address</label>
-                                <input type="text" id="adm-btc" class="form-input" placeholder="bc1q...">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label"><i class="fa-brands fa-ethereum text-purple"></i> ETH / USDT Fallback Address</label>
-                                <input type="text" id="adm-eth" class="form-input" placeholder="0x...">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label"><i class="fas fa-dollar-sign text-emerald"></i> CashApp Tag</label>
-                                <input type="text" id="adm-cashapp" class="form-input" placeholder="$Cashtag">
-                            </div>
-                        </div>
-
-                        <!-- Automated Verification API Integrations -->
-                        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top:12px; margin-bottom:14px;">
-                            <div style="font-weight:700; font-size:0.82rem; color:var(--accent-cyan); margin-bottom:10px;">
-                                <i class="fas fa-robot"></i> Automated Payment Verification Engines
-                            </div>
-                            <div style="display:grid; grid-template-columns:2fr 2fr 1fr; gap:10px; margin-bottom:10px;">
-                                <div class="form-group">
-                                    <label class="form-label"><i class="fa-brands fa-paypal text-indigo"></i> PayPal REST Client ID</label>
-                                    <input type="text" id="adm-paypal-client-id" class="form-input" placeholder="Client ID from developer.paypal.com">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label"><i class="fas fa-key text-amber"></i> PayPal REST Secret</label>
-                                    <input type="password" id="adm-paypal-client-secret" class="form-input" placeholder="Secret Key">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label"><i class="fas fa-globe"></i> PayPal Mode</label>
-                                    <select id="adm-paypal-mode" class="form-input">
-                                        <option value="live">Live</option>
-                                        <option value="sandbox">Sandbox</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group" style="max-width:320px;">
-                                <label class="form-label"><i class="fas fa-money-bill-transfer text-emerald"></i> Cash App Auto-Verify Mode</label>
-                                <select id="adm-cashapp-mode" class="form-input">
-                                    <option value="auto_note">Auto-Verify Note / Receipt Match</option>
-                                    <option value="manual">Manual Admin Approval Only</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn-submit-action btn-action-primary" onclick="saveAdminSettings()">
-                            <i class="fas fa-floppy-disk"></i> Save Payment & API Routing
-                        </button>
-                    </form>
+            <div class="modal-body">
+                <div class="admin-tabs-bar" style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:8px;">
+                    <button class="pmethod-tab active" id="tab-btn-admin-pay" onclick="switchAdminTab('pay')">Payment Config</button>
+                    <button class="pmethod-tab" id="tab-btn-admin-plans" onclick="switchAdminTab('plans')">Manage Plans</button>
+                    <button class="pmethod-tab" id="tab-btn-admin-orders" onclick="switchAdminTab('orders')">Audit Orders</button>
+                    <button class="pmethod-tab" id="tab-btn-admin-users" onclick="switchAdminTab('users')">Manage Users</button>
+                    <button class="pmethod-tab" id="tab-btn-admin-vault" onclick="switchAdminTab('vault')">Custodial Vault</button>
                 </div>
 
-                <!-- TAB 2: Pricing & Plans -->
-                <div class="admin-tab-pane" id="tab-pane-admin-plans" style="display:none;">
-                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:14px;">
-                        Manage plans and prices. Modifications update live on the landing page and checkout modal instantly.
-                    </div>
-                    
-                    <div style="max-height:220px; overflow-y:auto; margin-bottom:16px; border:1px solid rgba(255,255,255,0.08); border-radius:6px;">
-                        <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:left;">
-                            <thead>
-                                <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
-                                    <th style="padding:8px 10px;">ID</th>
-                                    <th style="padding:8px 10px;">Name</th>
-                                    <th style="padding:8px 10px;">Price</th>
-                                    <th style="padding:8px 10px;">Billing</th>
-                                    <th style="padding:8px 10px;">Status</th>
-                                    <th style="padding:8px 10px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-plans-tbody">
-                                <tr><td colspan="6" style="padding:12px; text-align:center; color:var(--text-muted);">Loading plans...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div style="font-weight:700; font-size:0.85rem; color:#fcd34d; margin-bottom:8px;">
-                        <i class="fas fa-plus-circle"></i> Add New Pricing Tier
-                    </div>
-                    <form id="admin-new-plan-form" onsubmit="return false;">
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-                            <input type="text" id="adm-plan-id" class="form-input" placeholder="ID (e.g. team)" required>
-                            <input type="text" id="adm-plan-name" class="form-input" placeholder="Name (e.g. Team Pass)" required>
-                            <input type="number" step="0.01" id="adm-plan-price" class="form-input" placeholder="Price ($)" required>
-                            <input type="text" id="adm-plan-period" class="form-input" placeholder="Billing (e.g. / mo, one-time)" value="one-time">
+                <!-- Admin Tab: Payment Config -->
+                <div id="admin-tab-pay" class="admin-tab-content">
+                    <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">Configure receiving crypto addresses & payment provider credentials:</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Litecoin (LTC) Address</label>
+                            <input type="text" id="adm-ltc" class="form-input font-mono" placeholder="LTC address">
                         </div>
-                        <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px; margin-bottom:10px;">
-                            <input type="text" id="adm-plan-badge" class="form-input" placeholder="Badge (e.g. ENTERPRISE)">
-                            <input type="text" id="adm-plan-desc" class="form-input" placeholder="Description line">
+                        <div class="form-group">
+                            <label class="form-label">Bitcoin (BTC) Address</label>
+                            <input type="text" id="adm-btc" class="form-input font-mono" placeholder="BTC address">
                         </div>
-                        <div class="form-group" style="margin-bottom:12px;">
-                            <textarea id="adm-plan-features" rows="2" class="form-input" style="font-family:var(--font-mono); font-size:0.75rem;" placeholder="Feature 1 (one per line)&#10;Feature 2&#10;Feature 3"></textarea>
+                        <div class="form-group">
+                            <label class="form-label">Ethereum (ETH) Address</label>
+                            <input type="text" id="adm-eth" class="form-input font-mono" placeholder="ETH address">
                         </div>
-                        <button type="button" class="btn-submit-action btn-action-primary" onclick="saveAdminPlan()">
-                            <i class="fas fa-plus"></i> Save Pricing Plan
-                        </button>
-                    </form>
+                        <div class="form-group">
+                            <label class="form-label">Cash App Tag</label>
+                            <input type="text" id="adm-cashapp" class="form-input font-mono" placeholder="$Cashtag">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">PayPal Client ID</label>
+                            <input type="text" id="adm-pp-client" class="form-input font-mono" placeholder="Client ID">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">PayPal Secret</label>
+                            <input type="password" id="adm-pp-secret" class="form-input font-mono" placeholder="Secret">
+                        </div>
+                    </div>
+                    <button class="btn-submit-action btn-action-primary" style="margin-top:16px;" onclick="saveAdminSettings()">
+                        <i class="fas fa-save"></i> Save Payment Config
+                    </button>
                 </div>
 
-                <!-- TAB 3: Incoming Orders Queue -->
-                <div class="admin-tab-pane" id="tab-pane-admin-orders" style="display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <div style="font-size:0.8rem; color:var(--text-secondary);">
-                            Review incoming crypto transfers and PayPal/CashApp proofs. Approving activates the operator account instantly.
-                        </div>
-                        <button type="button" class="btn-copy-address" onclick="loadAdminOrders()" style="padding:6px 12px;">
-                            <i class="fas fa-rotate"></i> Refresh Queue
-                        </button>
+                <!-- Admin Tab: Plans -->
+                <div id="admin-tab-plans" class="admin-tab-content" style="display:none;">
+                    <div id="admin-plans-list" style="margin-bottom:16px;"></div>
+                    <div style="font-weight:600;font-size:0.85rem;margin-bottom:8px;">Add / Update Plan:</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                        <input type="text" id="adm-plan-id" class="form-input" placeholder="Plan ID (e.g. lifetime)">
+                        <input type="text" id="adm-plan-name" class="form-input" placeholder="Display Name">
+                        <input type="number" id="adm-plan-price" class="form-input" placeholder="Price ($ USD)">
                     </div>
+                    <input type="text" id="adm-plan-desc" class="form-input" style="margin-top:8px;" placeholder="Description">
+                    <button class="btn-submit-action btn-action-primary" style="margin-top:12px;" onclick="saveAdminPlan()">
+                        <i class="fas fa-plus"></i> Save Plan
+                    </button>
+                </div>
 
-                    <div style="max-height:280px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:6px; margin-bottom:12px;">
-                        <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
+                <!-- Admin Tab: Orders -->
+                <div id="admin-tab-orders" class="admin-tab-content" style="display:none;">
+                    <div id="admin-orders-table-wrap" style="max-height:280px;overflow-y:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
                             <thead>
-                                <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
-                                    <th style="padding:8px 8px;">Order Ref</th>
-                                    <th style="padding:8px 8px;">Operator</th>
-                                    <th style="padding:8px 8px;">Plan / USD</th>
-                                    <th style="padding:8px 8px;">Rail / Crypto</th>
-                                    <th style="padding:8px 8px;">TXID / Proof</th>
-                                    <th style="padding:8px 8px;">Status</th>
-                                    <th style="padding:8px 8px; text-align:right;">Actions</th>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--text-muted);">
+                                    <th style="padding:6px;text-align:left;">Order ID</th>
+                                    <th style="padding:6px;text-align:left;">Email</th>
+                                    <th style="padding:6px;text-align:left;">Method</th>
+                                    <th style="padding:6px;text-align:left;">Status</th>
+                                    <th style="padding:6px;text-align:left;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-orders-tbody">
-                                <tr><td colspan="7" style="padding:14px; text-align:center; color:var(--text-muted);">Loading settlement queue...</td></tr>
+                                <tr><td colspan="5" style="padding:12px;text-align:center;">Loading orders...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- TAB 4: User Registry -->
-                <div class="admin-tab-pane" id="tab-pane-admin-users" style="display:none;">
-                    <form id="admin-upgrade-form" onsubmit="return false;" style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-                        <input type="email" id="admin-target-email" class="form-input" style="flex:1; min-width:200px;" placeholder="Target user email (e.g. user@target.com)" required list="registered-emails-list">
-                        <datalist id="registered-emails-list"></datalist>
-                        <select id="admin-target-tier" class="form-input" style="width:140px;">
-                            <option value="lifetime" selected>Lifetime Tier</option>
-                            <option value="premium">Premium Tier</option>
-                            <option value="free">Free Tier</option>
-                            <option value="admin">Master Admin</option>
+                <!-- Admin Tab: Users -->
+                <div id="admin-tab-users" class="admin-tab-content" style="display:none;">
+                    <div style="display:flex;gap:8px;margin-bottom:12px;">
+                        <input type="email" id="adm-user-email" class="form-input" placeholder="User email">
+                        <select id="adm-user-tier" class="form-input" style="width:160px;">
+                            <option value="free">Free</option>
+                            <option value="premium">Premium</option>
+                            <option value="lifetime">Lifetime</option>
+                            <option value="admin">Admin</option>
                         </select>
-                        <button type="button" class="btn-submit-action btn-action-primary" onclick="upgradeAdminUser()" style="padding:8px 16px; white-space:nowrap;">
-                            <i class="fas fa-arrow-up-right-from-square"></i> Upgrade User
-                        </button>
-                    </form>
-
-                    <div style="max-height:240px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:6px;">
-                        <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:left;">
+                        <button class="btn-submit-action btn-action-primary" style="width:auto;padding:0 16px;" onclick="upgradeAdminUser()">Set Tier</button>
+                    </div>
+                    <div id="admin-users-list-wrap" style="max-height:220px;overflow-y:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
                             <thead>
-                                <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
-                                    <th style="padding:8px 10px;">User Email</th>
-                                    <th style="padding:8px 10px;">Tier</th>
-                                    <th style="padding:8px 10px;">Created</th>
-                                    <th style="padding:8px 10px;">Quick Set</th>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--text-muted);">
+                                    <th style="padding:6px;text-align:left;">Email</th>
+                                    <th style="padding:6px;text-align:left;">Tier</th>
+                                    <th style="padding:6px;text-align:left;">Created</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-users-tbody">
-                                <tr><td colspan="4" style="padding:12px; text-align:center; color:var(--text-muted);">Loading user records...</td></tr>
-                            </tbody>
+                            <tbody id="admin-users-tbody"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- TAB 5: Platform Treasury & Cold Vault -->
-                <div class="admin-tab-pane" id="tab-pane-admin-vault" style="display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                        <div style="font-size:0.8rem; color:var(--text-secondary);">
-                            Custodial wallet balances, on-chain reserves, and cold storage sweeps. All crypto payments sit here in platform custody until swept.
+                <!-- Admin Tab: Custodial Vault -->
+                <div id="admin-tab-vault" class="admin-tab-content" style="display:none;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div style="background:rgba(0,240,255,0.04);border:1px solid rgba(0,240,255,0.15);padding:12px;border-radius:8px;">
+                            <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Custodial Vault Balance</div>
+                            <div id="admin-vault-balance-display" style="font-size:1.4rem;font-weight:700;color:var(--accent-cyan);margin:4px 0;">0.00 LTC</div>
+                            <div style="font-size:0.75rem;color:var(--text-secondary);">Isolated keys encrypted with Fernet AES-256</div>
                         </div>
-                        <div style="display:flex; gap:8px;">
-                            <button type="button" class="btn-copy-address" onclick="runAdminPaymentSync()" style="padding:6px 12px; background:rgba(0,240,255,0.1); border-color:var(--accent-cyan); color:var(--accent-cyan);">
-                                <i class="fas fa-satellite-dish"></i> Run Payment Scan
-                            </button>
-                            <button type="button" class="btn-copy-address" onclick="loadAdminVault()" style="padding:6px 12px;">
-                                <i class="fas fa-rotate"></i> Refresh Vault
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Treasury Balances Cards -->
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:16px;">
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
-                            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;"><i class="fas fa-sack-dollar text-amber"></i> Total Valuation</div>
-                            <div style="font-size:1.3rem; font-weight:800; color:#fff; margin-top:4px;" id="vault-stat-total-fiat">$0.00 <span style="font-size:0.75rem; color:var(--text-muted);">USD</span></div>
-                            <div style="font-size:0.7rem; color:var(--accent-emerald); margin-top:2px;"><i class="fas fa-shield-halved"></i> 100% Cold Custody</div>
-                        </div>
-
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(0,240,255,0.2); border-radius:8px; padding:12px;">
-                            <div style="font-size:0.7rem; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.05em;"><i class="fa-solid fa-coins"></i> Litecoin (LTC) Vault</div>
-                            <div style="font-size:1.15rem; font-weight:800; color:var(--accent-cyan); margin-top:4px;" id="vault-stat-ltc-bal">0.0000 <span style="font-size:0.75rem;">LTC</span></div>
-                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-ltc-fiat">≈ $0.00 USD</div>
-                        </div>
-
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:12px;">
-                            <div style="font-size:0.7rem; color:var(--accent-amber); text-transform:uppercase; letter-spacing:0.05em;"><i class="fa-brands fa-bitcoin"></i> Bitcoin (BTC) Vault</div>
-                            <div style="font-size:1.15rem; font-weight:800; color:var(--accent-amber); margin-top:4px;" id="vault-stat-btc-bal">0.000000 <span style="font-size:0.75rem;">BTC</span></div>
-                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-btc-fiat">≈ $0.00 USD</div>
-                        </div>
-
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(168,85,247,0.2); border-radius:8px; padding:12px;">
-                            <div style="font-size:0.7rem; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.05em;"><i class="fa-brands fa-ethereum"></i> Ethereum (ETH) Vault</div>
-                            <div style="font-size:1.15rem; font-weight:800; color:var(--accent-purple); margin-top:4px;" id="vault-stat-eth-bal">0.00000 <span style="font-size:0.75rem;">ETH</span></div>
-                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-eth-fiat">≈ $0.00 USD</div>
-                        </div>
-                    </div>
-
-                    <!-- Cold Storage Sweep / Withdrawal Box -->
-                    <div style="background:rgba(16,185,129,0.04); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:14px; margin-bottom:16px;">
-                        <div style="font-weight:700; font-size:0.85rem; color:#34d399; margin-bottom:10px;">
-                            <i class="fas fa-arrow-down-to-bracket"></i> Sweep / Withdraw to External Cold Wallet
-                        </div>
-                        <form id="admin-vault-withdraw-form" onsubmit="return false;">
-                            <div style="display:grid; grid-template-columns:140px 2fr 1fr; gap:10px; margin-bottom:10px;">
-                                <div class="form-group">
-                                    <label class="form-label">Currency</label>
-                                    <select id="adm-vault-currency" class="form-input" onchange="updateWithdrawMaxPlaceholder()">
-                                        <option value="LTC" selected>LTC (Litecoin)</option>
-                                        <option value="BTC">BTC (Bitcoin)</option>
-                                        <option value="ETH">ETH (Ethereum)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Destination Cold Address</label>
-                                    <input type="text" id="adm-vault-dest" class="form-input" placeholder="Enter your personal external wallet address..." required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Amount</label>
-                                    <div style="display:flex; gap:4px;">
-                                        <input type="number" step="0.000001" id="adm-vault-amount" class="form-input" placeholder="0.00" required>
-                                        <button type="button" class="btn-copy-address" onclick="setWithdrawMax()" style="padding:6px 10px; font-size:0.7rem;">MAX</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:10px; align-items:flex-end;">
-                                <div class="form-group" style="flex:1;">
-                                    <input type="text" id="adm-vault-notes" class="form-input" placeholder="Withdrawal notes (e.g. Cold Sweep to Hardware Wallet)">
-                                </div>
-                                <button type="button" class="btn-submit-action" onclick="executeAdminWithdrawal()" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; padding:10px 20px; white-space:nowrap;">
-                                    <i class="fas fa-paper-plane"></i> Execute Cold Withdrawal
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Withdrawal Audit Table -->
-                    <div style="margin-bottom:14px;">
-                        <div style="font-weight:700; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">
-                            <i class="fas fa-clock-rotate-left"></i> Cold Storage Withdrawal Audit History
-                        </div>
-                        <div style="max-height:160px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:6px;">
-                            <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
-                                <thead>
-                                    <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
-                                        <th style="padding:6px 8px;">ID</th>
-                                        <th style="padding:6px 8px;">Coin</th>
-                                        <th style="padding:6px 8px;">Amount</th>
-                                        <th style="padding:6px 8px;">Destination</th>
-                                        <th style="padding:6px 8px;">Sweep TXID</th>
-                                        <th style="padding:6px 8px;">Timestamp</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-vault-withdrawals-tbody">
-                                    <tr><td colspan="6" style="padding:10px; text-align:center; color:var(--text-muted);">No withdrawal history recorded yet.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Active Custodial Wallets Table -->
-                    <div>
-                        <div style="font-weight:700; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">
-                            <i class="fas fa-key"></i> Active Generated Custodial Wallets
-                        </div>
-                        <div style="max-height:160px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:6px;">
-                            <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
-                                <thead>
-                                    <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
-                                        <th style="padding:6px 8px;">Coin</th>
-                                        <th style="padding:6px 8px;">Custodial Address</th>
-                                        <th style="padding:6px 8px;">Balance</th>
-                                        <th style="padding:6px 8px;">Order Ref</th>
-                                        <th style="padding:6px 8px;">Created</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-vault-wallets-tbody">
-                                    <tr><td colspan="5" style="padding:10px; text-align:center; color:var(--text-muted);">Loading custodial wallets...</td></tr>
-                                </tbody>
-                            </table>
+                        <div style="background:rgba(16,185,129,0.04);border:1px solid rgba(16,185,129,0.15);padding:12px;border-radius:8px;">
+                            <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Cold Sweep Address</div>
+                            <div id="admin-vault-cold-display" class="font-mono" style="font-size:0.8rem;color:var(--accent-emerald);margin:4px 0;word-break:break-all;">Not configured</div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/landing.js?v=20260912_paywall_v4"></script>
+    <script src="/static/js/landing.js?v=20260912_paywall_v5"></script>
+    <script>
+        function simulateSearchClick() {
+            const input = document.getElementById('hero-interactive-input');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }
+        function setConsoleFilter(category, btn) {
+            document.querySelectorAll('.console-filter-chips .chip-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+        function runHeroInteractiveSearch() {
+            window.open('/checkout?plan=lifetime', '_blank');
+        }
+    </script>
 </body>
 </html>

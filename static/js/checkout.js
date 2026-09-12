@@ -1,15 +1,20 @@
-// SPECTRE — Minimalist Auto-Detect Checkout Controller
+/**
+ * SPECTRE — Redesigned Checkout Controller
+ * Multi-Rail Settlement & Autonomous Blockchain Mempool Scanner
+ */
 (function() {
     'use strict';
 
-    let currentTier = window.INITIAL_PLAN_ID || 'lifetime';
-    let currentAmount = window.INITIAL_PRICE || 99;
-    let currentRail = 'ltc';
+    let currentMethod = 'crypto';
+    let currentCoin = 'ltc';
     let activeOrder = null;
-    let paymentConfig = null;
-    let scanInterval = null;
-    let countdownInterval = null;
+    let pollInterval = null;
     let qrcodeInstance = null;
+    let paymentConfig = null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const planParam = urlParams.get('plan') || 'lifetime';
+    const planPrice = planParam === 'premium' ? 19 : 99;
 
     const cryptoRates = {
         'ltc': 85.0,
@@ -17,70 +22,70 @@
         'eth': 2600.0
     };
 
-    async function loadConfig() {
+    async function init() {
         try {
             const resp = await fetch('/api/payment/config');
-            if (resp.ok) {
-                paymentConfig = await resp.json();
+            if (resp.ok) paymentConfig = await resp.json();
+        } catch(e) {}
+        updateEstimatedPrice();
+    }
+
+    function updateEstimatedPrice() {
+        const rate = cryptoRates[currentCoin] || 85.0;
+        const estCrypto = (planPrice / rate).toFixed(4);
+        const calcEl = document.getElementById('chk-est-amount');
+        if (calcEl) {
+            if (currentMethod === 'crypto') {
+                calcEl.textContent = `${estCrypto} ${currentCoin.toUpperCase()} ($${planPrice}.00 USD)`;
+            } else {
+                calcEl.textContent = `$${planPrice}.00 USD`;
             }
-        } catch (e) {}
-        updateCalcAmount();
+        }
     }
 
-    window.selectRail = function(rail) {
-        currentRail = rail;
-        document.querySelectorAll('.rail-pill').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.rail === rail);
+    window.switchPaymentMethod = function(method) {
+        currentMethod = method;
+        document.querySelectorAll('.chk-method-tabs-grid .chk-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.method === method);
         });
-        updateCalcAmount();
+
+        const cryptoWrap = document.getElementById('chk-crypto-rails-wrap');
+        if (cryptoWrap) {
+            cryptoWrap.style.display = (method === 'crypto') ? 'block' : 'none';
+        }
+
+        const submitText = document.getElementById('btn-submit-text');
+        if (submitText) {
+            if (method === 'card') submitText.textContent = 'Pay with Card';
+            else if (method === 'paypal') submitText.textContent = 'Proceed with PayPal';
+            else if (method === 'cashapp') submitText.textContent = 'Pay with Cash App';
+            else submitText.textContent = 'Generate Crypto Vault';
+        }
+
+        updateEstimatedPrice();
     };
 
-    function updateCalcAmount() {
-        const calcEl = document.getElementById('chk-calc-amount');
-        if (!calcEl) return;
-
-        if (currentRail === 'ltc') {
-            const val = (currentAmount / (cryptoRates.ltc || 85.0)).toFixed(4);
-            calcEl.textContent = `${val} LTC (~$85/LTC)`;
-        } else if (currentRail === 'btc') {
-            const val = (currentAmount / (cryptoRates.btc || 65000.0)).toFixed(6);
-            calcEl.textContent = `${val} BTC (~$65,000/BTC)`;
-        } else if (currentRail === 'eth') {
-            const val = (currentAmount / (cryptoRates.eth || 2600.0)).toFixed(5);
-            calcEl.textContent = `${val} ETH (~$2,600/ETH)`;
-        } else if (currentRail === 'paypal') {
-            calcEl.textContent = `$${Number(currentAmount).toFixed(2)} USD (PayPal Direct)`;
-        } else if (currentRail === 'cashapp') {
-            calcEl.textContent = `$${Number(currentAmount).toFixed(2)} USD (Cash App)`;
-        }
-    }
-
-    window.setStep = function(step) {
-        document.getElementById('chk-pane-config').style.display = (step === 1) ? 'block' : 'none';
-        document.getElementById('chk-pane-deposit').style.display = (step === 2) ? 'block' : 'none';
-        document.getElementById('chk-pane-approved').style.display = (step === 3) ? 'block' : 'none';
-
-        if (step === 1) {
-            if (scanInterval) clearInterval(scanInterval);
-            if (countdownInterval) clearInterval(countdownInterval);
-        }
+    window.selectCryptoCoin = function(coin) {
+        currentCoin = coin;
+        document.querySelectorAll('.chk-coin-grid .chk-coin-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.coin === coin);
+        });
+        updateEstimatedPrice();
     };
 
-    window.generateOrderVault = async function() {
-        const emailInput = document.getElementById('chk-email-input');
+    window.initiateCheckoutOrder = async function() {
+        const emailInput = document.getElementById('chk-email');
         const email = emailInput ? emailInput.value.trim() : '';
 
-        if (!email || !email.includes('@') || !email.includes('.')) {
-            alert('Please enter a valid operator email address.');
-            if (emailInput) emailInput.focus();
+        if (!email || !email.includes('@')) {
+            showToast('Please provide a valid billing email address.', 'error');
             return;
         }
 
         const btn = document.getElementById('btn-create-order');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Initializing...';
-        }
+        if (btn) btn.disabled = true;
+
+        const effectiveMethod = (currentMethod === 'crypto') ? currentCoin : currentMethod;
 
         try {
             const resp = await fetch('/api/payment/create-order', {
@@ -88,230 +93,123 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: email,
-                    plan_id: currentTier,
-                    payment_method: currentRail
+                    tier: planParam,
+                    method: effectiveMethod
                 })
             });
 
             const data = await resp.json();
-            if (resp.ok && data.success && data.order) {
+
+            if (resp.ok && data.success) {
                 activeOrder = data.order;
-                renderOrderDetails(activeOrder);
-                window.setStep(2);
-                startAutoScanner(activeOrder.id);
+                renderDepositView(data.order);
             } else {
-                alert(data.error || 'Failed to initialize payment vault.');
+                showToast(data.error || 'Order creation failed', 'error');
             }
         } catch (err) {
-            alert('Connection error: ' + err.message);
+            showToast(`Connection error: ${err.message}`, 'error');
         } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = `<span>Continue to Payment</span> <i class="fas fa-arrow-right"></i>`;
-            }
+            if (btn) btn.disabled = false;
         }
     };
 
-    function renderOrderDetails(order) {
-        const ordDisp = document.getElementById('chk-order-id-display');
-        if (ordDisp) ordDisp.textContent = order.id;
+    function renderDepositView(order) {
+        document.getElementById('chk-pane-form').style.display = 'none';
+        document.getElementById('chk-pane-deposit').style.display = 'block';
 
-        const amtDisp = document.getElementById('chk-display-amount');
-        const addrDisp = document.getElementById('chk-display-addr');
-        const addrLbl = document.getElementById('chk-display-addr-label');
-        const qrWrap = document.getElementById('chk-qr-wrapper');
-        const dirLinkBox = document.getElementById('chk-direct-link-box');
-        const extPayLink = document.getElementById('chk-external-pay-link');
+        const amtEl = document.getElementById('chk-dep-amount');
+        const addrEl = document.getElementById('chk-dep-address');
 
-        const method = (order.payment_method || 'ltc').toLowerCase();
+        if (amtEl) amtEl.textContent = `${order.crypto_amount} ${order.payment_method.toUpperCase()}`;
+        if (addrEl) addrEl.textContent = order.deposit_address;
 
-        if (amtDisp) {
-            if (order.crypto_amount) {
-                amtDisp.textContent = `${order.crypto_amount} ${method.toUpperCase()}`;
-            } else {
-                amtDisp.textContent = `$${Number(order.amount_usd).toFixed(2)} USD`;
-            }
-        }
-
-        if (addrDisp) addrDisp.textContent = order.deposit_address;
-        if (addrLbl) addrLbl.textContent = `${method.toUpperCase()} DEPOSIT ADDRESS:`;
-
-        if (method === 'paypal' || method === 'cashapp') {
-            if (qrWrap) qrWrap.style.display = 'none';
-            if (dirLinkBox && extPayLink) {
-                dirLinkBox.style.display = 'block';
-                if (method === 'paypal') {
-                    extPayLink.href = (paymentConfig && paymentConfig.PAYPAL_LINK) || `mailto:${order.deposit_address}`;
-                    extPayLink.innerHTML = `<i class="fa-brands fa-paypal"></i> Pay with PayPal`;
-                    extPayLink.style.background = 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
-                } else {
-                    const tag = (order.deposit_address || '').replace('$', '');
-                    extPayLink.href = `https://cash.app/$${tag}/${order.amount_usd}`;
-                    extPayLink.innerHTML = `<i class="fas fa-dollar-sign"></i> Pay with Cash App`;
-                    extPayLink.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                }
-            }
-        } else {
-            if (qrWrap) {
-                qrWrap.style.display = 'flex';
-                renderQRCode(order);
-            }
-            if (dirLinkBox) dirLinkBox.style.display = 'none';
-        }
-
-        startCountdown(order.expires_at);
-    }
-
-    function renderQRCode(order) {
-        const target = document.getElementById('chk-qrcode-target');
-        if (!target) return;
-        target.innerHTML = '';
-
-        const method = (order.payment_method || 'ltc').toLowerCase();
-        let uri = order.deposit_address;
-        if (method === 'ltc') uri = `litecoin:${order.deposit_address}?amount=${order.crypto_amount}`;
-        else if (method === 'btc') uri = `bitcoin:${order.deposit_address}?amount=${order.crypto_amount}`;
-        else if (method === 'eth') uri = `ethereum:${order.deposit_address}?value=${order.crypto_amount}`;
-
-        try {
-            if (typeof QRCode !== 'undefined') {
-                qrcodeInstance = new QRCode(target, {
+        const qrTarget = document.getElementById('chk-qrcode-target');
+        if (qrTarget) {
+            qrTarget.innerHTML = '';
+            let uri = order.deposit_address;
+            if (order.payment_method === 'ltc') uri = `litecoin:${order.deposit_address}?amount=${order.crypto_amount}`;
+            else if (order.payment_method === 'btc') uri = `bitcoin:${order.deposit_address}?amount=${order.crypto_amount}`;
+            else if (order.payment_method === 'eth') uri = `ethereum:${order.deposit_address}?value=${order.crypto_amount}`;
+            
+            try {
+                qrcodeInstance = new QRCode(qrTarget, {
                     text: uri,
-                    width: 160,
-                    height: 160,
-                    colorDark: '#00f0ff',
-                    colorLight: '#0d1117',
+                    width: 120,
+                    height: 120,
+                    colorDark: '#030712',
+                    colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
                 });
-            } else {
-                const img = document.createElement('img');
-                img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(uri)}&color=00f0ff&bgcolor=0d1117`;
-                img.alt = 'Scan Deposit Address';
-                img.style.width = '160px';
-                img.style.height = '160px';
-                target.appendChild(img);
-            }
-        } catch (e) {
-            console.warn('QR Code render fallback:', e);
+            } catch(e) {}
         }
+
+        startPolling(order.order_id);
     }
 
-    function startCountdown(expiresAt) {
-        if (countdownInterval) clearInterval(countdownInterval);
-        const timerEl = document.getElementById('chk-countdown-timer');
-
-        let target = expiresAt ? new Date(expiresAt).getTime() : Date.now() + 30 * 60 * 1000;
-
-        countdownInterval = setInterval(() => {
-            const rem = Math.max(0, Math.floor((target - Date.now()) / 1000));
-            if (rem <= 0) {
-                if (timerEl) timerEl.textContent = 'EXPIRED';
-                clearInterval(countdownInterval);
-                return;
-            }
-            const m = String(Math.floor(rem / 60)).padStart(2, '0');
-            const s = String(rem % 60).padStart(2, '0');
-            if (timerEl) timerEl.textContent = `${m}:${s}`;
-        }, 1000);
-    }
-
-    // AUTOMATIC NETWORK SCANNER (Checks automatically every 1500ms — NO TXID INPUT NEEDED)
-    function startAutoScanner(orderId) {
-        if (scanInterval) clearInterval(scanInterval);
-
-        // Immediate first check
-        performAutoCheck(orderId);
-
-        // Poll every 1500ms
-        scanInterval = setInterval(() => {
-            if (!activeOrder || activeOrder.status === 'approved') {
-                clearInterval(scanInterval);
-                return;
-            }
-            performAutoCheck(orderId);
+    function startPolling(orderId) {
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(async () => {
+            try {
+                const resp = await fetch(`/api/payment/auto-check/${encodeURIComponent(orderId)}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.status === 'approved') {
+                        clearInterval(pollInterval);
+                        showToast('Payment verified on-chain! Activating platform access...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/app';
+                        }, 1200);
+                    }
+                }
+            } catch(e) {}
         }, 1500);
     }
 
-    async function performAutoCheck(orderId) {
-        try {
-            const resp = await fetch(`/api/payment/auto-check/${encodeURIComponent(orderId)}`);
-            if (resp.ok) {
-                const data = await resp.json();
-                if (data.success && data.approved) {
-                    onOrderApproved(data.order);
-                }
-            }
-        } catch (e) {}
-    }
-
-    // Manual "Check Now" button
     window.checkPaymentNow = async function() {
-        if (!activeOrder || !activeOrder.id) return;
-
-        const btn = document.getElementById('btn-manual-scan');
-        const titleEl = document.getElementById('chk-scan-status-title');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-        }
-        if (titleEl) titleEl.textContent = 'Scanning ledger mempool now...';
-
+        if (!activeOrder) return;
+        const btn = document.getElementById('btn-scan-now');
+        if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
+        
         try {
-            const resp = await fetch(`/api/payment/auto-check/${encodeURIComponent(activeOrder.id)}`);
+            const resp = await fetch(`/api/payment/auto-check/${encodeURIComponent(activeOrder.order_id)}`);
             const data = await resp.json();
-            if (resp.ok && data.success && data.approved) {
-                onOrderApproved(data.order);
+            if (data.status === 'approved') {
+                showToast('Payment Confirmed! Redirecting...', 'success');
+                setTimeout(() => window.location.href = '/app', 1000);
             } else {
-                if (titleEl) titleEl.textContent = 'Listening for incoming transfer...';
+                showToast('Mempool scan active: Transaction broadcast not yet confirmed on network.', 'info');
             }
-        } catch (e) {
-            if (titleEl) titleEl.textContent = 'Network check retry...';
+        } catch(e) {
+            showToast('Scan query error', 'error');
         } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-rotate"></i> Check Now';
-            }
+            if (btn) btn.innerHTML = '<i class="fas fa-rotate"></i> Check Payment Now';
         }
     };
 
-    function onOrderApproved(order) {
-        if (scanInterval) clearInterval(scanInterval);
-        if (countdownInterval) clearInterval(countdownInterval);
+    window.cancelCurrentOrder = function() {
+        if (pollInterval) clearInterval(pollInterval);
+        activeOrder = null;
+        document.getElementById('chk-pane-deposit').style.display = 'none';
+        document.getElementById('chk-pane-form').style.display = 'block';
+    };
 
-        const emailEl = document.getElementById('chk-approved-email');
-        if (emailEl) emailEl.textContent = (order && order.email) || 'Your Account';
-
-        window.setStep(3);
-
-        // Auto launch console after 1.2s
-        setTimeout(() => {
-            window.location.href = '/app';
-        }, 1200);
-    }
-
-    window.copyDynamicText = function(targetId, btnId, label) {
-        const el = document.getElementById(targetId);
+    window.copyValue = function(elementId) {
+        const el = document.getElementById(elementId);
         if (!el) return;
-        const text = el.innerText || el.textContent;
-
-        navigator.clipboard.writeText(text.trim()).then(() => {
-            const btn = document.getElementById(btnId);
-            if (btn) {
-                const orig = btn.innerHTML;
-                btn.innerHTML = `<i class="fas fa-check text-emerald"></i> Copied!`;
-                btn.style.borderColor = 'var(--chk-emerald)';
-                btn.style.color = 'var(--chk-emerald)';
-                setTimeout(() => {
-                    btn.innerHTML = orig;
-                    btn.style.borderColor = '';
-                    btn.style.color = '';
-                }, 1500);
-            }
+        const text = el.textContent.trim();
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Copied to clipboard!', 'success');
         });
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadConfig();
-    });
+    function showToast(msg, type = 'info') {
+        const toast = document.getElementById('chk-toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.borderColor = type === 'error' ? '#f43f5e' : (type === 'success' ? '#10b981' : '#3b82f6');
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
 
+    document.addEventListener('DOMContentLoaded', init);
 })();

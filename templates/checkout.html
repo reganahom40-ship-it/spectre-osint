@@ -3,214 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPECTRE — Checkout</title>
+    <title>SPECTRE — Secure Checkout</title>
     
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- QRCode Generator Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v4">
-    <link rel="stylesheet" href="/static/css/checkout.css?v=20260912_chk_v2">
+    <link rel="stylesheet" href="/static/css/checkout.css?v=20260912_chk_redesign_v1">
 </head>
 <body class="checkout-body">
 
-    <div class="landing-ambient-bg">
-        <div class="ambient-orb orb-top-left"></div>
-        <div class="ambient-orb orb-mid-right"></div>
+    <!-- Ambient Background // SPECTRE CHECKOUT // CUSTODIAL VAULT GATEWAY -->
+    <div class="chk-ambient-bg">
+        <div class="orb-chk-left"></div>
+        <div class="orb-chk-right"></div>
+        <div class="chk-grid-overlay"></div>
     </div>
 
-    <div class="checkout-wrapper">
+    <div class="checkout-container">
         
         <!-- Header -->
         <header class="checkout-topbar">
             <a href="/" class="chk-brand">
-                <span class="chk-brand-name">SPECTRE CHECKOUT</span>
-                <!-- CUSTODIAL VAULT GATEWAY -->
+                <div class="chk-brand-icon">
+                    <i class="fas fa-shield-cat"></i>
+                </div>
+                <div class="chk-brand-name">
+                    SPECTRE <span class="chk-brand-pill">OSINT</span>
+                </div>
             </a>
-            <a href="/" class="chk-back-link">
-                <i class="fas fa-arrow-left"></i> Back
-            </a>
+            
+            <div class="chk-security-indicator">
+                <i class="fas fa-lock text-emerald"></i>
+                <span>Secure Checkout</span>
+            </div>
         </header>
 
-        <!-- Main Card -->
-        <div class="checkout-card">
-            <div class="cyber-corner-tl">+</div>
-            <div class="cyber-corner-tr">+</div>
-            <div class="cyber-corner-bl">+</div>
-            <div class="cyber-corner-br">+</div>
+        <!-- Main 2-Column Luxury Checkout Grid -->
+        <div class="checkout-main-grid">
+            
+            <!-- LEFT CARD: Plan Overview with Operator Silhouette -->
+            <div class="chk-plan-card">
+                <a href="/" class="chk-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Plans</span>
+                </a>
 
-            <div class="checkout-layout">
-                
-                <!-- Left: Minimal Plan Info -->
-                <div class="chk-plan-sidebar">
-                    <div class="plan-tag">
-                        <span class="dot"></span>
-                        <span id="chk-plan-badge">{% if plan.id == 'lifetime' %}LIFETIME CLEARANCE{% else %}PRO MONTHLY{% endif %}</span>
+                <div class="chk-plan-header">
+                    <h1 class="chk-plan-title" id="chk-plan-name">{{ plan.name or 'Lifetime Operator' }}</h1>
+                    <p class="chk-plan-tagline">Full access. No limits. Forever.</p>
+                </div>
+
+                <div class="chk-price-row">
+                    <div class="chk-price-val">
+                        <span class="chk-curr">$</span><span id="chk-price-amount">{{ plan.price|int if plan.price else 99 }}</span>
+                        <span class="chk-freq">USD</span>
                     </div>
+                    <div class="chk-badge-best-value">Best Value</div>
+                </div>
 
-                    <h1 class="plan-heading" id="chk-plan-name">{{ plan.name or 'Lifetime Master Pass' }}</h1>
-
-                    <div class="price-display">
-                        {% if plan.id == 'lifetime' %}
-                        <div class="strike-row">
-                            <span class="strike-price">$299</span>
-                            <span class="save-tag">-$200</span>
-                        </div>
-                        {% endif %}
-                        <div class="main-price">
-                            <span class="currency">$</span>
-                            <span class="amount" id="chk-price-val">{{ plan.price|int if plan.price else 99 }}</span>
-                            <span class="freq">USD</span>
-                        </div>
+                <!-- Features Checklist -->
+                <div class="chk-checklist">
+                    <div class="chk-check-item">
+                        <i class="fas fa-check text-cyan"></i>
+                        <span>Full access to all 112+ OSINT sources</span>
                     </div>
-
-                    <div class="pill-perks">
-                        <div class="perk-pill"><i class="fas fa-bolt text-cyan"></i> Instant Activation</div>
-                        <div class="perk-pill"><i class="fas fa-shield text-emerald"></i> No Subscriptions</div>
-                        <div class="perk-pill"><i class="fas fa-network-wired text-purple"></i> All 10 OSINT Engines</div>
-                        <div class="perk-pill"><i class="fas fa-user-secret text-amber"></i> 100% Private & Logless</div>
+                    <div class="chk-check-item">
+                        <i class="fas fa-check text-cyan"></i>
+                        <span>Unlimited investigations</span>
+                    </div>
+                    <div class="chk-check-item">
+                        <i class="fas fa-check text-cyan"></i>
+                        <span>Advanced data correlation & mapping</span>
+                    </div>
+                    <div class="chk-check-item">
+                        <i class="fas fa-check text-cyan"></i>
+                        <span>Priority support</span>
+                    </div>
+                    <div class="chk-check-item">
+                        <i class="fas fa-check text-cyan"></i>
+                        <span>Lifetime updates</span>
                     </div>
                 </div>
 
-                <!-- Right: Interactive Terminal -->
-                <div class="chk-action-side">
+                <!-- Bottom Pill -->
+                <div class="chk-lifetime-pill">
+                    <i class="fas fa-infinity text-indigo"></i>
+                    <span>One payment. Lifetime access.</span>
+                </div>
+
+                <!-- Dark Hooded Operator Silhouette Background Art -->
+                <div class="chk-operator-art">
+                    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" class="silhouette-svg">
+                        <path d="M100 20C75 20 60 45 60 75C60 110 40 140 20 180H180C160 140 140 110 140 75C140 45 125 20 100 20Z" fill="url(#hoodGradient)" />
+                        <path d="M100 45C85 45 75 60 75 80C75 105 85 125 100 125C115 125 125 105 125 80C125 60 115 45 100 45Z" fill="#070b14" />
+                        <defs>
+                            <linearGradient id="hoodGradient" x1="100" y1="20" x2="100" y2="180" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#3b82f6" stop-opacity="0.35"/>
+                                <stop offset="1" stop-color="#6366f1" stop-opacity="0.05"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- RIGHT CARD: Payment Configuration & Processing -->
+            <div class="chk-payment-card">
+                <div class="chk-payment-header">
+                    <h2>Payment Method</h2>
+                </div>
+
+                <!-- Method Selector Tabs -->
+                <div class="chk-method-tabs-grid">
+                    <button type="button" class="chk-tab-btn" data-method="card" onclick="switchPaymentMethod('card')">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Card</span>
+                    </button>
+                    <button type="button" class="chk-tab-btn" data-method="paypal" onclick="switchPaymentMethod('paypal')">
+                        <i class="fab fa-paypal"></i>
+                        <span>PayPal</span>
+                    </button>
+                    <button type="button" class="chk-tab-btn active" data-method="crypto" onclick="switchPaymentMethod('crypto')">
+                        <i class="fab fa-bitcoin"></i>
+                        <span>Crypto</span>
+                    </button>
+                    <button type="button" class="chk-tab-btn" data-method="cashapp" onclick="switchPaymentMethod('cashapp')">
+                        <i class="fas fa-building-columns"></i>
+                        <span>Cash App</span>
+                    </button>
+                </div>
+
+                <!-- VIEW 1: Form Configuration -->
+                <div class="chk-view-pane" id="chk-pane-form">
                     
-                    <!-- PANE 1: Configuration (Email + Rail) -->
-                    <div class="chk-pane" id="chk-pane-config">
-                        <div class="field-wrap">
-                            <label class="field-label">Account Email</label>
-                            <input type="email" class="clean-input" id="chk-email-input" placeholder="operator@spectre.io" value="{% if user %}{{ user.email }}{% endif %}">
-                        </div>
-
-                        <div class="field-wrap" style="margin-top: 16px;">
-                            <label class="field-label">Payment Method</label>
-                            <div class="rails-pill-grid">
-                                <button type="button" class="rail-pill active" data-rail="ltc" onclick="selectRail('ltc')">
-                                    <i class="fa-solid fa-coins" style="color:#00f0ff;"></i>
-                                    <span>Litecoin</span>
-                                </button>
-                                <button type="button" class="rail-pill" data-rail="paypal" onclick="selectRail('paypal')">
-                                    <i class="fa-brands fa-paypal" style="color:#818cf8;"></i>
-                                    <span>PayPal</span>
-                                </button>
-                                <button type="button" class="rail-pill" data-rail="btc" onclick="selectRail('btc')">
-                                    <i class="fa-brands fa-bitcoin" style="color:#f59e0b;"></i>
-                                    <span>Bitcoin</span>
-                                </button>
-                                <button type="button" class="rail-pill" data-rail="eth" onclick="selectRail('eth')">
-                                    <i class="fa-brands fa-ethereum" style="color:#c084fc;"></i>
-                                    <span>Ethereum</span>
-                                </button>
-                                <button type="button" class="rail-pill" data-rail="cashapp" onclick="selectRail('cashapp')">
-                                    <i class="fas fa-dollar-sign" style="color:#10b981;"></i>
-                                    <span>Cash App</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="calc-box">
-                            <span class="calc-label">Pay:</span>
-                            <span class="calc-val font-mono" id="chk-calc-amount">1.1647 LTC</span>
-                        </div>
-
-                        <button type="button" class="btn-glow-primary" id="btn-create-order" onclick="generateOrderVault()">
-                            <span>Continue to Payment</span>
-                            <i class="fas fa-arrow-right"></i>
-                        </button>
+                    <!-- Billing Email -->
+                    <div class="chk-input-wrap">
+                        <label class="chk-input-label">Billing Email</label>
+                        <input type="email" id="chk-email" class="chk-text-input" placeholder="you@example.com" value="{% if user %}{{ user.email }}{% endif %}">
                     </div>
 
-                    <!-- PANE 2: Live Deposit & Auto-Detect (NO TXID REQUIRED!) -->
-                    <div class="chk-pane" id="chk-pane-deposit" style="display:none;">
+                    <!-- Crypto Rail Selector (Visible when Crypto is active) -->
+                    <div class="chk-crypto-rails" id="chk-crypto-rails-wrap">
+                        <label class="chk-input-label">Select Cryptocurrency</label>
+                        <div class="chk-coin-grid">
+                            <button type="button" class="chk-coin-btn active" data-coin="ltc" onclick="selectCryptoCoin('ltc')">
+                                <i class="fas fa-coins text-cyan"></i>
+                                <span>Litecoin (LTC)</span>
+                            </button>
+                            <button type="button" class="chk-coin-btn" data-coin="btc" onclick="selectCryptoCoin('btc')">
+                                <i class="fab fa-bitcoin text-amber"></i>
+                                <span>Bitcoin (BTC)</span>
+                            </button>
+                            <button type="button" class="chk-coin-btn" data-coin="eth" onclick="selectCryptoCoin('eth')">
+                                <i class="fab fa-ethereum text-purple"></i>
+                                <span>Ethereum (ETH)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estimated Amount -->
+                    <div class="chk-calc-row">
+                        <span class="chk-calc-label">Total to Pay:</span>
+                        <span class="chk-calc-amount font-mono" id="chk-est-amount">1.1647 LTC ($99.00 USD)</span>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="button" class="btn-complete-payment" id="btn-create-order" onclick="initiateCheckoutOrder()">
+                        <i class="fas fa-lock"></i>
+                        <span id="btn-submit-text">Complete Payment</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+
+                    <div class="chk-footer-note">
+                        <i class="fas fa-lock text-muted"></i>
+                        <span>Your payment information is encrypted and secure.</span>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: Active Deposit Vault & Live Mempool Auto-Scanner -->
+                <div class="chk-view-pane" id="chk-pane-deposit" style="display: none;">
+                    
+                    <div class="deposit-active-banner">
+                        <div class="radar-scan-bar">
+                            <div class="radar-pulse"></div>
+                            <span class="radar-text"><i class="fas fa-satellite-dish"></i> Autonomous Mempool Radar: Listening for transaction...</span>
+                        </div>
+                    </div>
+
+                    <!-- Address & QR Container -->
+                    <div class="deposit-details-box">
+                        <div class="deposit-qr-wrap" id="chk-qrcode-target"></div>
                         
-                        <div class="deposit-top">
-                            <span class="order-id-badge font-mono" id="chk-order-id-display">SPEC-XXXXXXXX</span>
-                            <span class="timer-badge font-mono" id="chk-countdown-timer">29:59</span>
-                        </div>
-
-                        <!-- QR Frame -->
-                        <div class="qr-clean-box" id="chk-qr-wrapper">
-                            <div id="chk-qrcode-target"></div>
-                        </div>
-
-                        <!-- Amount & Copy -->
-                        <div class="coord-box">
-                            <div class="coord-meta">AMOUNT TO SEND:</div>
-                            <div class="coord-row">
-                                <span class="coord-val font-mono" id="chk-display-amount">1.1647 LTC</span>
-                                <button type="button" class="btn-mini-copy" id="btn-copy-chk-amt" onclick="copyDynamicText('chk-display-amount', 'btn-copy-chk-amt', 'Amount')">
-                                    <i class="fas fa-copy"></i> Copy
-                                </button>
+                        <div class="deposit-meta-wrap">
+                            <div class="dep-row">
+                                <span class="dep-label">Exact Amount:</span>
+                                <div class="dep-val-copy" onclick="copyValue('chk-dep-amount')">
+                                    <span class="font-mono text-cyan" id="chk-dep-amount">1.1647 LTC</span>
+                                    <i class="fas fa-copy"></i>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Address & Copy -->
-                        <div class="coord-box" style="margin-top: 10px;">
-                            <div class="coord-meta" id="chk-display-addr-label">DEPOSIT ADDRESS:</div>
-                            <div class="coord-row">
-                                <code class="coord-addr font-mono" id="chk-display-addr">...</code>
-                                <button type="button" class="btn-mini-copy" id="btn-copy-chk-addr" onclick="copyDynamicText('chk-display-addr', 'btn-copy-chk-addr', 'Address')">
-                                    <i class="fas fa-copy"></i> Copy
-                                </button>
+                            <div class="dep-row">
+                                <span class="dep-label">Deposit Address:</span>
+                                <div class="dep-val-copy" onclick="copyValue('chk-dep-address')">
+                                    <span class="font-mono text-white address-text" id="chk-dep-address">Loading custodial address...</span>
+                                    <i class="fas fa-copy"></i>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- External Link (PayPal / CashApp) -->
-                        <div class="external-portal-box" id="chk-direct-link-box" style="display:none; margin-top: 12px;">
-                            <a href="#" target="_blank" class="btn-ext-portal" id="chk-external-pay-link">
-                                <i class="fas fa-arrow-up-right-from-square"></i> Open Payment Portal
-                            </a>
-                        </div>
-
-                        <!-- AUTOMATED NETWORK SCANNER RADAR (NO TXID REQUIRED!) -->
-                        <div class="auto-scan-card">
-                            <div class="scan-radar-indicator">
-                                <span class="radar-ping"></span>
-                                <span class="radar-core"></span>
-                            </div>
-                            <div class="scan-text-wrap">
-                                <div class="scan-title" id="chk-scan-status-title">Listening for incoming transfer...</div>
-                                <div class="scan-sub">Mempool scanned automatically • Instant activation</div>
-                            </div>
-                            <button type="button" class="btn-scan-trigger" id="btn-manual-scan" onclick="checkPaymentNow()">
-                                <i class="fas fa-rotate"></i> Check Now
-                            </button>
-                        </div>
-
-                        <div class="back-link-row">
-                            <button type="button" class="btn-text-back" onclick="setStep(1)">
-                                <i class="fas fa-chevron-left"></i> Change Payment Method
-                            </button>
                         </div>
                     </div>
 
-                    <!-- PANE 3: Confirmed & Approved -->
-                    <div class="chk-pane" id="chk-pane-approved" style="display:none; text-align:center; padding: 30px 10px;">
-                        <div class="approved-orb">
-                            <i class="fas fa-check"></i>
-                        </div>
-                        <h2 class="approved-title">PAYMENT CONFIRMED</h2>
-                        <p class="approved-sub">Clearance active for <span class="text-cyan font-mono" id="chk-approved-email"></span></p>
-
-                        <a href="/app" class="btn-glow-primary" style="margin-top: 24px; text-decoration:none;">
-                            <span>Launch Console</span>
-                            <i class="fas fa-terminal"></i>
-                        </a>
+                    <div class="deposit-actions-row">
+                        <button type="button" class="btn-manual-verify" id="btn-scan-now" onclick="checkPaymentNow()">
+                            <i class="fas fa-rotate"></i> Check Payment Now
+                        </button>
+                        <button type="button" class="btn-cancel-chk" onclick="cancelCurrentOrder()">
+                            Cancel
+                        </button>
                     </div>
 
                 </div>
 
             </div>
+
         </div>
 
     </div>
 
-    <script>
-        window.INITIAL_PLAN_ID = '{{ plan.id or "lifetime" }}';
-        window.INITIAL_PRICE = {{ plan.price if plan.price else 99 }};
-    </script>
-    <script src="/static/js/landing.js?v=20260912_paywall_v4"></script>
-    <script src="/static/js/checkout.js?v=20260912_chk_v2"></script>
+    <!-- Hidden toast container -->
+    <div id="chk-toast" class="chk-toast"></div>
+
+    <script src="/static/js/checkout.js?v=20260912_chk_redesign_v1"></script>
 </body>
 </html>
