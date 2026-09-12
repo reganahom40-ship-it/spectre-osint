@@ -12,5 +12,8 @@ ENV/
 dist/
 build/
 *.log
+*.db
+*.db-shm
+*.db-wal
 .DS_Store
 Thumbs.db

@@ -66,6 +66,32 @@
 
             <!-- Navigation Controls -->
             <div class="nav-controls">
+                <button class="pricing-pill-btn" id="btn-open-pricing" title="Subscription Plans & Lifetime Access">
+                    <i class="fas fa-crown text-amber"></i>
+                    <span>UPGRADE</span>
+                </button>
+                <div class="nav-auth-box" id="nav-auth-container">
+                    <button class="btn-auth-signin" id="btn-open-auth">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Sign In</span>
+                    </button>
+                    <div class="user-profile-widget" id="user-profile-widget" style="display:none;">
+                        <button class="user-profile-btn" id="btn-user-profile">
+                            <span class="user-tier-badge badge-free" id="nav-user-tier">FREE</span>
+                            <span class="user-email-text" id="nav-user-email">user@domain.com</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-profile-dropdown" id="user-profile-dropdown" style="display:none;">
+                            <div class="up-header">
+                                <span class="up-email" id="dropdown-user-email">user@domain.com</span>
+                                <span class="up-tier-tag" id="dropdown-user-tier">FREE PLAN</span>
+                            </div>
+                            <button class="up-item text-amber" id="menu-item-upgrade"><i class="fas fa-crown"></i> Upgrade to Lifetime</button>
+                            <button class="up-item text-cyan" id="menu-item-admin" style="display:none;"><i class="fas fa-terminal"></i> Master Admin Deck</button>
+                            <button class="up-item text-rose" id="menu-item-logout"><i class="fas fa-arrow-right-from-bracket"></i> Sign Out</button>
+                        </div>
+                    </div>
+                </div>
                 <button class="cmd-palette-btn" id="btn-open-palette" title="Quick Command Launcher (Ctrl+K)">
                     <i class="fas fa-terminal"></i>
                     <span>⌘K</span>
@@ -801,6 +827,190 @@
             </div>
             <div class="palette-list" id="palette-list">
                 <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         AUTHENTICATION MODAL (SIGN IN / REGISTER)
+         ============================================== -->
+    <div class="spectre-modal-backdrop" id="auth-modal-backdrop">
+        <div class="spectre-modal" id="auth-modal">
+            <div class="modal-header-row">
+                <h3 id="auth-modal-title"><i class="fas fa-user-shield text-cyan"></i> SPECTRE Intelligence Access</h3>
+                <button class="btn-close-modal" id="btn-close-auth"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="auth-tabs-row">
+                <button class="auth-tab-btn active" id="tab-auth-signin">Sign In</button>
+                <button class="auth-tab-btn" id="tab-auth-register">Create Account</button>
+            </div>
+            <div class="auth-body-container">
+                <form id="auth-form" onsubmit="return false;">
+                    <div class="auth-form-group">
+                        <label>Operator Email</label>
+                        <input type="email" id="auth-input-email" class="auth-input-field" placeholder="operator@spectre.io" required autocomplete="email">
+                    </div>
+                    <div class="auth-form-group">
+                        <label>Master Passphrase</label>
+                        <input type="password" id="auth-input-password" class="auth-input-field" placeholder="••••••••••••" required autocomplete="current-password">
+                    </div>
+                    <div id="auth-error-msg" style="display:none;color:#f87171;font-size:0.75rem;margin-bottom:10px;"></div>
+                    <button type="submit" class="btn-auth-action" id="btn-submit-auth">
+                        <i class="fas fa-right-to-bracket"></i>
+                        <span id="btn-auth-label">Authenticate Session</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         PRICING & CHECKOUT MODAL ("PAY WITH ANYTHING")
+         ============================================== -->
+    <div class="spectre-modal-backdrop" id="upgrade-modal-backdrop">
+        <div class="spectre-modal pricing-modal" id="upgrade-modal">
+            <div class="modal-header-row">
+                <h3><i class="fas fa-crown text-amber"></i> Unlock SPECTRE Access</h3>
+                <button class="btn-close-modal" id="btn-close-upgrade"><i class="fas fa-xmark"></i></button>
+            </div>
+            
+            <div class="pricing-tiers-grid">
+                <!-- Plan 1: Pro Monthly -->
+                <div class="tier-card" id="card-tier-pro">
+                    <div>
+                        <h4 class="tier-title">Pro Monthly</h4>
+                        <div class="tier-price">$19 <span>/ month</span></div>
+                        <ul class="tier-features-list">
+                            <li><i class="fas fa-check"></i> Unlimited Investigations</li>
+                            <li><i class="fas fa-check"></i> Full HIBP Breach Intelligence</li>
+                            <li><i class="fas fa-check"></i> 3D Topology Exports & Nodes</li>
+                            <li><i class="fas fa-check"></i> Cross-Module Correlations</li>
+                        </ul>
+                    </div>
+                    <button class="btn-select-tier" id="btn-select-pro" data-tier="premium" data-amount="19">Select Pro ($19)</button>
+                </div>
+
+                <!-- Plan 2: Lifetime Pass -->
+                <div class="tier-card featured" id="card-tier-lifetime">
+                    <span class="tier-ribbon">POPULAR</span>
+                    <div>
+                        <h4 class="tier-title" style="color:#fbbf24;">Lifetime Pass</h4>
+                        <div class="tier-price" style="color:#fbbf24;">$99 <span>one-time</span></div>
+                        <ul class="tier-features-list">
+                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> <strong>Permanent Lifetime Access</strong></li>
+                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> Unlimited Parallel Engine Probes</li>
+                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> All Future OSINT Modules Included</li>
+                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> Priority Circuit-Breaker Sockets</li>
+                        </ul>
+                    </div>
+                    <button class="btn-select-tier btn-featured" id="btn-select-lifetime" data-tier="lifetime" data-amount="99">Get Lifetime Pass ($99)</button>
+                </div>
+            </div>
+
+            <!-- Payment Methods Area -->
+            <div class="payment-methods-box">
+                <h4>Pay With Anything</h4>
+                <div class="pmethods-pills">
+                    <button class="pmethod-pill active" data-method="card"><i class="fas fa-credit-card"></i> Card / Apple Pay</button>
+                    <button class="pmethod-pill" data-method="crypto"><i class="fa-brands fa-bitcoin"></i> Crypto (BTC / ETH / USDT)</button>
+                    <button class="pmethod-pill" data-method="cashapp"><i class="fas fa-dollar-sign"></i> CashApp / PayPal</button>
+                    <button class="pmethod-pill" data-method="instant"><i class="fas fa-bolt text-amber"></i> Instant Unlock</button>
+                </div>
+
+                <!-- Method View: Card -->
+                <div class="pmethod-panel" id="panel-pay-card">
+                    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <input type="text" class="auth-input-field" placeholder="Card Number (4242 ••••)" value="4242 •••• •••• 4242">
+                        <input type="text" class="auth-input-field" placeholder="MM/YY" value="12/28">
+                        <input type="text" class="auth-input-field" placeholder="CVC" value="999">
+                    </div>
+                    <button class="btn-auth-action" id="btn-pay-card-submit">
+                        <i class="fas fa-lock"></i>
+                        <span>Confirm & Activate <strong id="btn-pay-amount-label">$99.00</strong></span>
+                    </button>
+                </div>
+
+                <!-- Method View: Crypto -->
+                <div class="pmethod-panel" id="panel-pay-crypto" style="display:none;">
+                    <div class="crypto-addr-card">
+                        <div><span style="color:#f59e0b;font-weight:700;">BTC:</span> <code>bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code></div>
+                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8'); showToast('Bitcoin address copied', 'fas fa-copy');">Copy</button>
+                    </div>
+                    <div class="crypto-addr-card">
+                        <div><span style="color:#6366f1;font-weight:700;">ETH / USDT:</span> <code>0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code></div>
+                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('0x71C7656EC7ab88b098defB751B7401B5f6d8976F'); showToast('ETH/USDT address copied', 'fas fa-copy');">Copy</button>
+                    </div>
+                    <button class="btn-auth-action" id="btn-pay-crypto-confirm" style="background:#059669;">
+                        <i class="fas fa-check-double"></i>
+                        <span>I Have Sent Crypto Payment (Activate Now)</span>
+                    </button>
+                </div>
+
+                <!-- Method View: CashApp -->
+                <div class="pmethod-panel" id="panel-pay-cashapp" style="display:none;">
+                    <div class="crypto-addr-card">
+                        <div><span style="color:#10b981;font-weight:700;">CashApp:</span> <code>$SpectreIntel</code></div>
+                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('$SpectreIntel'); showToast('CashApp cashtag copied', 'fas fa-copy');">Copy</button>
+                    </div>
+                    <button class="btn-auth-action" id="btn-pay-cashapp-confirm" style="background:#10b981;color:#000;">
+                        <i class="fas fa-check"></i>
+                        <span>Confirm CashApp Transfer</span>
+                    </button>
+                </div>
+
+                <!-- Method View: Instant Unlock -->
+                <div class="pmethod-panel" id="panel-pay-instant" style="display:none;">
+                    <p style="font-size:0.75rem;color:var(--text-secondary);margin:0 0 8px;">Direct instant operator bypass for immediate evaluation.</p>
+                    <button class="btn-auth-action" id="btn-pay-instant-submit" style="background:linear-gradient(135deg, #f59e0b, #d97706);color:#000;">
+                        <i class="fas fa-bolt"></i>
+                        <span>Instant Upgrade to Selected Plan</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         MASTER ADMIN UPGRADE PORTAL MODAL
+         ============================================== -->
+    <div class="spectre-modal-backdrop" id="admin-modal-backdrop">
+        <div class="spectre-modal admin-modal" id="admin-modal">
+            <div class="modal-header-row">
+                <h3><i class="fas fa-terminal text-rose"></i> Master Admin Control Console</h3>
+                <button class="btn-close-modal" id="btn-close-admin"><i class="fas fa-xmark"></i></button>
+            </div>
+
+            <!-- Instant User Upgrade By Email Form -->
+            <form id="admin-upgrade-form" class="admin-upgrade-form" onsubmit="return false;">
+                <input type="email" id="admin-target-email" placeholder="Enter target user email (e.g. user@target.com)" required list="registered-emails-list">
+                <datalist id="registered-emails-list"></datalist>
+                <select id="admin-target-tier">
+                    <option value="lifetime" selected>Lifetime Tier</option>
+                    <option value="premium">Premium Tier</option>
+                    <option value="free">Free Tier</option>
+                    <option value="admin">Master Admin</option>
+                </select>
+                <button type="submit" class="btn-admin-submit" id="btn-admin-submit-upgrade">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Upgrade User
+                </button>
+            </form>
+
+            <!-- Live Registered Users Table -->
+            <div class="admin-users-table-box">
+                <table class="admin-users-table" id="admin-users-table">
+                    <thead>
+                        <tr>
+                            <th>User Email</th>
+                            <th>Current Tier</th>
+                            <th>Probes</th>
+                            <th>Registered</th>
+                            <th>Quick Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-tbody">
+                        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

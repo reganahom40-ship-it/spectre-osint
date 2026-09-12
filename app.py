@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
 import datetime
+import os
 import re
 
 from modules.username import check_username
@@ -15,11 +16,23 @@ from modules.bgp_lookup import lookup_bgp
 from modules.number_forensics import analyze_number
 from modules.engine import InvestigationEngine
 from modules.logging_config import setup_logging, log_investigation_summary
+from modules.db import (
+    init_db, create_user, authenticate_user, update_user_tier,
+    list_all_users, record_payment, increment_user_searches, get_user_by_email
+)
+from modules.auth import (
+    get_current_user, login_user, logout_user, is_admin,
+    has_tier, login_required, admin_required
+)
 
 setup_logging()
+init_db()
 engine = InvestigationEngine()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+app.secret_key = os.environ.get('SECRET_KEY', 'spectre_master_secret_session_2026')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 @app.after_request
 def add_cors_headers(response):
@@ -86,7 +99,156 @@ def health():
     return jsonify({'status': 'operational', 'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'}), 200
 
 # =========================================================================
-# OMNI-RECON AUTO-DETECTION ENGINE
+# AUTHENTICATION & MEMBERSHIP ENGINE
+# =========================================================================
+@app.route('/api/auth/register', methods=['POST', 'OPTIONS'])
+def api_auth_register():
+    if request.method == 'OPTIONS':
+        return '', 204
+    email = get_param('email')
+    password = get_param('password')
+    try:
+        user = create_user(email, password, tier='free')
+        login_user(user)
+        return jsonify({
+            'success': True,
+            'message': 'Account created successfully.',
+            'user': user
+        }), 201
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Failed to create account.'}), 500
+
+@app.route('/api/auth/login', methods=['POST', 'OPTIONS'])
+def api_auth_login():
+    if request.method == 'OPTIONS':
+        return '', 204
+    email = get_param('email')
+    password = get_param('password')
+    user = authenticate_user(email, password)
+    if not user:
+        return jsonify({'success': False, 'error': 'Invalid email or password.'}), 401
+    login_user(user)
+    return jsonify({
+        'success': True,
+        'message': 'Authentication successful.',
+        'user': user
+    }), 200
+
+@app.route('/api/auth/logout', methods=['POST', 'GET', 'OPTIONS'])
+def api_auth_logout():
+    logout_user()
+    return jsonify({'success': True, 'message': 'Logged out successfully.'}), 200
+
+@app.route('/api/auth/me', methods=['GET', 'OPTIONS'])
+def api_auth_me():
+    if request.method == 'OPTIONS':
+        return '', 204
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            'success': True,
+            'logged_in': False,
+            'authenticated': False,
+            'user': {
+                'email': 'Guest (Unauthenticated)',
+                'tier': 'free',
+                'searches_count': session.get('guest_searches', 0),
+                'is_admin': False
+            }
+        }), 200
+    return jsonify({
+        'success': True,
+        'logged_in': True,
+        'authenticated': True,
+        'user': {
+            'id': user['id'],
+            'email': user['email'],
+            'tier': user['tier'],
+            'searches_count': user.get('searches_count', 0),
+            'is_admin': is_admin(user),
+            'created_at': user.get('created_at')
+        }
+    }), 200
+
+# =========================================================================
+# PAYMENT & SUBSCRIPTION CHECKOUT
+# =========================================================================
+@app.route('/api/payment/checkout', methods=['POST', 'OPTIONS'])
+def api_payment_checkout():
+    if request.method == 'OPTIONS':
+        return '', 204
+    user = get_current_user()
+    tier = get_param('tier') or 'premium'
+    method = get_param('method') or 'card'
+    amount = float(get_param('amount') or (99.0 if tier == 'lifetime' else 19.0))
+
+    if not user:
+        email = get_param('email')
+        if not email:
+            # Check if there is an active session or fallback to guest buyer account
+            email = f"guest_{int(time.time())}@spectre.io"
+        user = get_user_by_email(email)
+        if not user:
+            user = create_user(email, 'spectre_temp_' + str(int(time.time())), tier=tier)
+
+    # Apply tier upgrade and record payment
+    update_user_tier(user['email'], tier, f"Upgraded via checkout ({method})")
+    record_payment(user['id'], amount, method, tier)
+
+    # Refresh session tier
+    login_user(get_user_by_email(user['email']))
+
+    return jsonify({
+        'success': True,
+        'message': f'Payment confirmed! Account upgraded to {tier.upper()} access.',
+        'tier': tier,
+        'user': get_user_by_email(user['email'])
+    }), 200
+
+# =========================================================================
+# MASTER ADMIN MANAGEMENT PORTAL
+# =========================================================================
+@app.route('/api/admin/users', methods=['GET', 'OPTIONS'])
+@admin_required
+def api_admin_users():
+    if request.method == 'OPTIONS':
+        return '', 204
+    users = list_all_users()
+    return jsonify({
+        'success': True,
+        'users': users,
+        'total_count': len(users)
+    }), 200
+
+@app.route('/api/admin/upgrade', methods=['POST', 'OPTIONS'])
+@admin_required
+def api_admin_upgrade():
+    if request.method == 'OPTIONS':
+        return '', 204
+    target_email = get_param('email')
+    target_tier = get_param('tier') or 'lifetime'
+    notes = get_param('notes') or 'Direct Admin Upgrade'
+
+    if not target_email:
+        return jsonify({'success': False, 'error': 'Missing target user email.'}), 400
+
+    try:
+        updated_user = update_user_tier(target_email, target_tier, notes)
+        return jsonify({
+            'success': True,
+            'message': f"Account {target_email} successfully upgraded to {target_tier.upper()}.",
+            'tier': target_tier,
+            'user': updated_user
+        }), 200
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Failed to upgrade user: {str(e)}"}), 500
+
+# =========================================================================
+# OMNI-RECON AUTO-DETECTION ENGINE (TIER GATED)
 # =========================================================================
 @app.route('/api/investigate', methods=['GET', 'POST', 'OPTIONS'])
 @app.route('/api/omni', methods=['GET', 'POST', 'OPTIONS'])
@@ -98,8 +260,45 @@ def api_omni():
         return make_response_json(False, 'omni', '', error='Missing target query string'), 400
 
     target = target.strip()
+
+    # User & Tier evaluation
+    user = get_current_user()
+    user_tier = user['tier'] if user else 'free'
+    is_privileged = user_tier in ('premium', 'lifetime', 'admin')
+
+    # Quota check for free/guest users
+    if not is_privileged:
+        if user:
+            searches_used = user.get('searches_count', 0)
+            if searches_used >= 5:
+                return jsonify({
+                    'success': False,
+                    'error': 'Free investigation quota reached (5/5). Upgrade to Premium or Lifetime for unlimited access.',
+                    'upgrade_required': True
+                }), 403
+            increment_user_searches(user['id'])
+        else:
+            guest_searches = session.get('guest_searches', 0)
+            if guest_searches >= 3:
+                return jsonify({
+                    'success': False,
+                    'error': 'Guest preview quota reached (3/3). Create a free account or upgrade for full access.',
+                    'upgrade_required': True
+                }), 403
+            session['guest_searches'] = guest_searches + 1
+    else:
+        if user:
+            increment_user_searches(user['id'])
+
     try:
         resp_data = engine.investigate(target)
+
+        # Flag preview status for free users
+        if not is_privileged:
+            resp_data['is_preview'] = True
+            resp_data['upgrade_prompt'] = True
+            resp_data['user_tier'] = user_tier
+
         log_investigation_summary(
             resp_data.get('investigation_id', ''),
             target,

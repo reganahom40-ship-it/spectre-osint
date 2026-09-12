@@ -1716,6 +1716,28 @@
             const data = await resp.json();
             const latencyMs = Date.now() - startTime;
 
+            if (resp.status === 403 || data.upgrade_required) {
+                if (resultsDeck) {
+                    resultsDeck.innerHTML = `
+                        <div class="paywall-gate-card">
+                            <div class="pg-badge"><i class="fas fa-lock text-amber"></i> QUOTA EXCEEDED</div>
+                            <h3>${escapeHtml(data.message || 'Free Investigation Quota Exceeded')}</h3>
+                            <p>${escapeHtml(data.detail || 'Free searches are capped. Unlock unlimited queries, raw node exports, and automated correlates with Lifetime or Pro access.')}</p>
+                            <div class="pg-actions">
+                                <button class="btn-primary" onclick="window.SPECTRE_AUTH.openUpgradeModal('lifetime')"><i class="fas fa-bolt"></i> Unlock Lifetime Access ($99)</button>
+                                <button class="btn-secondary" onclick="window.SPECTRE_AUTH.openUpgradeModal('premium')"><i class="fas fa-calendar"></i> Monthly Pro ($19)</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                playTone(400, 'sawtooth', 0.2);
+                showToast(data.message || 'Quota exceeded. Please upgrade.', 'fas fa-lock');
+                if (window.SPECTRE_AUTH && window.SPECTRE_AUTH.openUpgradeModal) {
+                    window.SPECTRE_AUTH.openUpgradeModal();
+                }
+                return;
+            }
+
             const executedCount = (data.provenance && data.provenance.length) ? data.provenance.length : 4;
             totalProbesCounter += executedCount;
             const counterEl = document.getElementById('counter-probes');
@@ -1794,7 +1816,22 @@
 
         const confidenceColor = (confidenceText.includes('INVALID') || confidenceText.includes('UNRESOLVED') || confidenceText.includes('0%')) ? 'var(--accent-rose)' : 'var(--accent-emerald)';
 
-        let html = `
+        let previewBanner = '';
+        if (data.is_preview) {
+            previewBanner = `
+                <div class="paywall-gate-card" style="margin-bottom: 20px;">
+                    <div class="pg-badge"><i class="fas fa-crown text-amber"></i> FREE PREVIEW ACTIVE (${data.quota_used || 0}/${data.quota_limit || 3} SEARCHES)</div>
+                    <h3>Target Synthesized • Partial Intelligence Restricted</h3>
+                    <p>You are viewing an automated free preview. Deep correlates, raw graph exports, and unlimited concurrent queries require an active <strong>SPECTRE Membership</strong>.</p>
+                    <div class="pg-actions">
+                        <button class="btn-primary" onclick="window.SPECTRE_AUTH.openUpgradeModal('lifetime')"><i class="fas fa-bolt"></i> Unlock Full Lifetime Access ($99)</button>
+                        <button class="btn-secondary" onclick="window.SPECTRE_AUTH.openUpgradeModal('premium')"><i class="fas fa-calendar"></i> Monthly Pro ($19/mo)</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        let html = previewBanner + `
             <!-- Top Summary Card -->
             <div class="dossier-summary-card">
                 <div class="dossier-target-info">
@@ -2509,6 +2546,438 @@
             .replace(/"/g, '&quot;');
     }
 
+    // =========================================================================
+    // AUTHENTICATION, PAYMENT CHECKOUT & MASTER ADMIN UPGRADE PORTAL
+    // =========================================================================
+    window.SPECTRE_AUTH = {
+        currentUser: null,
+        selectedTier: 'lifetime',
+        selectedAmount: 99,
+        selectedMethod: 'card',
+
+        openAuthModal(mode = 'login') {
+            const backdrop = document.getElementById('auth-modal-backdrop');
+            if (!backdrop) return;
+            backdrop.style.display = 'flex';
+            this.setAuthMode(mode);
+            const emailInput = document.getElementById('auth-input-email');
+            if (emailInput) setTimeout(() => emailInput.focus(), 50);
+        },
+
+        closeAuthModal() {
+            const backdrop = document.getElementById('auth-modal-backdrop');
+            if (backdrop) backdrop.style.display = 'none';
+            const err = document.getElementById('auth-error-msg');
+            if (err) { err.style.display = 'none'; err.textContent = ''; }
+        },
+
+        setAuthMode(mode) {
+            const tabLogin = document.getElementById('tab-auth-signin');
+            const tabRegister = document.getElementById('tab-auth-register');
+            const label = document.getElementById('btn-auth-label');
+            const form = document.getElementById('auth-form');
+
+            if (mode === 'register') {
+                if (tabRegister) tabRegister.classList.add('active');
+                if (tabLogin) tabLogin.classList.remove('active');
+                if (label) label.textContent = 'Create Intelligence Account';
+                if (form) form.dataset.mode = 'register';
+            } else {
+                if (tabLogin) tabLogin.classList.add('active');
+                if (tabRegister) tabRegister.classList.remove('active');
+                if (label) label.textContent = 'Authenticate Session';
+                if (form) form.dataset.mode = 'login';
+            }
+        },
+
+        openUpgradeModal(defaultTier = 'lifetime') {
+            const backdrop = document.getElementById('upgrade-modal-backdrop');
+            if (!backdrop) return;
+            backdrop.style.display = 'flex';
+            this.selectTier(defaultTier, defaultTier === 'lifetime' ? 99 : 19);
+        },
+
+        closeUpgradeModal() {
+            const backdrop = document.getElementById('upgrade-modal-backdrop');
+            if (backdrop) backdrop.style.display = 'none';
+        },
+
+        selectTier(tier, amount) {
+            this.selectedTier = tier;
+            this.selectedAmount = amount;
+
+            const cardPro = document.getElementById('card-tier-pro');
+            const cardLifetime = document.getElementById('card-tier-lifetime');
+            const label = document.getElementById('btn-pay-amount-label');
+
+            if (tier === 'lifetime') {
+                if (cardLifetime) cardLifetime.classList.add('selected');
+                if (cardPro) cardPro.classList.remove('selected');
+                if (label) label.textContent = '$99.00';
+            } else {
+                if (cardPro) cardPro.classList.add('selected');
+                if (cardLifetime) cardLifetime.classList.remove('selected');
+                if (label) label.textContent = '$19.00';
+            }
+        },
+
+        setPaymentMethod(method) {
+            this.selectedMethod = method;
+            const pills = document.querySelectorAll('.pmethod-pill');
+            pills.forEach(p => {
+                p.classList.toggle('active', p.dataset.method === method);
+            });
+
+            const panels = {
+                card: document.getElementById('panel-pay-card'),
+                crypto: document.getElementById('panel-pay-crypto'),
+                cashapp: document.getElementById('panel-pay-cashapp'),
+                instant: document.getElementById('panel-pay-instant')
+            };
+
+            Object.keys(panels).forEach(k => {
+                if (panels[k]) {
+                    panels[k].style.display = (k === method) ? 'block' : 'none';
+                }
+            });
+        },
+
+        async processCheckout() {
+            try {
+                const resp = await fetch('/api/payment/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tier: this.selectedTier,
+                        method: this.selectedMethod,
+                        amount: this.selectedAmount
+                    })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    showToast(`Access Upgraded: ${data.tier.toUpperCase()} Active!`, 'fas fa-crown text-amber');
+                    playTone(880, 'sine', 0.2);
+                    this.closeUpgradeModal();
+                    await this.fetchCurrentUser();
+                } else {
+                    showToast(data.error || 'Payment failed', 'fas fa-circle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Checkout error: ${err.message}`, 'fas fa-triangle-exclamation');
+            }
+        },
+
+        openAdminModal() {
+            const backdrop = document.getElementById('admin-modal-backdrop');
+            if (!backdrop) return;
+            backdrop.style.display = 'flex';
+            this.loadAdminUsers();
+        },
+
+        closeAdminModal() {
+            const backdrop = document.getElementById('admin-modal-backdrop');
+            if (backdrop) backdrop.style.display = 'none';
+        },
+
+        async loadAdminUsers() {
+            const tbody = document.getElementById('admin-users-tbody');
+            const datalist = document.getElementById('registered-emails-list');
+            if (!tbody) return;
+
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading registered operators...</td></tr>`;
+
+            try {
+                const resp = await fetch('/api/admin/users');
+                const data = await resp.json();
+                if (resp.ok && data.users) {
+                    if (datalist) {
+                        datalist.innerHTML = data.users.map(u => `<option value="${escapeHtml(u.email)}"></option>`).join('');
+                    }
+
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No users found.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = data.users.map(u => {
+                        const tierColor = u.tier === 'lifetime' ? '#fbbf24' : (u.tier === 'premium' ? '#06b6d4' : (u.tier === 'admin' ? '#f43f5e' : '#94a3b8'));
+                        return `
+                            <tr>
+                                <td><strong style="color:var(--text-primary);">${escapeHtml(u.email)}</strong></td>
+                                <td><span class="user-tier-badge" style="color:${tierColor};border-color:${tierColor};background:rgba(255,255,255,0.05);">${escapeHtml(u.tier.toUpperCase())}</span></td>
+                                <td>${u.probes_count || 0}</td>
+                                <td style="font-size:0.75rem;color:var(--text-muted);">${(u.created_at || '').substring(0, 16)}</td>
+                                <td>
+                                    <div style="display:flex;gap:4px;">
+                                        <button class="btn-tier-pill" onclick="window.SPECTRE_AUTH.upgradeUserDirect('${escapeHtml(u.email)}', 'lifetime')" style="color:#fbbf24;border:1px solid rgba(251,191,36,0.3);background:rgba(251,191,36,0.08);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:0.7rem;" title="Set Lifetime">Lifetime</button>
+                                        <button class="btn-tier-pill" onclick="window.SPECTRE_AUTH.upgradeUserDirect('${escapeHtml(u.email)}', 'premium')" style="color:#06b6d4;border:1px solid rgba(6,182,212,0.3);background:rgba(6,182,212,0.08);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:0.7rem;" title="Set Pro">Pro</button>
+                                        <button class="btn-tier-pill" onclick="window.SPECTRE_AUTH.upgradeUserDirect('${escapeHtml(u.email)}', 'free')" style="color:#94a3b8;border:1px solid rgba(148,163,184,0.3);background:rgba(148,163,184,0.08);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:0.7rem;" title="Reset Free">Free</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--accent-rose);">${escapeHtml(data.error || 'Failed to fetch users')}</td></tr>`;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--accent-rose);">Error: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        },
+
+        async upgradeUserDirect(email, tier) {
+            try {
+                const resp = await fetch('/api/admin/upgrade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, tier })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    showToast(`Updated ${email} to ${tier.toUpperCase()}`, 'fas fa-check-circle text-emerald');
+                    this.loadAdminUsers();
+                    if (this.currentUser && this.currentUser.email === email) {
+                        this.fetchCurrentUser();
+                    }
+                } else {
+                    showToast(data.error || 'Upgrade failed', 'fas fa-circle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation');
+            }
+        },
+
+        async fetchCurrentUser() {
+            try {
+                const resp = await fetch('/api/auth/me');
+                const data = await resp.json();
+                if (resp.ok && data.authenticated) {
+                    this.currentUser = data.user;
+                    this.updateNavUI(data.user);
+                } else {
+                    this.currentUser = null;
+                    this.updateNavUI(null);
+                }
+            } catch (err) {
+                this.currentUser = null;
+                this.updateNavUI(null);
+            }
+        },
+
+        updateNavUI(user) {
+            const btnOpenAuth = document.getElementById('btn-open-auth');
+            const profileWidget = document.getElementById('user-profile-widget');
+            const navEmail = document.getElementById('nav-user-email');
+            const navTier = document.getElementById('nav-user-tier');
+            const dropEmail = document.getElementById('dropdown-user-email');
+            const dropTier = document.getElementById('dropdown-user-tier');
+            const adminMenuItem = document.getElementById('menu-item-admin');
+
+            if (user) {
+                if (btnOpenAuth) btnOpenAuth.style.display = 'none';
+                if (profileWidget) profileWidget.style.display = 'block';
+                if (navEmail) navEmail.textContent = user.email;
+                if (dropEmail) dropEmail.textContent = user.email;
+
+                const tierName = (user.tier || 'free').toUpperCase();
+                if (navTier) {
+                    navTier.textContent = tierName;
+                    navTier.className = `user-tier-badge badge-${user.tier || 'free'}`;
+                }
+                if (dropTier) dropTier.textContent = `${tierName} MEMBERSHIP`;
+
+                if (adminMenuItem) {
+                    adminMenuItem.style.display = (user.role === 'admin' || user.tier === 'admin') ? 'flex' : 'none';
+                }
+            } else {
+                if (btnOpenAuth) btnOpenAuth.style.display = 'inline-flex';
+                if (profileWidget) profileWidget.style.display = 'none';
+                if (adminMenuItem) adminMenuItem.style.display = 'none';
+            }
+        }
+    };
+
+    function initAuthAndMembership() {
+        const auth = window.SPECTRE_AUTH;
+
+        // Nav Buttons
+        const btnOpenPricing = document.getElementById('btn-open-pricing');
+        if (btnOpenPricing) {
+            btnOpenPricing.addEventListener('click', () => auth.openUpgradeModal('lifetime'));
+        }
+
+        const btnOpenAuth = document.getElementById('btn-open-auth');
+        if (btnOpenAuth) {
+            btnOpenAuth.addEventListener('click', () => auth.openAuthModal('login'));
+        }
+
+        // Profile Dropdown Toggle
+        const btnUserProfile = document.getElementById('btn-user-profile');
+        const userProfileDropdown = document.getElementById('user-profile-dropdown');
+        if (btnUserProfile && userProfileDropdown) {
+            btnUserProfile.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = userProfileDropdown.style.display === 'none' || !userProfileDropdown.style.display;
+                userProfileDropdown.style.display = isHidden ? 'flex' : 'none';
+            });
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#user-profile-widget')) {
+                    userProfileDropdown.style.display = 'none';
+                }
+            });
+        }
+
+        // Profile Dropdown Menu Items
+        const menuItemUpgrade = document.getElementById('menu-item-upgrade');
+        if (menuItemUpgrade) {
+            menuItemUpgrade.addEventListener('click', () => {
+                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
+                auth.openUpgradeModal('lifetime');
+            });
+        }
+
+        const menuItemAdmin = document.getElementById('menu-item-admin');
+        if (menuItemAdmin) {
+            menuItemAdmin.addEventListener('click', () => {
+                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
+                auth.openAdminModal();
+            });
+        }
+
+        const menuItemLogout = document.getElementById('menu-item-logout');
+        if (menuItemLogout) {
+            menuItemLogout.addEventListener('click', async () => {
+                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
+                try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    showToast('Signed out of session', 'fas fa-arrow-right-from-bracket');
+                    await auth.fetchCurrentUser();
+                } catch (e) {
+                    showToast('Logout error', 'fas fa-triangle-exclamation');
+                }
+            });
+        }
+
+        // Auth Modal Close & Backdrop Click
+        const authBackdrop = document.getElementById('auth-modal-backdrop');
+        const btnCloseAuth = document.getElementById('btn-close-auth');
+        if (btnCloseAuth) btnCloseAuth.addEventListener('click', () => auth.closeAuthModal());
+        if (authBackdrop) {
+            authBackdrop.addEventListener('click', (e) => {
+                if (e.target === authBackdrop) auth.closeAuthModal();
+            });
+        }
+
+        // Auth Tabs
+        const tabSignin = document.getElementById('tab-auth-signin');
+        const tabRegister = document.getElementById('tab-auth-register');
+        if (tabSignin) tabSignin.addEventListener('click', () => auth.setAuthMode('login'));
+        if (tabRegister) tabRegister.addEventListener('click', () => auth.setAuthMode('register'));
+
+        // Auth Form Submit
+        const authForm = document.getElementById('auth-form');
+        const authErrorMsg = document.getElementById('auth-error-msg');
+        if (authForm) {
+            authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const mode = authForm.dataset.mode || 'login';
+                const email = document.getElementById('auth-input-email').value.trim();
+                const password = document.getElementById('auth-input-password').value;
+                const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+
+                if (authErrorMsg) { authErrorMsg.style.display = 'none'; authErrorMsg.textContent = ''; }
+
+                try {
+                    const resp = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await resp.json();
+                    if (resp.ok && data.success) {
+                        showToast(mode === 'register' ? 'Account Created & Authenticated!' : 'Authenticated Successfully', 'fas fa-check-circle text-emerald');
+                        playTone(720, 'sine', 0.1);
+                        auth.closeAuthModal();
+                        await auth.fetchCurrentUser();
+                    } else {
+                        if (authErrorMsg) {
+                            authErrorMsg.style.display = 'block';
+                            authErrorMsg.textContent = data.error || 'Authentication failed';
+                        }
+                    }
+                } catch (err) {
+                    if (authErrorMsg) {
+                        authErrorMsg.style.display = 'block';
+                        authErrorMsg.textContent = err.message || 'Network error';
+                    }
+                }
+            });
+        }
+
+        // Upgrade / Pricing Modal Close & Backdrop Click
+        const upgradeBackdrop = document.getElementById('upgrade-modal-backdrop');
+        const btnCloseUpgrade = document.getElementById('btn-close-upgrade');
+        if (btnCloseUpgrade) btnCloseUpgrade.addEventListener('click', () => auth.closeUpgradeModal());
+        if (upgradeBackdrop) {
+            upgradeBackdrop.addEventListener('click', (e) => {
+                if (e.target === upgradeBackdrop) auth.closeUpgradeModal();
+            });
+        }
+
+        // Plan Selection Buttons
+        const btnSelectPro = document.getElementById('btn-select-pro');
+        const btnSelectLifetime = document.getElementById('btn-select-lifetime');
+        if (btnSelectPro) btnSelectPro.addEventListener('click', () => auth.selectTier('premium', 19));
+        if (btnSelectLifetime) btnSelectLifetime.addEventListener('click', () => auth.selectTier('lifetime', 99));
+
+        // Payment Method Switcher
+        const pmethodPills = document.querySelectorAll('.pmethod-pill');
+        pmethodPills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                auth.setPaymentMethod(pill.dataset.method);
+            });
+        });
+
+        // Checkout Action Triggers
+        const btnPayCard = document.getElementById('btn-pay-card-submit');
+        const btnPayCrypto = document.getElementById('btn-pay-crypto-confirm');
+        const btnPayCashapp = document.getElementById('btn-pay-cashapp-confirm');
+        const btnPayInstant = document.getElementById('btn-pay-instant-submit');
+
+        if (btnPayCard) btnPayCard.addEventListener('click', () => auth.processCheckout());
+        if (btnPayCrypto) btnPayCrypto.addEventListener('click', () => auth.processCheckout());
+        if (btnPayCashapp) btnPayCashapp.addEventListener('click', () => auth.processCheckout());
+        if (btnPayInstant) btnPayInstant.addEventListener('click', () => auth.processCheckout());
+
+        // Admin Modal Controls
+        const adminBackdrop = document.getElementById('admin-modal-backdrop');
+        const btnCloseAdmin = document.getElementById('btn-close-admin');
+        if (btnCloseAdmin) btnCloseAdmin.addEventListener('click', () => auth.closeAdminModal());
+        if (adminBackdrop) {
+            adminBackdrop.addEventListener('click', (e) => {
+                if (e.target === adminBackdrop) auth.closeAdminModal();
+            });
+        }
+
+        // Admin Upgrade Form
+        const adminUpgradeForm = document.getElementById('admin-upgrade-form');
+        if (adminUpgradeForm) {
+            adminUpgradeForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('admin-target-email').value.trim();
+                const tier = document.getElementById('admin-target-tier').value;
+                if (!email) {
+                    showToast('Please enter an operator email', 'fas fa-triangle-exclamation');
+                    return;
+                }
+                auth.upgradeUserDirect(email, tier);
+            });
+        }
+
+        // Initialize user session
+        auth.fetchCurrentUser();
+    }
+
     // --- DOM Ready Boot ---
     document.addEventListener('DOMContentLoaded', () => {
         applyPreferences();
@@ -2523,6 +2992,7 @@
         initStudio();
         initGraph();
         initLiveStream();
+        initAuthAndMembership();
     });
 
 })();
