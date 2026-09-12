@@ -408,13 +408,131 @@
         }
     };
 
-    window.copyDynamicText = function(elementId, label = 'Data') {
-        const el = document.getElementById(elementId);
-        if (el) {
-            navigator.clipboard.writeText(el.textContent.trim()).then(() => {
-                showToast(`${label} copied to clipboard!`, 'check');
-            });
+    let heroSimTimeout = null;
+    window.simulateHeroTarget = function(target) {
+        const targetDisplay = document.getElementById('hero-target-display');
+        const termScreen = document.getElementById('hero-live-terminal');
+        if (!termScreen) return;
+
+        if (targetDisplay) targetDisplay.textContent = target;
+
+        // Visual active state on sample target buttons
+        const ttbBtns = document.querySelectorAll('.ttb-btn');
+        ttbBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.trim() === target);
+        });
+
+        // Generate lines based on target
+        let lines = [];
+        if (target === '185.220.101.5') {
+            lines = [
+                { text: `[00:00:01] INPUT CLASSIFIER: Detected TARGET_TYPE = IP (Confidence: 1.0 CONFIRMED)`, color: '#67e8f9' },
+                { text: `[00:00:01] GEO FORENSICS: Frankfurt am Main, Hesse, DE (50.1109, 8.6821)`, color: '#34d399' },
+                { text: `[00:00:02] ASN ROBUSTNESS: AS205100 (F3 Netze e.V.) // Tor Exit Relay Flagged`, color: '#fcd34d' },
+                { text: `[00:00:02] PORT SCAN RADAR: Active 80/TCP, 443/TCP, 9001/TCP (Tor ORPort)`, color: '#67e8f9' },
+                { text: `[00:00:03] SPATIAL GRAPH: 18 Nodes / 29 Edges connected in autonomous routing mesh`, color: '#34d399' },
+                { text: `[00:00:03] RISK SCORING: Severity = 88/100 (CRITICAL RISK // ANONYMIZATION RELAY)`, color: '#f43f5e' }
+            ];
+        } else if (target === 'operator_ghost') {
+            lines = [
+                { text: `[00:00:01] INPUT CLASSIFIER: Detected TARGET_TYPE = USERNAME (Confidence: 0.85 PROBABLE)`, color: '#67e8f9' },
+                { text: `[00:00:01] IDENTITY RADAR: Active profiles confirmed on GitHub, Keybase, Telegram, HackerOne`, color: '#34d399' },
+                { text: `[00:00:02] PGP CORRELATION: Key ID 0x8F4E29A1 verified on MIT / Ubuntu keyservers`, color: '#67e8f9' },
+                { text: `[00:00:02] BREACH INDEX: Correlated associated alias to 2 compromised credentials`, color: '#fcd34d' },
+                { text: `[00:00:03] SPATIAL GRAPH: 14 Nodes / 22 Edges synthesized across entity clusters`, color: '#34d399' },
+                { text: `[00:00:03] RISK SCORING: Severity = 64/100 (ELEVATED // IDENTITY FOOTPRINT DETECTED)`, color: '#c084fc' }
+            ];
+        } else {
+            lines = [
+                { text: `[00:00:01] INPUT CLASSIFIER: Detected TARGET_TYPE = DOMAIN (Confidence: 1.0 CONFIRMED)`, color: '#67e8f9' },
+                { text: `[00:00:01] BGP DISCOVERY: Route 104.21.32.0/20 announced by AS13335 (CLOUDFLARE, US)`, color: '#34d399' },
+                { text: `[00:00:02] CT LOG ENGINE: Mined 48 active subdomains across Certificate Transparency logs`, color: '#67e8f9' },
+                { text: `[00:00:02] BREACH RADAR: 4 compromised credential dumps correlated in darkweb index`, color: '#fcd34d' },
+                { text: `[00:00:03] SPATIAL GRAPH: 38 Nodes / 62 Edges compiled into 3D Physics Canvas`, color: '#34d399' },
+                { text: `[00:00:03] RISK SCORING: Severity = 74/100 (HIGH RISK // MULTIPLE EXPOSURES)`, color: '#c084fc' }
+            ];
         }
+
+        termScreen.innerHTML = `
+            <div class="term-line prompt"><span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">${target}</span> --vectors all</div>
+            <div class="term-line" style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Initializing multi-vector cascade on target...</div>
+        `;
+
+        if (heroSimTimeout) clearTimeout(heroSimTimeout);
+        let idx = 0;
+        function printNext() {
+            if (idx === 0) {
+                termScreen.innerHTML = `<div class="term-line prompt"><span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">${target}</span> --vectors all</div>`;
+            }
+            if (idx < lines.length) {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'term-line';
+                lineDiv.style.color = lines[idx].color;
+                lineDiv.textContent = lines[idx].text;
+                termScreen.appendChild(lineDiv);
+                idx++;
+                heroSimTimeout = setTimeout(printNext, 180);
+            } else {
+                const cursorDiv = document.createElement('div');
+                cursorDiv.className = 'term-line prompt';
+                cursorDiv.style.marginTop = '6px';
+                cursorDiv.innerHTML = `<span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ <span class="term-cursor">_</span>`;
+                termScreen.appendChild(cursorDiv);
+            }
+        }
+        heroSimTimeout = setTimeout(printNext, 250);
+    };
+
+    function fallbackCopy(text) {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(temp);
+    }
+
+    window.copyDynamicText = function(elementId, btnOrLabel = 'Data', optionalLabel = null) {
+        let btnId = null;
+        let label = 'Data';
+
+        if (optionalLabel) {
+            btnId = btnOrLabel;
+            label = optionalLabel;
+        } else if (typeof btnOrLabel === 'string' && (btnOrLabel.startsWith('btn-') || document.getElementById(btnOrLabel))) {
+            btnId = btnOrLabel;
+            label = 'Copied';
+        } else if (typeof btnOrLabel === 'string') {
+            label = btnOrLabel;
+        }
+
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const textToCopy = el.textContent.trim();
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textToCopy).catch(() => fallbackCopy(textToCopy));
+        } else {
+            fallbackCopy(textToCopy);
+        }
+
+        if (btnId) {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                const origHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> COPIED! ✓';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = origHtml;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }
+        }
+
+        showToast(`${label} copied to clipboard!`, 'check');
     };
 
     window.copyText = function(elementId, label = 'Address') {

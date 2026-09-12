@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
     
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,7 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v2">
+    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v3">
 </head>
 <body>
 
@@ -29,6 +29,21 @@
         <div class="grid-overlay"></div>
     </div>
 
+    <!-- Top Telemetry HUD Bar -->
+    <div class="landing-hud-bar">
+        <div class="hud-inner">
+            <div class="hud-item"><span class="hud-dot pulse-emerald"></span> CORE ENGINE: <strong class="text-emerald">ONLINE [ACTIVE]</strong></div>
+            <div class="hud-sep">//</div>
+            <div class="hud-item"><i class="fas fa-shield-halved text-cyan"></i> CLEARANCE: <strong class="text-cyan">TIER-4 ENFORCED</strong></div>
+            <div class="hud-sep">//</div>
+            <div class="hud-item"><i class="fas fa-vault text-amber"></i> CUSTODIAL VAULT: <strong class="text-amber">SECP256K1 / AES-128</strong></div>
+            <div class="hud-sep">//</div>
+            <div class="hud-item"><i class="fas fa-satellite-dish text-purple"></i> SATELLITE RECON NODES: <strong class="text-purple">12/12 SYNCHRONIZED</strong></div>
+            <div class="hud-sep">//</div>
+            <div class="hud-item"><i class="fas fa-bolt text-emerald"></i> MEMPOOL LATENCY: <strong class="text-emerald">9ms</strong></div>
+        </div>
+    </div>
+
     <!-- Navigation Header -->
     <header class="landing-nav">
         <div class="landing-nav-inner">
@@ -37,7 +52,7 @@
                     <i class="fas fa-layer-group"></i>
                 </div>
                 <div class="brand-text">
-                    SPECTRE <span class="brand-badge">INTELLIGENCE</span>
+                    SPECTRE <span class="brand-badge">v68.4-RELEASE</span>
                 </div>
             </a>
             
@@ -84,52 +99,88 @@
         
         <!-- Hero Section -->
         <section class="landing-hero" id="overview">
-            <div class="hero-pill">
-                <span class="dot"></span>
-                <span>RESTRICTED OPERATOR CLEARANCE // MEMBERSHIP GATED</span>
-            </div>
-            
-            <h1 class="hero-title">
-                Autonomous Cyber <span class="gradient-text">OSINT Intelligence</span> & Threat Mapping
-            </h1>
-            
-            <p class="hero-description">
-                SPECTRE synthesizes deep digital footprints across multi-vector infrastructure, autonomous BGP routes, breached credential databases, and subdomains in real time. Access is strictly members-only.
-            </p>
-
-            <div class="hero-actions">
-                <button class="btn-hero-primary" onclick="openCheckoutModal('lifetime')">
-                    <i class="fas fa-crown text-amber"></i>
-                    <span>Unlock Full Access ($99 Lifetime)</span>
-                </button>
-                <button class="btn-hero-secondary" onclick="openCheckoutModal('premium')">
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Pro Monthly ($19/mo)</span>
-                </button>
-            </div>
-
-            <div class="hero-paywall-badge">
-                <i class="fas fa-shield-halved"></i>
-                <span><strong>No Free Quota:</strong> All intelligence modules, search cascades, and 3D spatial graphs are locked behind active membership.</span>
-            </div>
-
-            <!-- Metrics Grid -->
-            <div class="hero-metrics-grid">
-                <div class="metric-item">
-                    <div class="metric-val text-cyan">10+</div>
-                    <div class="metric-lbl">INTELLIGENCE VECTORS</div>
+            <div class="hero-content">
+                <div class="hero-pill">
+                    <span class="dot"></span>
+                    <span>RESTRICTED OPERATOR CLEARANCE // MEMBERSHIP GATED</span>
                 </div>
-                <div class="metric-item">
-                    <div class="metric-val text-purple">0.0s</div>
-                    <div class="metric-lbl">AVERAGE TTL CACHE</div>
+                
+                <h1 class="hero-title">
+                    AUTONOMOUS CYBER <span class="gradient-text">OSINT INTELLIGENCE</span> & THREAT CARTOGRAPHY
+                </h1>
+                
+                <p class="hero-description">
+                    Synthesize multi-vector attack surfaces, BGP route hijacks, compromised darkweb credentials, and 3D spatial network topology in real time. Full engine capabilities are strictly member-gated.
+                </p>
+
+                <div class="hero-actions">
+                    <button class="btn-hero-primary" onclick="openCheckoutModal('lifetime')">
+                        <i class="fas fa-crown text-amber"></i>
+                        <span>Acquire Lifetime Clearance ($99)</span>
+                    </button>
+                    <button class="btn-hero-secondary" onclick="openCheckoutModal('premium')">
+                        <i class="fas fa-shield-halved"></i>
+                        <span>Pro Monthly ($19/mo)</span>
+                    </button>
                 </div>
-                <div class="metric-item">
-                    <div class="metric-val text-amber">100%</div>
-                    <div class="metric-lbl">PRIVATE & LOGLESS</div>
+
+                <div class="hero-paywall-badge">
+                    <i class="fas fa-lock text-amber"></i>
+                    <span><strong>Zero Free Quota:</strong> All search cascades, BGP cartography, breach correlators, and 3D spatial graphs are locked behind cryptographic membership verification.</span>
                 </div>
-                <div class="metric-item">
-                    <div class="metric-val text-emerald">3D</div>
-                    <div class="metric-lbl">SPATIAL TOPOLOGY</div>
+
+                <!-- Metrics Grid -->
+                <div class="hero-metrics-grid">
+                    <div class="metric-item">
+                        <div class="metric-val text-cyan">10+</div>
+                        <div class="metric-lbl">RECON VECTORS</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-val text-purple">&lt;15ms</div>
+                        <div class="metric-lbl">CACHE TTL LATENCY</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-val text-amber">100%</div>
+                        <div class="metric-lbl">LOGLESS & AIRGAPPED</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-val text-emerald">3D</div>
+                        <div class="metric-lbl">TOPOLOGY KINETICS</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Interactive Cyber Terminal Widget -->
+            <div class="hero-terminal-container">
+                <div class="hero-terminal-chassis">
+                    <div class="terminal-chassis-header">
+                        <div class="chassis-lights">
+                            <span class="clight red"></span>
+                            <span class="clight yellow"></span>
+                            <span class="clight green"></span>
+                        </div>
+                        <div class="chassis-title">
+                            <i class="fas fa-terminal text-cyan"></i>
+                            <span>SPECTRE-DAEMON v68.4 // LIVE OMNI CASCADE FEED</span>
+                        </div>
+                        <div class="chassis-badge">LIVE MONITOR</div>
+                    </div>
+                    <div class="terminal-screen" id="hero-live-terminal">
+                        <div class="term-line prompt"><span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">target-defense.net</span> --vectors all</div>
+                        <div class="term-line" style="color:#67e8f9;">[00:00:01] INPUT CLASSIFIER: Detected TARGET_TYPE = DOMAIN (Confidence: 1.0 CONFIRMED)</div>
+                        <div class="term-line" style="color:#34d399;">[00:00:01] BGP DISCOVERY: Route 104.21.32.0/20 announced by AS13335 (CLOUDFLARE, US)</div>
+                        <div class="term-line" style="color:#67e8f9;">[00:00:02] CT LOG ENGINE: Mined 48 active subdomains across Certificate Transparency logs</div>
+                        <div class="term-line" style="color:#fcd34d;">[00:00:02] BREACH RADAR: 4 compromised credential dumps correlated in darkweb index</div>
+                        <div class="term-line" style="color:#34d399;">[00:00:03] SPATIAL GRAPH: 38 Nodes / 62 Edges compiled into 3D Physics Canvas</div>
+                        <div class="term-line" style="color:#c084fc;">[00:00:03] RISK SCORING: Severity = 74/100 (HIGH RISK // MULTIPLE EXPOSURES)</div>
+                        <div class="term-line prompt" style="margin-top:6px;"><span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ <span class="term-cursor">_</span></div>
+                    </div>
+                    <div class="terminal-targets-bar">
+                        <span class="ttb-label">Sample Targets:</span>
+                        <button type="button" class="ttb-btn" onclick="simulateHeroTarget('defense-cloud.io')">defense-cloud.io</button>
+                        <button type="button" class="ttb-btn" onclick="simulateHeroTarget('185.220.101.5')">185.220.101.5</button>
+                        <button type="button" class="ttb-btn" onclick="simulateHeroTarget('operator_ghost')">operator_ghost</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -137,14 +188,18 @@
         <!-- Vectors & Capabilities Showcase -->
         <section class="vectors-section" id="vectors">
             <div class="section-header">
-                <div class="section-tag">ENGINE SPECS</div>
-                <h2 class="section-title">Deep Autonomous Reconnaissance</h2>
-                <p class="section-subtitle">What you unlock once your credential is authenticated inside the SPECTRE Console.</p>
+                <div class="section-tag">ENGINE ARCHITECTURE</div>
+                <h2 class="section-title">Classified Reconnaissance Matrix</h2>
+                <p class="section-subtitle">Tactical OSINT engines operating concurrently behind cryptographic clearance gates.</p>
             </div>
 
             <div class="vectors-grid">
                 <!-- Card 1 -->
                 <div class="vector-card">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
                     <div class="vcard-icon">
                         <i class="fas fa-network-wired"></i>
                     </div>
@@ -161,6 +216,10 @@
 
                 <!-- Card 2 -->
                 <div class="vector-card">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
                     <div class="vcard-icon">
                         <i class="fas fa-globe"></i>
                     </div>
@@ -171,12 +230,16 @@
                     <div class="vcard-tags">
                         <span class="vtag">CT LOG MINING</span>
                         <span class="vtag">WHOIS INTEL</span>
-                        <span class="vtag">DNS RECORD CHROME</span>
+                        <span class="vtag">DNS CHROME</span>
                     </div>
                 </div>
 
                 <!-- Card 3 -->
                 <div class="vector-card">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
                     <div class="vcard-icon">
                         <i class="fas fa-shield-virus"></i>
                     </div>
@@ -187,12 +250,16 @@
                     <div class="vcard-tags">
                         <span class="vtag">HIBP TELEMETRY</span>
                         <span class="vtag">PASTE EXTRACTION</span>
-                        <span class="vtag">RISK SCORING</span>
+                        <span class="vtag">EXPLAINABLE RISK</span>
                     </div>
                 </div>
 
                 <!-- Card 4 -->
                 <div class="vector-card">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
                     <div class="vcard-icon">
                         <i class="fas fa-fingerprint"></i>
                     </div>
@@ -209,6 +276,10 @@
 
                 <!-- Card 5 -->
                 <div class="vector-card">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
                     <div class="vcard-icon">
                         <i class="fas fa-cubes"></i>
                     </div>
@@ -225,6 +296,10 @@
 
                 <!-- Card 6 -->
                 <div class="vector-card">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
                     <div class="vcard-icon">
                         <i class="fas fa-phone"></i>
                     </div>
@@ -244,54 +319,76 @@
         <!-- Pricing Section -->
         <section class="pricing-section" id="pricing">
             <div class="section-header">
-                <div class="section-tag">MEMBERSHIP ACCESS</div>
+                <div class="section-tag">PROCUREMENT CLEARANCE</div>
                 <h2 class="section-title">Select Your Intelligence Credential</h2>
-                <p class="section-subtitle">No free tier. Choose between flexible monthly billing or permanent lifetime access.</p>
+                <p class="section-subtitle">Zero recurring contracts on Lifetime. Cryptographic settlement via Bitcoin, Litecoin, Ethereum, CashApp, or PayPal.</p>
             </div>
 
             <div class="pricing-cards-grid" id="pricing-cards-container">
                 <!-- Pro Card -->
                 <div class="pricing-card" data-plan="premium">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
+                    <div class="pcard-badge-top">MONTHLY CLEARANCE</div>
                     <div class="pcard-header">
-                        <div class="pcard-tier">Pro Monthly</div>
-                        <div class="pcard-price">$19 <span class="pcard-period">/ month</span></div>
-                        <div class="pcard-sub">Full access billed monthly. Cancel anytime.</div>
+                        <div class="pcard-tier">Pro Tactical</div>
+                        <div class="pcard-price">
+                            <span class="pcard-currency">$</span>19
+                            <span class="pcard-period">/ month</span>
+                        </div>
+                        <div class="pcard-sub">Flexible operational intelligence access. Cancel anytime with 1 click.</div>
                     </div>
 
                     <ul class="pcard-features">
-                        <li><i class="fas fa-check"></i> Unlimited Parallel Recon Cascades</li>
-                        <li><i class="fas fa-check"></i> All 10 OSINT Intelligence Modules</li>
-                        <li><i class="fas fa-check"></i> 3D Spatial Knowledge Graph</li>
-                        <li><i class="fas fa-check"></i> Explainable Risk Engine (0-100)</li>
-                        <li><i class="fas fa-check"></i> JSON & Markdown Dossier Export</li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Unlimited Parallel Recon</strong> cascades across all vectors</span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>All 10 OSINT Intelligence Modules</strong> (IP, Domain, BGP, Phone, Social)</span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Interactive 3D Spatial Knowledge Graph</strong> with physics clustering</span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Explainable Threat Risk Engine</strong> (0-100 score + factor audits)</span></li>
+                        <li><i class="fas fa-check-circle text-cyan"></i> <span><strong>Instant JSON & Markdown Dossier Exports</strong> for case management</span></li>
                     </ul>
 
                     <button class="btn-select-plan btn-plan-pro" onclick="openCheckoutModal('premium')">
-                        <span>Subscribe Pro ($19/mo)</span>
+                        <span>Activate Pro Monthly ($19/mo)</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
 
                 <!-- Lifetime Card -->
-                <div class="pricing-card featured">
-                    <div class="pricing-ribbon">POPULAR CHOICE</div>
+                <div class="pricing-card featured" data-plan="lifetime">
+                    <div class="cyber-corner-tl">+</div>
+                    <div class="cyber-corner-tr">+</div>
+                    <div class="cyber-corner-bl">+</div>
+                    <div class="cyber-corner-br">+</div>
+                    <div class="pricing-ribbon">⭐ BEST VALUE // NO SUBSCRIPTION</div>
+                    <div class="pcard-badge-top" style="color:var(--accent-amber);">PERMANENT OPERATOR COMMAND</div>
                     <div class="pcard-header">
-                        <div class="pcard-tier" style="color:var(--accent-amber);">Lifetime Pass</div>
-                        <div class="pcard-price" style="color:var(--accent-amber);">$99 <span class="pcard-period" style="color:var(--accent-amber);">one-time</span></div>
-                        <div class="pcard-sub">Single payment. Permanent unrestricted access forever.</div>
+                        <div class="pcard-tier" style="color:var(--accent-amber);">Lifetime Master Pass</div>
+                        <div class="pcard-price-row">
+                            <span class="pcard-strikethrough">$299</span>
+                            <div class="pcard-price" style="color:var(--accent-amber);">
+                                <span class="pcard-currency">$</span>99
+                                <span class="pcard-period" style="color:var(--accent-amber);">ONE-TIME</span>
+                            </div>
+                            <span class="pcard-save-pill">SAVE $200 TODAY</span>
+                        </div>
+                        <div class="pcard-sub">Single cryptographic clearance settlement. Permanent uncapped access forever.</div>
                     </div>
 
                     <ul class="pcard-features">
-                        <li><i class="fas fa-check"></i> <strong>Permanent Lifetime Access</strong> (Never pay again)</li>
-                        <li><i class="fas fa-check"></i> Unlimited Concurrent Intelligence Cascades</li>
-                        <li><i class="fas fa-check"></i> Priority Rate Limit & Circuit-Breaker Sockets</li>
-                        <li><i class="fas fa-check"></i> All Future OSINT Modules & Feeds Included</li>
-                        <li><i class="fas fa-check"></i> 1-on-1 Priority Technical Assistance</li>
+                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>Permanent Lifetime Access</strong> — Zero recurring fees or expirations</span></li>
+                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>Unlimited Concurrent Intelligence Cascades</strong> without throttling</span></li>
+                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>High-Speed Priority Circuit Breakers</strong> and rate limit bypasses</span></li>
+                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>All Future Zero-Day Feeds & Recon Modules</strong> included at no cost</span></li>
+                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>Direct Raw JSON/Markdown API Token Access</strong> for automated scripts</span></li>
+                        <li><i class="fas fa-shield-check text-amber"></i> <span><strong>VIP Direct Operator Telegram Channel Access</strong> for custom requests</span></li>
                     </ul>
 
                     <button class="btn-select-plan btn-plan-lifetime" onclick="openCheckoutModal('lifetime')">
                         <i class="fas fa-bolt"></i>
-                        <span>Get Lifetime Access ($99)</span>
+                        <span>Acquire Lifetime Access ($99)</span>
+                        <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
@@ -321,12 +418,20 @@
          MULTI-RAIL VERIFIED CHECKOUT TERMINAL (LTC, PAYPAL, BTC, ETH, CASHAPP)
          ========================================================================= -->
     <div class="spectre-modal-backdrop" id="checkout-modal-backdrop">
-        <div class="spectre-modal checkout-modal" id="checkout-modal" style="max-width: 580px;">
+        <div class="spectre-modal checkout-modal" id="checkout-modal" style="max-width: 590px;">
+            <div class="cyber-corner-tl">+</div>
+            <div class="cyber-corner-tr">+</div>
+            <div class="cyber-corner-bl">+</div>
+            <div class="cyber-corner-br">+</div>
+
             <div class="modal-header">
-                <h3>
-                    <i class="fas fa-shield-halved text-cyan"></i>
-                    <span>Secure Access Credential Gateway</span>
-                </h3>
+                <div class="modal-header-left">
+                    <span class="modal-header-meta"><i class="fas fa-terminal"></i> GATEWAY_ID: #SPEC-VAULT-2026 • CUSTODIAL ENCRYPTION ACTIVE</span>
+                    <h3>
+                        <i class="fas fa-shield-halved text-cyan"></i>
+                        <span>Secure Credential Gateway</span>
+                    </h3>
+                </div>
                 <button class="btn-modal-close" onclick="closeCheckoutModal()">
                     <i class="fas fa-xmark"></i>
                 </button>
@@ -382,9 +487,9 @@
                     <label class="form-label"><i class="fas fa-network-wired text-amber"></i> Choose Settlement Rail</label>
                     <div class="pmethods-tabs">
                         <button type="button" class="pmethod-tab active" data-method="ltc" onclick="selectPaymentMethod('ltc')">
-                            <i class="fa-solid fa-coins" style="color:#06b6d4;"></i>
+                            <i class="fa-solid fa-coins" style="color:#00f0ff;"></i>
                             <span>Litecoin (LTC)</span>
-                            <small class="tab-subtext">Instant • Low Fee</small>
+                            <small class="tab-subtext" style="color:#00f0ff;">Instant • Low Fee</small>
                         </button>
                         <button type="button" class="pmethod-tab" data-method="paypal" onclick="selectPaymentMethod('paypal')">
                             <i class="fa-brands fa-paypal" style="color:#6366f1;"></i>
@@ -418,7 +523,7 @@
 
                     <!-- Action Button -->
                     <button type="button" class="btn-submit-action btn-action-primary" id="btn-create-order" onclick="startOrderCreation()">
-                        <span>Generate Deposit Address & Order Reference</span>
+                        <span>Generate Custodial Vault & Deposit Address</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
@@ -442,7 +547,7 @@
                         <!-- QR Code Frame (Used for Crypto) -->
                         <div class="qrcode-wrapper" id="crypto-qrcode-wrapper">
                             <div class="qrcode-canvas-box" id="qrcode-target"></div>
-                            <div class="qrcode-hint"><i class="fas fa-qrcode"></i> Scan with mobile wallet</div>
+                            <div class="qrcode-hint"><i class="fas fa-qrcode text-cyan"></i> Scan with mobile wallet or copy details below</div>
                         </div>
 
                         <!-- Amount to Send Box -->
@@ -450,7 +555,7 @@
                             <div class="dah-label">SEND EXACT AMOUNT:</div>
                             <div class="dah-val-row">
                                 <span class="dah-num" id="display-send-amount">1.164 LTC</span>
-                                <button type="button" class="btn-copy-address" onclick="copyDynamicText('display-send-amount', 'Amount')">
+                                <button type="button" class="btn-copy-address" id="btn-copy-amt" onclick="copyDynamicText('display-send-amount', 'btn-copy-amt', 'Amount')">
                                     <i class="fas fa-copy"></i> Copy
                                 </button>
                             </div>
@@ -461,7 +566,7 @@
                             <div class="ddb-label" id="display-dest-label">LITECOIN DESTINATION ADDRESS:</div>
                             <div class="wallet-copy-row">
                                 <code id="display-dest-address">...</code>
-                                <button type="button" class="btn-copy-address" onclick="copyDynamicText('display-dest-address', 'Address')">
+                                <button type="button" class="btn-copy-address" id="btn-copy-addr" onclick="copyDynamicText('display-dest-address', 'btn-copy-addr', 'Address')">
                                     <i class="fas fa-copy"></i> Copy
                                 </button>
                             </div>
@@ -474,8 +579,8 @@
                     </div>
 
                     <div class="transfer-warning-banner">
-                        <i class="fas fa-info-circle text-cyan"></i>
-                        <span>Transfer the required funds now. Once broadcasted, click below to provide your transaction hash (TXID) or transfer ID.</span>
+                        <i class="fas fa-shield-halved text-cyan" style="font-size:1.1rem; margin-top:2px;"></i>
+                        <span><strong>100% Custodial Protection:</strong> Funds are locked securely in your dedicated platform vault wallet and verified continuously on public distributed ledgers.</span>
                     </div>
 
                     <div class="step-nav-buttons">
@@ -959,6 +1064,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/landing.js?v=20260912_paywall_v1"></script>
+    <script src="/static/js/landing.js?v=20260912_paywall_v3"></script>
 </body>
 </html>
