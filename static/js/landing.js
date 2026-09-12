@@ -689,6 +689,38 @@
         if (backdrop) backdrop.style.display = 'none';
     };
 
+    // Auth Modal Controllers
+    window.openAuthModal = function(mode = 'login') {
+        const backdrop = document.getElementById('auth-modal-backdrop');
+        const form = document.getElementById('landing-auth-form');
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const errBox = document.getElementById('auth-error-msg');
+
+        if (form) {
+            form.dataset.mode = mode;
+            form.reset();
+        }
+        if (errBox) errBox.style.display = 'none';
+
+        if (tabLogin && tabRegister) {
+            if (mode === 'register') {
+                tabLogin.classList.remove('active');
+                tabRegister.classList.add('active');
+            } else {
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+            }
+        }
+
+        if (backdrop) backdrop.style.display = 'flex';
+    };
+
+    window.closeAuthModal = function() {
+        const backdrop = document.getElementById('auth-modal-backdrop');
+        if (backdrop) backdrop.style.display = 'none';
+    };
+
     window.switchAdminTab = function(tab) {
         const tabs = ['pay', 'plans', 'orders', 'users', 'vault'];
         tabs.forEach(t => {
