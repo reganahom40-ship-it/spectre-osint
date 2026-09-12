@@ -426,35 +426,35 @@
         let lines = [];
         if (target === '185.220.101.5') {
             lines = [
-                { text: `[00:00:01] INPUT CLASSIFIER: Detected TARGET_TYPE = IP (Confidence: 1.0 CONFIRMED)`, color: '#67e8f9' },
-                { text: `[00:00:01] GEO FORENSICS: Frankfurt am Main, Hesse, DE (50.1109, 8.6821)`, color: '#34d399' },
-                { text: `[00:00:02] ASN ROBUSTNESS: AS205100 (F3 Netze e.V.) // Tor Exit Relay Flagged`, color: '#fcd34d' },
-                { text: `[00:00:02] PORT SCAN RADAR: Active 80/TCP, 443/TCP, 9001/TCP (Tor ORPort)`, color: '#67e8f9' },
-                { text: `[00:00:03] SPATIAL GRAPH: 18 Nodes / 29 Edges connected in autonomous routing mesh`, color: '#34d399' },
-                { text: `[00:00:03] RISK SCORING: Severity = 88/100 (CRITICAL RISK // ANONYMIZATION RELAY)`, color: '#f43f5e' }
+                { tag: '[CLASSIFIER]', text: 'Target: IP (Confidence: 1.0 CONFIRMED)', colorClass: 'color-cyan' },
+                { tag: '[GEO LOCATION]', text: 'Frankfurt am Main, DE (50.1109, 8.6821)', colorClass: 'color-emerald' },
+                { tag: '[ASN RADAR]', text: 'AS205100 (F3 Netze e.V.) — Tor Exit Relay', colorClass: 'color-amber' },
+                { tag: '[PORT SCAN]', text: 'Active: 80/TCP, 443/TCP, 9001/TCP (ORPort)', colorClass: 'color-cyan' },
+                { tag: '[3D GRAPH]', text: '18 Nodes / 29 Edges connected in mesh', colorClass: 'color-purple' },
+                { tag: '[RISK SCORE]', text: '88/100 (CRITICAL // ANONYMIZATION RELAY)', colorClass: 'color-rose' }
             ];
         } else if (target === 'operator_ghost') {
             lines = [
-                { text: `[00:00:01] INPUT CLASSIFIER: Detected TARGET_TYPE = USERNAME (Confidence: 0.85 PROBABLE)`, color: '#67e8f9' },
-                { text: `[00:00:01] IDENTITY RADAR: Active profiles confirmed on GitHub, Keybase, Telegram, HackerOne`, color: '#34d399' },
-                { text: `[00:00:02] PGP CORRELATION: Key ID 0x8F4E29A1 verified on MIT / Ubuntu keyservers`, color: '#67e8f9' },
-                { text: `[00:00:02] BREACH INDEX: Correlated associated alias to 2 compromised credentials`, color: '#fcd34d' },
-                { text: `[00:00:03] SPATIAL GRAPH: 14 Nodes / 22 Edges synthesized across entity clusters`, color: '#34d399' },
-                { text: `[00:00:03] RISK SCORING: Severity = 64/100 (ELEVATED // IDENTITY FOOTPRINT DETECTED)`, color: '#c084fc' }
+                { tag: '[CLASSIFIER]', text: 'Target: USERNAME (Confidence: 0.85 PROBABLE)', colorClass: 'color-cyan' },
+                { tag: '[IDENTITY]', text: 'Active: GitHub, Keybase, Telegram, HackerOne', colorClass: 'color-emerald' },
+                { tag: '[PGP KEY]', text: 'Key ID 0x8F4E29A1 verified on keyservers', colorClass: 'color-cyan' },
+                { tag: '[BREACH RADAR]', text: 'Correlated alias to 2 compromised credentials', colorClass: 'color-amber' },
+                { tag: '[3D GRAPH]', text: '14 Nodes / 22 Edges synthesized in canvas', colorClass: 'color-purple' },
+                { tag: '[RISK SCORE]', text: '64/100 (ELEVATED // IDENTITY FOOTPRINT)', colorClass: 'color-rose' }
             ];
         } else {
             lines = [
-                { text: `[00:00:01] INPUT CLASSIFIER: Detected TARGET_TYPE = DOMAIN (Confidence: 1.0 CONFIRMED)`, color: '#67e8f9' },
-                { text: `[00:00:01] BGP DISCOVERY: Route 104.21.32.0/20 announced by AS13335 (CLOUDFLARE, US)`, color: '#34d399' },
-                { text: `[00:00:02] CT LOG ENGINE: Mined 48 active subdomains across Certificate Transparency logs`, color: '#67e8f9' },
-                { text: `[00:00:02] BREACH RADAR: 4 compromised credential dumps correlated in darkweb index`, color: '#fcd34d' },
-                { text: `[00:00:03] SPATIAL GRAPH: 38 Nodes / 62 Edges compiled into 3D Physics Canvas`, color: '#34d399' },
-                { text: `[00:00:03] RISK SCORING: Severity = 74/100 (HIGH RISK // MULTIPLE EXPOSURES)`, color: '#c084fc' }
+                { tag: '[CLASSIFIER]', text: 'Target: DOMAIN (Confidence: 1.0 CONFIRMED)', colorClass: 'color-cyan' },
+                { tag: '[BGP ROUTE]', text: '104.21.32.0/20 &rarr; AS13335 (Cloudflare)', colorClass: 'color-emerald' },
+                { tag: '[CT LOGS]', text: '48 subdomains enumerated via CT logs', colorClass: 'color-cyan' },
+                { tag: '[BREACH RADAR]', text: '4 darkweb credential exposures indexed', colorClass: 'color-amber' },
+                { tag: '[3D GRAPH]', text: '38 Nodes / 62 Edges mapped in canvas', colorClass: 'color-purple' },
+                { tag: '[RISK SCORE]', text: '74/100 (HIGH RISK // MULTIPLE EXPOSURES)', colorClass: 'color-rose' }
             ];
         }
 
         termScreen.innerHTML = `
-            <div class="term-line prompt"><span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">${target}</span> --vectors all</div>
+            <div class="term-line prompt"><span class="term-prompt-user">spectre@recon</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">${target}</span></div>
             <div class="term-line" style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Initializing multi-vector cascade on target...</div>
         `;
 
@@ -462,25 +462,24 @@
         let idx = 0;
         function printNext() {
             if (idx === 0) {
-                termScreen.innerHTML = `<div class="term-line prompt"><span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">${target}</span> --vectors all</div>`;
+                termScreen.innerHTML = `<div class="term-line prompt"><span class="term-prompt-user">spectre@recon</span>:<span class="term-prompt-path">~</span>$ omni-recon --target <span class="term-target-str" id="hero-target-display">${target}</span></div>`;
             }
             if (idx < lines.length) {
                 const lineDiv = document.createElement('div');
-                lineDiv.className = 'term-line';
-                lineDiv.style.color = lines[idx].color;
-                lineDiv.textContent = lines[idx].text;
+                lineDiv.className = `term-line ${lines[idx].colorClass}`;
+                lineDiv.innerHTML = `<span class="term-tag">${lines[idx].tag}</span> ${lines[idx].text}`;
                 termScreen.appendChild(lineDiv);
                 idx++;
-                heroSimTimeout = setTimeout(printNext, 180);
+                heroSimTimeout = setTimeout(printNext, 160);
             } else {
                 const cursorDiv = document.createElement('div');
-                cursorDiv.className = 'term-line prompt';
+                cursorDiv.className = 'term-line prompt term-cursor-row';
                 cursorDiv.style.marginTop = '6px';
-                cursorDiv.innerHTML = `<span class="term-prompt-user">spectre@root</span>:<span class="term-prompt-path">~</span>$ <span class="term-cursor">_</span>`;
+                cursorDiv.innerHTML = `<span class="term-prompt-user">spectre@recon</span>:<span class="term-prompt-path">~</span>$ <span class="term-cursor">_</span>`;
                 termScreen.appendChild(cursorDiv);
             }
         }
-        heroSimTimeout = setTimeout(printNext, 250);
+        heroSimTimeout = setTimeout(printNext, 200);
     };
 
     function fallbackCopy(text) {
