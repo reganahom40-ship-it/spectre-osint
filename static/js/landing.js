@@ -535,7 +535,7 @@
     };
 
     window.switchAdminTab = function(tab) {
-        const tabs = ['pay', 'plans', 'orders', 'users'];
+        const tabs = ['pay', 'plans', 'orders', 'users', 'vault'];
         tabs.forEach(t => {
             const btn = document.getElementById(`tab-btn-admin-${t}`);
             const pane = document.getElementById(`tab-pane-admin-${t}`);
@@ -543,6 +543,7 @@
             if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
         });
         if (tab === 'pay') loadAdminSettings();
+        if (tab === 'vault') loadAdminVault();
         if (tab === 'plans') loadAdminPlans();
         if (tab === 'orders') loadAdminOrders();
         if (tab === 'users') loadAdminUsers();
@@ -670,6 +671,10 @@
                 setVal('adm-paypal-email', s.PAYPAL_EMAIL);
                 setVal('adm-paypal-link', s.PAYPAL_LINK);
                 setVal('adm-cashapp', s.CASHAPP_TAG);
+                setVal('adm-paypal-client-id', s.PAYPAL_CLIENT_ID);
+                setVal('adm-paypal-client-secret', s.PAYPAL_CLIENT_SECRET);
+                setVal('adm-paypal-mode', s.PAYPAL_MODE || 'live');
+                setVal('adm-cashapp-mode', s.CASHAPP_VERIFY_MODE || 'auto_note');
             }
         } catch (e) {
             showToast(`Failed loading settings: ${e.message}`, 'error');
@@ -684,7 +689,11 @@
             ETH_ADDRESS: getVal('adm-eth'),
             PAYPAL_EMAIL: getVal('adm-paypal-email'),
             PAYPAL_LINK: getVal('adm-paypal-link'),
-            CASHAPP_TAG: getVal('adm-cashapp')
+            CASHAPP_TAG: getVal('adm-cashapp'),
+            PAYPAL_CLIENT_ID: getVal('adm-paypal-client-id'),
+            PAYPAL_CLIENT_SECRET: getVal('adm-paypal-client-secret'),
+            PAYPAL_MODE: getVal('adm-paypal-mode') || 'live',
+            CASHAPP_VERIFY_MODE: getVal('adm-cashapp-mode') || 'auto_note'
         };
 
         try {
@@ -695,7 +704,7 @@
             });
             const data = await resp.json();
             if (resp.ok && data.success) {
-                showToast('Payment Wallets & Routing Saved Live!', 'check');
+                showToast('Payment Routing & API Credentials Saved Live!', 'check');
                 loadPaymentConfig();
             } else {
                 showToast(data.error || 'Failed saving payment info', 'error');
@@ -859,6 +868,184 @@
             return;
         }
         await window.upgradeAdminUserDirect(email, tier);
+    };
+
+    // =========================================================================
+    // MASTER ADMIN TREASURY & COLD VAULT CONTROLLERS
+    // =========================================================================
+    let _vaultData = null;
+
+    window.loadAdminVault = async function() {
+        const tbodyWd = document.getElementById('admin-vault-withdrawals-tbody');
+        const tbodyWallets = document.getElementById('admin-vault-wallets-tbody');
+
+        try {
+            const resp = await fetch('/api/admin/vault/summary');
+            const data = await resp.json();
+            if (!resp.ok || !data.vault) {
+                showToast(data.error || 'Failed loading vault summary', 'error');
+                return;
+            }
+
+            _vaultData = data.vault;
+            const totals = data.vault.totals || {};
+
+            // Update stat cards
+            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+            setTxt('vault-stat-total-fiat', `$${Number(data.vault.total_fiat_usd || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span style="font-size:0.75rem; color:var(--text-muted);">USD</span>`);
+            
+            const ltc = totals.ltc || { available: 0, fiat_usd_value: 0 };
+            setTxt('vault-stat-ltc-bal', `${Number(ltc.available).toFixed(4)} <span style="font-size:0.75rem;">LTC</span>`);
+            setTxt('vault-stat-ltc-fiat', `≈ $${Number(ltc.fiat_usd_value || 0).toFixed(2)} USD`);
+
+            const btc = totals.btc || { available: 0, fiat_usd_value: 0 };
+            setTxt('vault-stat-btc-bal', `${Number(btc.available).toFixed(6)} <span style="font-size:0.75rem;">BTC</span>`);
+            setTxt('vault-stat-btc-fiat', `≈ $${Number(btc.fiat_usd_value || 0).toFixed(2)} USD`);
+
+            const eth = totals.eth || { available: 0, fiat_usd_value: 0 };
+            setTxt('vault-stat-eth-bal', `${Number(eth.available).toFixed(5)} <span style="font-size:0.75rem;">ETH</span>`);
+            setTxt('vault-stat-eth-fiat', `≈ $${Number(eth.fiat_usd_value || 0).toFixed(2)} USD`);
+
+            // Update withdrawals table
+            if (tbodyWd) {
+                const wds = data.vault.recent_withdrawals || [];
+                if (wds.length === 0) {
+                    tbodyWd.innerHTML = `<tr><td colspan="6" style="padding:12px; text-align:center; color:var(--text-muted);">No cold withdrawals recorded yet.</td></tr>`;
+                } else {
+                    tbodyWd.innerHTML = wds.map(w => `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                            <td style="padding:6px 8px;"><code>${escapeHtml(w.id)}</code></td>
+                            <td style="padding:6px 8px;font-weight:700;color:var(--accent-cyan);">${escapeHtml(w.currency)}</td>
+                            <td style="padding:6px 8px;font-weight:700;color:#10b981;">${Number(w.amount).toFixed(6)}</td>
+                            <td style="padding:6px 8px;font-family:var(--font-mono);"><span title="${escapeHtml(w.destination_address)}">${escapeHtml(w.destination_address.substring(0, 10))}...${escapeHtml(w.destination_address.substring(w.destination_address.length - 6))}</span></td>
+                            <td style="padding:6px 8px;"><code>${escapeHtml(w.tx_hash)}</code></td>
+                            <td style="padding:6px 8px;color:var(--text-muted);font-size:0.7rem;">${escapeHtml(w.created_at)}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            // Update custodial wallets table
+            if (tbodyWallets) {
+                const wls = data.vault.wallets || [];
+                if (wls.length === 0) {
+                    tbodyWallets.innerHTML = `<tr><td colspan="5" style="padding:12px; text-align:center; color:var(--text-muted);">No generated custodial wallets yet.</td></tr>`;
+                } else {
+                    tbodyWallets.innerHTML = wls.map(w => `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                            <td style="padding:6px 8px;font-weight:700;color:var(--accent-cyan);">${escapeHtml(w.currency)}</td>
+                            <td style="padding:6px 8px;font-family:var(--font-mono);">${escapeHtml(w.address)}</td>
+                            <td style="padding:6px 8px;font-weight:700;color:${w.balance > 0 ? '#10b981' : 'var(--text-muted)'};">${Number(w.balance).toFixed(6)}</td>
+                            <td style="padding:6px 8px;"><code>${escapeHtml(w.order_id || 'Direct')}</code></td>
+                            <td style="padding:6px 8px;color:var(--text-muted);font-size:0.7rem;">${escapeHtml(w.created_at)}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            window.updateWithdrawMaxPlaceholder();
+        } catch (err) {
+            showToast(`Error loading vault: ${err.message}`, 'error');
+        }
+    };
+
+    window.updateWithdrawMaxPlaceholder = function() {
+        const curr = document.getElementById('adm-vault-currency')?.value.toLowerCase() || 'ltc';
+        const amtInput = document.getElementById('adm-vault-amount');
+        if (!_vaultData || !_vaultData.totals || !amtInput) return;
+        const available = _vaultData.totals[curr]?.available || 0;
+        amtInput.placeholder = `Max: ${Number(available).toFixed(6)}`;
+    };
+
+    window.setWithdrawMax = function() {
+        const curr = document.getElementById('adm-vault-currency')?.value.toLowerCase() || 'ltc';
+        const amtInput = document.getElementById('adm-vault-amount');
+        if (!_vaultData || !_vaultData.totals || !amtInput) return;
+        const available = _vaultData.totals[curr]?.available || 0;
+        amtInput.value = available;
+    };
+
+    window.executeAdminWithdrawal = async function() {
+        const curr = document.getElementById('adm-vault-currency')?.value || 'LTC';
+        const dest = document.getElementById('adm-vault-dest')?.value.trim();
+        const amt = parseFloat(document.getElementById('adm-vault-amount')?.value || 0);
+        const notes = document.getElementById('adm-vault-notes')?.value.trim() || '';
+
+        if (!dest) {
+            showToast('Destination cold address is required.', 'warning');
+            return;
+        }
+        if (amt <= 0) {
+            showToast('Withdrawal amount must be greater than 0.', 'warning');
+            return;
+        }
+
+        if (!confirm(`Confirm cold storage withdrawal of ${amt} ${curr} to ${dest}?`)) return;
+
+        try {
+            const resp = await fetch('/api/admin/vault/withdraw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currency: curr,
+                    destination_address: dest,
+                    amount: amt,
+                    notes: notes
+                })
+            });
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+                showToast(`Cold sweep successful! TX: ${data.tx_hash}`, 'check');
+                document.getElementById('admin-vault-withdraw-form')?.reset();
+                loadAdminVault();
+            } else {
+                showToast(data.error || 'Withdrawal failed', 'error');
+            }
+        } catch (err) {
+            showToast(`Error: ${err.message}`, 'error');
+        }
+    };
+
+    window.runAdminPaymentSync = async function() {
+        showToast('Initiating automated payment synchronization...', 'info');
+        try {
+            const resp = await fetch('/api/admin/payments/sync', { method: 'POST' });
+            const data = await resp.json();
+            if (resp.ok && data.success) {
+                const s = data.sync;
+                showToast(`Sync complete! Scanned ${s.scanned_count} orders, cleared ${s.cleared_count} new payments!`, 'check');
+                loadAdminOrders();
+                loadAdminVault();
+            } else {
+                showToast(data.error || 'Sync failed', 'error');
+            }
+        } catch (err) {
+            showToast(`Sync error: ${err.message}`, 'error');
+        }
+    };
+
+    window.verifyOnChainNow = async function() {
+        if (!activeOrder || !activeOrder.id) {
+            showToast('No active order to verify.', 'warning');
+            return;
+        }
+
+        showToast('Querying blockchain network for incoming transfer...', 'info');
+        try {
+            const resp = await fetch(`/api/payment/verify-on-chain/${encodeURIComponent(activeOrder.id)}`, { method: 'POST' });
+            const data = await resp.json();
+
+            if (resp.ok && data.verified && data.status === 'approved') {
+                showToast('Blockchain transfer confirmed on ledger! Account activated.', 'check');
+                activeOrder = data.order;
+                handleOrderApproved(data.order);
+            } else {
+                showToast(data.message || 'Deposit not yet confirmed on network. Monitoring...', 'info');
+            }
+        } catch (err) {
+            showToast(`Network check failed: ${err.message}`, 'error');
+        }
     };
 
     document.addEventListener('DOMContentLoaded', () => {

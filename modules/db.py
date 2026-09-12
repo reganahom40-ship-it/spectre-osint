@@ -89,8 +89,34 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users (id)
             );
 
+            CREATE TABLE IF NOT EXISTS vault_wallets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                currency TEXT NOT NULL, -- 'LTC', 'BTC', 'ETH'
+                address TEXT NOT NULL UNIQUE,
+                encrypted_privkey TEXT NOT NULL,
+                order_id TEXT DEFAULT '',
+                balance REAL DEFAULT 0.0,
+                status TEXT DEFAULT 'active', -- 'active', 'swept', 'reserved'
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS vault_withdrawals (
+                id TEXT PRIMARY KEY,
+                admin_email TEXT NOT NULL,
+                currency TEXT NOT NULL,
+                destination_address TEXT NOT NULL,
+                amount REAL NOT NULL,
+                tx_hash TEXT DEFAULT '',
+                status TEXT DEFAULT 'completed',
+                notes TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
             CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+            CREATE INDEX IF NOT EXISTS idx_vault_currency ON vault_wallets(currency);
+            CREATE INDEX IF NOT EXISTS idx_vault_address ON vault_wallets(address);
+            CREATE INDEX IF NOT EXISTS idx_withdrawals_created ON vault_withdrawals(created_at);
         """)
         conn.commit()
 
@@ -232,15 +258,25 @@ def increment_user_searches(user_id: int):
 
 def record_payment(user_id: int, amount: float, method: str, tier_granted: str) -> int:
     """Records a payment and applies the granted tier to the user."""
+    t_lower = (tier_granted or '').lower()
+    if 'lifetime' in t_lower:
+        norm_tier = 'lifetime'
+    elif 'admin' in t_lower:
+        norm_tier = 'admin'
+    elif 'free' in t_lower:
+        norm_tier = 'free'
+    else:
+        norm_tier = 'premium'
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO payments (user_id, amount, currency, method, tier_granted, status) VALUES (?, ?, 'USD', ?, ?, 'completed')",
-            (user_id, amount, method, tier_granted)
+            (user_id, amount, method, norm_tier)
         )
         cursor.execute(
             "UPDATE users SET tier = ? WHERE id = ?",
-            (tier_granted, user_id)
+            (norm_tier, user_id)
         )
         conn.commit()
         return cursor.lastrowid
@@ -350,7 +386,11 @@ def seed_default_plans_and_settings():
         'ETH_ADDRESS': os.environ.get('ETH_ADDRESS', '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'),
         'PAYPAL_EMAIL': os.environ.get('PAYPAL_EMAIL', 'payments@spectre.io'),
         'PAYPAL_LINK': os.environ.get('PAYPAL_LINK', 'https://paypal.me/SpectreIntel'),
+        'PAYPAL_CLIENT_ID': os.environ.get('PAYPAL_CLIENT_ID', ''),
+        'PAYPAL_CLIENT_SECRET': os.environ.get('PAYPAL_CLIENT_SECRET', ''),
+        'PAYPAL_MODE': os.environ.get('PAYPAL_MODE', 'live'),
         'CASHAPP_TAG': os.environ.get('CASHAPP_TAG', '$SpectreIntel'),
+        'CASHAPP_VERIFY_MODE': os.environ.get('CASHAPP_VERIFY_MODE', 'auto_note'),
     }
     with get_db_connection() as conn:
         for k, v in default_settings.items():
@@ -447,14 +487,25 @@ def approve_order(order_id: str, admin_notes: str = '') -> Dict[str, Any]:
     amount = order['amount']
     method = order['payment_method']
     
+    # Determine target subscription tier from plan_id
+    plan_lower = (plan_id or '').lower()
+    if 'lifetime' in plan_lower:
+        target_tier = 'lifetime'
+    elif 'admin' in plan_lower:
+        target_tier = 'admin'
+    elif 'free' in plan_lower:
+        target_tier = 'free'
+    else:
+        target_tier = 'premium'
+
     # Ensure user exists
     user = get_user_by_email(email)
     if not user:
-        user = create_user(email, f"spectre_order_{int(time.time())}", tier=plan_id)
+        user = create_user(email, f"spectre_order_{int(time.time())}", tier=target_tier)
     
     # Apply tier upgrade
-    update_user_tier(email, plan_id, f"Order {order_id} approved. {admin_notes}")
-    record_payment(user['id'], amount, method, plan_id)
+    update_user_tier(email, target_tier, f"Order {order_id} approved. {admin_notes}")
+    record_payment(user['id'], amount, method, target_tier)
 
     now_str = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%SZ')
     with get_db_connection() as conn:
@@ -481,3 +532,107 @@ def reject_order(order_id: str, reason: str = '') -> Dict[str, Any]:
         conn.commit()
 
     return get_order(order_id)
+
+# =========================================================================
+# PLATFORM TREASURY & CUSTODIAL VAULT
+# =========================================================================
+def save_vault_wallet(currency: str, address: str, encrypted_privkey: str,
+                      order_id: str = '', balance: float = 0.0) -> Dict[str, Any]:
+    currency = currency.strip().upper()
+    address = address.strip()
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT INTO vault_wallets (currency, address, encrypted_privkey, order_id, balance, status)
+            VALUES (?, ?, ?, ?, ?, 'active')
+            ON CONFLICT(address) DO UPDATE SET
+                order_id = excluded.order_id,
+                balance = excluded.balance
+        """, (currency, address, encrypted_privkey, order_id, float(balance)))
+        conn.commit()
+    return get_vault_wallet_by_address(address)
+
+def get_vault_wallet_by_address(address: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vault_wallets WHERE address = ?", (address.strip(),))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def get_vault_wallet_by_order(order_id: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vault_wallets WHERE order_id = ? ORDER BY id DESC LIMIT 1", (order_id.strip(),))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def list_vault_wallets(currency: Optional[str] = None) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if currency:
+            cursor.execute("SELECT * FROM vault_wallets WHERE currency = ? ORDER BY id DESC", (currency.upper(),))
+        else:
+            cursor.execute("SELECT * FROM vault_wallets ORDER BY id DESC")
+        return [dict(row) for row in cursor.fetchall()]
+
+def update_vault_wallet_balance(address: str, balance: float) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        conn.execute("UPDATE vault_wallets SET balance = ? WHERE address = ?", (float(balance), address.strip()))
+        conn.commit()
+    return get_vault_wallet_by_address(address)
+
+def credit_vault_wallet(address: str, amount: float) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        conn.execute("UPDATE vault_wallets SET balance = balance + ? WHERE address = ?", (float(amount), address.strip()))
+        conn.commit()
+    return get_vault_wallet_by_address(address)
+
+def create_vault_withdrawal(admin_email: str, currency: str, destination_address: str,
+                            amount: float, tx_hash: str = '', notes: str = '') -> Dict[str, Any]:
+    withdrawal_id = f"WD-{uuid.uuid4().hex[:8].upper()}"
+    currency = currency.strip().upper()
+    now_str = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%SZ')
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT INTO vault_withdrawals (id, admin_email, currency, destination_address, amount, tx_hash, status, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?)
+        """, (withdrawal_id, admin_email.strip().lower(), currency, destination_address.strip(),
+              float(amount), tx_hash.strip(), notes.strip(), now_str))
+        conn.commit()
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vault_withdrawals WHERE id = ?", (withdrawal_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else {}
+
+def list_vault_withdrawals(limit: int = 50) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vault_withdrawals ORDER BY created_at DESC LIMIT ?", (int(limit),))
+        return [dict(row) for row in cursor.fetchall()]
+
+def get_vault_totals() -> Dict[str, Any]:
+    """Calculates aggregate balances received, withdrawn, and available across all currencies."""
+    totals = {}
+    currencies = ['LTC', 'BTC', 'ETH']
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        for c in currencies:
+            cursor.execute("SELECT COALESCE(SUM(balance), 0.0) as total_bal, COUNT(*) as wallet_count FROM vault_wallets WHERE currency = ?", (c,))
+            w_row = cursor.fetchone()
+            total_bal = float(w_row['total_bal'])
+            wallet_count = int(w_row['wallet_count'])
+
+            cursor.execute("SELECT COALESCE(SUM(amount), 0.0) as total_withdrawn FROM vault_withdrawals WHERE currency = ? AND status = 'completed'", (c,))
+            wd_row = cursor.fetchone()
+            total_withdrawn = float(wd_row['total_withdrawn'])
+
+            available = max(0.0, total_bal - total_withdrawn)
+            totals[c.lower()] = {
+                'currency': c,
+                'total_received': round(total_bal, 8),
+                'total_withdrawn': round(total_withdrawn, 8),
+                'available': round(available, 8),
+                'wallet_count': wallet_count
+            }
+    return totals
+

@@ -1024,9 +1024,12 @@
             </div>
 
             <!-- Admin Navigation Tabs -->
-            <div class="admin-tabs-bar">
+            <div class="admin-tabs-bar" style="overflow-x:auto;">
                 <button class="admin-tab-btn active" id="tab-btn-admin-pay" onclick="window.SPECTRE_AUTH.switchAdminTab('pay')">
                     <i class="fas fa-wallet text-cyan"></i> Payment Wallets & Accounts
+                </button>
+                <button class="admin-tab-btn" id="tab-btn-admin-vault" onclick="window.SPECTRE_AUTH.switchAdminTab('vault')">
+                    <i class="fas fa-vault text-emerald"></i> Treasury & Cold Vault
                 </button>
                 <button class="admin-tab-btn" id="tab-btn-admin-plans" onclick="window.SPECTRE_AUTH.switchAdminTab('plans')">
                     <i class="fas fa-tags text-amber"></i> Pricing & Custom Plans
@@ -1042,11 +1045,11 @@
             <!-- TAB 1: Payment Wallets & Accounts -->
             <div class="admin-tab-pane active" id="tab-pane-admin-pay">
                 <div class="admin-pane-desc">
-                    Configure your direct settlement addresses and accounts. All checkout requests across the landing page and member deck route directly to these destinations.
+                    Configure your direct settlement addresses and automated payment verification credentials.
                 </div>
                 <form id="admin-payments-form" class="admin-form-grid" onsubmit="return false;">
                     <div class="admin-form-group">
-                        <label><i class="fab fa-litecoin text-cyan"></i> Litecoin (LTC) Address</label>
+                        <label><i class="fab fa-litecoin text-cyan"></i> Litecoin (LTC) Fallback Address</label>
                         <input type="text" id="adm-ltc" placeholder="e.g. ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8">
                         <small>Native SegWit or Legacy LTC wallet address</small>
                     </div>
@@ -1061,12 +1064,12 @@
                         <small>Direct instant 1-click PayPal payment link</small>
                     </div>
                     <div class="admin-form-group">
-                        <label><i class="fab fa-bitcoin text-amber"></i> Bitcoin (BTC) Address</label>
+                        <label><i class="fab fa-bitcoin text-amber"></i> Bitcoin (BTC) Fallback Address</label>
                         <input type="text" id="adm-btc" placeholder="e.g. bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8">
                         <small>Native SegWit (bc1q) or Standard BTC address</small>
                     </div>
                     <div class="admin-form-group">
-                        <label><i class="fab fa-ethereum text-purple"></i> Ethereum / USDT Address</label>
+                        <label><i class="fab fa-ethereum text-purple"></i> Ethereum / USDT Fallback Address</label>
                         <input type="text" id="adm-eth" placeholder="e.g. 0x71C7656EC7ab88b098defB751B7401B5f6d8976F">
                         <small>ERC-20, Arbitrum, or Base settlement wallet</small>
                     </div>
@@ -1075,9 +1078,34 @@
                         <input type="text" id="adm-cashapp" placeholder="e.g. $YourCashtag">
                         <small>Your direct CashApp operator identifier</small>
                     </div>
-                    <div class="admin-form-actions">
+
+                    <!-- Automated Verification Credentials -->
+                    <div class="admin-form-group">
+                        <label><i class="fab fa-paypal text-indigo"></i> PayPal REST Client ID</label>
+                        <input type="text" id="adm-paypal-client-id" placeholder="OAuth2 Client ID">
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fas fa-key text-amber"></i> PayPal REST Secret</label>
+                        <input type="password" id="adm-paypal-client-secret" placeholder="OAuth2 Secret Key">
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fas fa-globe"></i> PayPal Mode</label>
+                        <select id="adm-paypal-mode" style="background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;">
+                            <option value="live">Live Production</option>
+                            <option value="sandbox">Sandbox Test</option>
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label><i class="fas fa-money-bill-transfer text-emerald"></i> Cash App Auto-Verify</label>
+                        <select id="adm-cashapp-mode" style="background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;">
+                            <option value="auto_note">Auto-Verify Note / Receipt Match</option>
+                            <option value="manual">Manual Approval Only</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-form-actions" style="grid-column: 1 / -1;">
                         <button type="button" class="btn-admin-submit" id="btn-save-admin-payments">
-                            <i class="fas fa-floppy-disk"></i> Save Payment Routing
+                            <i class="fas fa-floppy-disk"></i> Save Payment & API Routing
                         </button>
                     </div>
                 </form>
@@ -1212,6 +1240,131 @@
                             <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- TAB 5: Platform Treasury & Cold Vault -->
+            <div class="admin-tab-pane" id="tab-pane-admin-vault" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                    <div class="admin-pane-desc" style="margin-bottom:0;">
+                        Custodial crypto balances, on-chain reserves, and cold storage sweeps. All payments remain stored safely in platform custody until swept.
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.runAdminPaymentSync()" style="padding:6px 14px; font-size:0.75rem; background:rgba(0,240,255,0.1); border-color:var(--accent-cyan); color:var(--accent-cyan);">
+                            <i class="fas fa-satellite-dish"></i> Run Payment Scan
+                        </button>
+                        <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.loadAdminVault()" style="padding:6px 14px; font-size:0.75rem;">
+                            <i class="fas fa-rotate"></i> Refresh Vault
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Treasury Balances Cards -->
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:16px;">
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
+                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;"><i class="fas fa-sack-dollar text-amber"></i> Total Valuation</div>
+                        <div style="font-size:1.25rem; font-weight:800; color:#fff; margin-top:4px;" id="vault-stat-total-fiat-app">$0.00 <span style="font-size:0.75rem; color:var(--text-muted);">USD</span></div>
+                        <div style="font-size:0.7rem; color:var(--accent-emerald); margin-top:2px;"><i class="fas fa-shield-halved"></i> 100% Cold Custody</div>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(0,240,255,0.2); border-radius:8px; padding:12px;">
+                        <div style="font-size:0.7rem; color:var(--accent-cyan); text-transform:uppercase;"><i class="fab fa-litecoin"></i> Litecoin (LTC)</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:var(--accent-cyan); margin-top:4px;" id="vault-stat-ltc-bal-app">0.0000 <span style="font-size:0.75rem;">LTC</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-ltc-fiat-app">≈ $0.00 USD</div>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:12px;">
+                        <div style="font-size:0.7rem; color:var(--accent-amber); text-transform:uppercase;"><i class="fab fa-bitcoin"></i> Bitcoin (BTC)</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:var(--accent-amber); margin-top:4px;" id="vault-stat-btc-bal-app">0.000000 <span style="font-size:0.75rem;">BTC</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-btc-fiat-app">≈ $0.00 USD</div>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(168,85,247,0.2); border-radius:8px; padding:12px;">
+                        <div style="font-size:0.7rem; color:var(--accent-purple); text-transform:uppercase;"><i class="fab fa-ethereum"></i> Ethereum (ETH)</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:var(--accent-purple); margin-top:4px;" id="vault-stat-eth-bal-app">0.00000 <span style="font-size:0.75rem;">ETH</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-eth-fiat-app">≈ $0.00 USD</div>
+                    </div>
+                </div>
+
+                <!-- Cold Storage Sweep / Withdrawal Box -->
+                <div style="background:rgba(16,185,129,0.04); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:14px; margin-bottom:16px;">
+                    <div style="font-weight:700; font-size:0.85rem; color:#34d399; margin-bottom:10px;">
+                        <i class="fas fa-arrow-down-to-bracket"></i> Sweep / Withdraw to External Cold Wallet
+                    </div>
+                    <form id="admin-vault-withdraw-form-app" onsubmit="return false;">
+                        <div style="display:grid; grid-template-columns:130px 2fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div class="admin-form-group">
+                                <label>Currency</label>
+                                <select id="adm-vault-currency-app" onchange="window.SPECTRE_AUTH.updateWithdrawMaxApp()" style="background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;">
+                                    <option value="LTC" selected>LTC (Litecoin)</option>
+                                    <option value="BTC">BTC (Bitcoin)</option>
+                                    <option value="ETH">ETH (Ethereum)</option>
+                                </select>
+                            </div>
+                            <div class="admin-form-group">
+                                <label>Destination Cold Address</label>
+                                <input type="text" id="adm-vault-dest-app" placeholder="Enter your personal external wallet address..." required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label>Amount</label>
+                                <div style="display:flex; gap:4px;">
+                                    <input type="number" step="0.000001" id="adm-vault-amount-app" placeholder="0.00" required>
+                                    <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.setWithdrawMaxApp()" style="padding:4px 8px; font-size:0.7rem;">MAX</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:flex-end;">
+                            <div class="admin-form-group" style="flex:1;">
+                                <input type="text" id="adm-vault-notes-app" placeholder="Withdrawal notes (e.g. Ledger Cold Sweep #1)">
+                            </div>
+                            <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.executeAdminWithdrawalApp()" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; padding:10px 20px; white-space:nowrap;">
+                                <i class="fas fa-paper-plane"></i> Execute Cold Withdrawal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Cold Withdrawal History Table -->
+                <div style="margin-bottom:14px;">
+                    <div class="admin-subbox-title" style="font-size:0.8rem; margin-bottom:6px;"><i class="fas fa-clock-rotate-left text-cyan"></i> Cold Storage Sweep Audit History</div>
+                    <div class="admin-users-table-box" style="max-height:160px; overflow-y:auto;">
+                        <table class="admin-users-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Coin</th>
+                                    <th>Amount</th>
+                                    <th>Destination</th>
+                                    <th>Sweep TXID</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-vault-withdrawals-tbody-app">
+                                <tr><td colspan="6" style="padding:10px; text-align:center; color:var(--text-muted);">No withdrawal history recorded yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Custodial Wallets Table -->
+                <div>
+                    <div class="admin-subbox-title" style="font-size:0.8rem; margin-bottom:6px;"><i class="fas fa-key text-amber"></i> Active Generated Custodial Wallets</div>
+                    <div class="admin-users-table-box" style="max-height:160px; overflow-y:auto;">
+                        <table class="admin-users-table">
+                            <thead>
+                                <tr>
+                                    <th>Coin</th>
+                                    <th>Custodial Address</th>
+                                    <th>Balance</th>
+                                    <th>Order Ref</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-vault-wallets-tbody-app">
+                                <tr><td colspan="5" style="padding:10px; text-align:center; color:var(--text-muted);">Loading custodial wallets...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

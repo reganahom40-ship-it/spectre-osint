@@ -2674,7 +2674,7 @@
         },
 
         switchAdminTab(tab) {
-            const tabs = ['pay', 'plans', 'orders', 'users'];
+            const tabs = ['pay', 'plans', 'orders', 'users', 'vault'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-admin-${t}`);
                 const pane = document.getElementById(`tab-pane-admin-${t}`);
@@ -2682,6 +2682,7 @@
                 if (pane) pane.style.display = t === tab ? 'block' : 'none';
             });
             if (tab === 'pay') this.loadAdminSettings();
+            if (tab === 'vault') this.loadAdminVault();
             if (tab === 'plans') this.loadAdminPlans();
             if (tab === 'orders') this.loadAdminOrders();
             if (tab === 'users') this.loadAdminUsers();
@@ -2816,6 +2817,10 @@
                     setVal('adm-paypal-email', s.PAYPAL_EMAIL);
                     setVal('adm-paypal-link', s.PAYPAL_LINK);
                     setVal('adm-cashapp', s.CASHAPP_TAG);
+                    setVal('adm-paypal-client-id', s.PAYPAL_CLIENT_ID);
+                    setVal('adm-paypal-client-secret', s.PAYPAL_CLIENT_SECRET);
+                    setVal('adm-paypal-mode', s.PAYPAL_MODE || 'live');
+                    setVal('adm-cashapp-mode', s.CASHAPP_VERIFY_MODE || 'auto_note');
                 }
             } catch (err) {
                 showToast(`Failed loading settings: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
@@ -2830,7 +2835,11 @@
                 ETH_ADDRESS: getVal('adm-eth'),
                 PAYPAL_EMAIL: getVal('adm-paypal-email'),
                 PAYPAL_LINK: getVal('adm-paypal-link'),
-                CASHAPP_TAG: getVal('adm-cashapp')
+                CASHAPP_TAG: getVal('adm-cashapp'),
+                PAYPAL_CLIENT_ID: getVal('adm-paypal-client-id'),
+                PAYPAL_CLIENT_SECRET: getVal('adm-paypal-client-secret'),
+                PAYPAL_MODE: getVal('adm-paypal-mode') || 'live',
+                CASHAPP_VERIFY_MODE: getVal('adm-cashapp-mode') || 'auto_note'
             };
 
             try {
@@ -2848,6 +2857,156 @@
                 }
             } catch (err) {
                 showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
+            }
+        },
+
+        // --- PLATFORM TREASURY & COLD VAULT (APP) ---
+        _vaultDataApp: null,
+
+        async loadAdminVault() {
+            const tbodyWd = document.getElementById('admin-vault-withdrawals-tbody-app');
+            const tbodyWallets = document.getElementById('admin-vault-wallets-tbody-app');
+
+            try {
+                const resp = await fetch('/api/admin/vault/summary');
+                const data = await resp.json();
+                if (!resp.ok || !data.vault) {
+                    showToast(data.error || 'Failed loading vault summary', 'fas fa-circle-exclamation text-rose');
+                    return;
+                }
+
+                this._vaultDataApp = data.vault;
+                const totals = data.vault.totals || {};
+
+                const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+                setTxt('vault-stat-total-fiat-app', `$${Number(data.vault.total_fiat_usd || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span style="font-size:0.75rem; color:var(--text-muted);">USD</span>`);
+                
+                const ltc = totals.ltc || { available: 0, fiat_usd_value: 0 };
+                setTxt('vault-stat-ltc-bal-app', `${Number(ltc.available).toFixed(4)} <span style="font-size:0.75rem;">LTC</span>`);
+                setTxt('vault-stat-ltc-fiat-app', `≈ $${Number(ltc.fiat_usd_value || 0).toFixed(2)} USD`);
+
+                const btc = totals.btc || { available: 0, fiat_usd_value: 0 };
+                setTxt('vault-stat-btc-bal-app', `${Number(btc.available).toFixed(6)} <span style="font-size:0.75rem;">BTC</span>`);
+                setTxt('vault-stat-btc-fiat-app', `≈ $${Number(btc.fiat_usd_value || 0).toFixed(2)} USD`);
+
+                const eth = totals.eth || { available: 0, fiat_usd_value: 0 };
+                setTxt('vault-stat-eth-bal-app', `${Number(eth.available).toFixed(5)} <span style="font-size:0.75rem;">ETH</span>`);
+                setTxt('vault-stat-eth-fiat-app', `≈ $${Number(eth.fiat_usd_value || 0).toFixed(2)} USD`);
+
+                if (tbodyWd) {
+                    const wds = data.vault.recent_withdrawals || [];
+                    if (wds.length === 0) {
+                        tbodyWd.innerHTML = `<tr><td colspan="6" style="padding:10px;text-align:center;color:var(--text-muted);">No withdrawal history recorded yet.</td></tr>`;
+                    } else {
+                        tbodyWd.innerHTML = wds.map(w => `
+                            <tr>
+                                <td><code>${escapeHtml(w.id)}</code></td>
+                                <td style="font-weight:700;color:var(--accent-cyan);">${escapeHtml(w.currency)}</td>
+                                <td style="font-weight:700;color:#10b981;">${Number(w.amount).toFixed(6)}</td>
+                                <td style="font-family:var(--font-mono);"><span title="${escapeHtml(w.destination_address)}">${escapeHtml(w.destination_address.substring(0, 10))}...${escapeHtml(w.destination_address.substring(w.destination_address.length - 6))}</span></td>
+                                <td><code>${escapeHtml(w.tx_hash)}</code></td>
+                                <td style="color:var(--text-muted);font-size:0.7rem;">${escapeHtml(w.created_at)}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+
+                if (tbodyWallets) {
+                    const wls = data.vault.wallets || [];
+                    if (wls.length === 0) {
+                        tbodyWallets.innerHTML = `<tr><td colspan="5" style="padding:10px;text-align:center;color:var(--text-muted);">No generated custodial wallets yet.</td></tr>`;
+                    } else {
+                        tbodyWallets.innerHTML = wls.map(w => `
+                            <tr>
+                                <td style="font-weight:700;color:var(--accent-cyan);">${escapeHtml(w.currency)}</td>
+                                <td style="font-family:var(--font-mono);">${escapeHtml(w.address)}</td>
+                                <td style="font-weight:700;color:${w.balance > 0 ? '#10b981' : 'var(--text-muted)'};">${Number(w.balance).toFixed(6)}</td>
+                                <td><code>${escapeHtml(w.order_id || 'Direct')}</code></td>
+                                <td style="color:var(--text-muted);font-size:0.7rem;">${escapeHtml(w.created_at)}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+
+                this.updateWithdrawMaxApp();
+            } catch (err) {
+                showToast(`Error loading vault: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
+            }
+        },
+
+        updateWithdrawMaxApp() {
+            const curr = document.getElementById('adm-vault-currency-app')?.value.toLowerCase() || 'ltc';
+            const amtInput = document.getElementById('adm-vault-amount-app');
+            if (!this._vaultDataApp || !this._vaultDataApp.totals || !amtInput) return;
+            const available = this._vaultDataApp.totals[curr]?.available || 0;
+            amtInput.placeholder = `Max: ${Number(available).toFixed(6)}`;
+        },
+
+        setWithdrawMaxApp() {
+            const curr = document.getElementById('adm-vault-currency-app')?.value.toLowerCase() || 'ltc';
+            const amtInput = document.getElementById('adm-vault-amount-app');
+            if (!this._vaultDataApp || !this._vaultDataApp.totals || !amtInput) return;
+            const available = this._vaultDataApp.totals[curr]?.available || 0;
+            amtInput.value = available;
+        },
+
+        async executeAdminWithdrawalApp() {
+            const curr = document.getElementById('adm-vault-currency-app')?.value || 'LTC';
+            const dest = document.getElementById('adm-vault-dest-app')?.value.trim();
+            const amt = parseFloat(document.getElementById('adm-vault-amount-app')?.value || 0);
+            const notes = document.getElementById('adm-vault-notes-app')?.value.trim() || '';
+
+            if (!dest) {
+                showToast('Destination cold address is required.', 'fas fa-triangle-exclamation text-rose');
+                return;
+            }
+            if (amt <= 0) {
+                showToast('Withdrawal amount must be greater than 0.', 'fas fa-triangle-exclamation text-rose');
+                return;
+            }
+
+            if (!confirm(`Confirm cold storage withdrawal of ${amt} ${curr} to ${dest}?`)) return;
+
+            try {
+                const resp = await fetch('/api/admin/vault/withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        currency: curr,
+                        destination_address: dest,
+                        amount: amt,
+                        notes: notes
+                    })
+                });
+                const data = await resp.json();
+
+                if (resp.ok && data.success) {
+                    showToast(`Cold sweep successful! TX: ${data.tx_hash}`, 'fas fa-check-circle text-emerald');
+                    document.getElementById('admin-vault-withdraw-form-app')?.reset();
+                    this.loadAdminVault();
+                } else {
+                    showToast(data.error || 'Withdrawal failed', 'fas fa-circle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
+            }
+        },
+
+        async runAdminPaymentSync() {
+            showToast('Initiating automated payment synchronization...', 'fas fa-satellite-dish text-cyan');
+            try {
+                const resp = await fetch('/api/admin/payments/sync', { method: 'POST' });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    const s = data.sync;
+                    showToast(`Sync complete! Scanned ${s.scanned_count} orders, cleared ${s.cleared_count} new payments!`, 'fas fa-check-circle text-emerald');
+                    this.loadAdminOrders();
+                    this.loadAdminVault();
+                } else {
+                    showToast(data.error || 'Sync failed', 'fas fa-triangle-exclamation text-rose');
+                }
+            } catch (err) {
+                showToast(`Sync error: ${err.message}`, 'fas fa-triangle-exclamation text-rose');
             }
         },
 

@@ -19,6 +19,13 @@ from modules.engine import InvestigationEngine
 from modules.logging_config import setup_logging, log_investigation_summary
 from modules.payment_config import get_payment_config
 from modules.crypto_rates import calculate_crypto_amount, get_crypto_rate
+from modules.vault import (
+    generate_custodial_wallet, get_vault_summary, execute_cold_withdrawal
+)
+from modules.crypto_verifier import verify_order_on_chain
+from modules.payment_verifier import (
+    verify_paypal_order, verify_cashapp_payment, sync_pending_payments
+)
 from modules.db import (
     init_db, create_user, authenticate_user, update_user_tier,
     list_all_users, record_payment, increment_user_searches, get_user_by_email,
@@ -250,15 +257,14 @@ def api_payment_create_order():
     crypto_amount = 0.0
     deposit_address = ''
 
-    if method == 'ltc':
-        deposit_address = cfg.get('LTC_ADDRESS', '')
-        crypto_amount = calculate_crypto_amount(amount, 'ltc')
-    elif method == 'btc':
-        deposit_address = cfg.get('BTC_ADDRESS', '')
-        crypto_amount = calculate_crypto_amount(amount, 'btc')
-    elif method == 'eth':
-        deposit_address = cfg.get('ETH_ADDRESS', '')
-        crypto_amount = calculate_crypto_amount(amount, 'eth')
+    if method in ('ltc', 'btc', 'eth'):
+        crypto_amount = calculate_crypto_amount(amount, method)
+        try:
+            # Generate a 100% dedicated, encrypted custodial wallet for this order
+            custodial = generate_custodial_wallet(method, f"SPEC-ORD-{int(time.time())}")
+            deposit_address = custodial['address']
+        except Exception as e:
+            deposit_address = cfg.get(f'{method.upper()}_ADDRESS', '')
     elif method == 'paypal':
         deposit_address = cfg.get('PAYPAL_EMAIL', '')
     elif method == 'cashapp':
@@ -315,10 +321,34 @@ def api_payment_submit_proof():
         return jsonify({'success': False, 'error': 'Please provide a valid transaction hash (TXID) or transfer reference identifier.'}), 400
 
     updated = update_order_proof(order_id, tx_hash, notes)
+    method = updated['payment_method'].lower()
+
+    # Immediate automated clearing attempt
+    if method in ('ltc', 'btc', 'eth'):
+        v_res = verify_order_on_chain(order_id)
+        if v_res.get('verified'):
+            updated = get_order(order_id)
+    elif method == 'paypal':
+        v_res = verify_paypal_order(order_id, tx_hash)
+        if v_res.get('verified'):
+            updated = get_order(order_id)
+    elif method == 'cashapp':
+        v_res = verify_cashapp_payment(order_id, tx_hash)
+        if v_res.get('verified'):
+            updated = get_order(order_id)
+
+    is_approved = (updated['status'] == 'approved')
+    if is_approved:
+        user = get_user_by_email(updated['email'])
+        if user:
+            login_user(user)
+
     return jsonify({
         'success': True,
-        'message': 'Payment proof submitted. Order is now queued for network verification and operator clearance.',
-        'order': updated
+        'message': 'Payment proof submitted and processed. Verified!' if is_approved else 'Payment proof submitted. Awaiting network confirmation.',
+        'order': updated,
+        'approved': is_approved,
+        'redirect': '/app' if is_approved else None
     }), 200
 
 @app.route('/api/payment/order-status/<order_id>', methods=['GET', 'OPTIONS'])
@@ -329,6 +359,19 @@ def api_payment_order_status(order_id):
     order = get_order(order_id)
     if not order:
         return jsonify({'success': False, 'error': 'Order not found'}), 404
+
+    # If pending or verifying, poll auto-settlement engines
+    if order['status'] in ('pending', 'verifying'):
+        method = order['payment_method'].lower()
+        if method in ('ltc', 'btc', 'eth'):
+            verify_order_on_chain(order_id)
+            order = get_order(order_id)
+        elif method == 'paypal':
+            verify_paypal_order(order_id)
+            order = get_order(order_id)
+        elif method == 'cashapp':
+            verify_cashapp_payment(order_id)
+            order = get_order(order_id)
 
     is_approved = (order['status'] == 'approved')
     if is_approved:
@@ -343,11 +386,32 @@ def api_payment_order_status(order_id):
         'redirect': '/app' if is_approved else None
     }), 200
 
+@app.route('/api/payment/verify-on-chain/<order_id>', methods=['POST', 'GET', 'OPTIONS'])
+def api_payment_verify_on_chain(order_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    order_id = (order_id or '').strip().upper()
+    result = verify_order_on_chain(order_id)
+    return jsonify(result), 200
+
+@app.route('/api/payment/paypal/webhook', methods=['POST', 'OPTIONS'])
+def api_payment_paypal_webhook():
+    if request.method == 'OPTIONS':
+        return '', 204
+    payload = request.get_json(silent=True) or {}
+    resource = payload.get('resource', {})
+    order_id = resource.get('custom_id') or resource.get('invoice_id') or ''
+    if order_id:
+        order = get_order(order_id)
+        if order and order['status'] != 'approved':
+            approve_order(order_id, admin_notes="Cleared via PayPal Webhook")
+            return jsonify({'success': True, 'cleared': order_id}), 200
+    return jsonify({'success': True, 'message': 'Webhook received'}), 200
+
 @app.route('/api/payment/checkout', methods=['POST', 'OPTIONS'])
 def api_payment_checkout():
     if request.method == 'OPTIONS':
         return '', 204
-    # Real checkout redirects to create-order to avoid fake instant upgrades
     return api_payment_create_order()
 
 # =========================================================================
@@ -510,6 +574,48 @@ def api_admin_reject_order(order_id):
         return jsonify({'success': False, 'error': str(e)}), 404
     except Exception as e:
         return jsonify({'success': False, 'error': f"Failed to reject order: {str(e)}"}), 500
+
+# =========================================================================
+# PLATFORM TREASURY & COLD STORAGE WITHDRAWALS
+# =========================================================================
+@app.route('/api/admin/vault/summary', methods=['GET', 'OPTIONS'])
+@admin_required
+def api_admin_vault_summary():
+    if request.method == 'OPTIONS':
+        return '', 204
+    summary = get_vault_summary()
+    return jsonify({'success': True, 'vault': summary}), 200
+
+@app.route('/api/admin/vault/withdraw', methods=['POST', 'OPTIONS'])
+@admin_required
+def api_admin_vault_withdraw():
+    if request.method == 'OPTIONS':
+        return '', 204
+    user = get_current_user()
+    admin_email = user['email'] if user else 'admin@spectre.io'
+    currency = (get_param('currency') or 'LTC').strip().upper()
+    destination = (get_param('destination_address') or get_param('address') or '').strip()
+    try:
+        amount = float(get_param('amount') or 0.0)
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'error': 'Invalid numeric amount.'}), 400
+    notes = (get_param('notes') or '').strip()
+
+    try:
+        receipt = execute_cold_withdrawal(admin_email, currency, destination, amount, notes)
+        return jsonify(receipt), 200
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Withdrawal failed: {str(e)}"}), 500
+
+@app.route('/api/admin/payments/sync', methods=['POST', 'OPTIONS'])
+@admin_required
+def api_admin_payments_sync():
+    if request.method == 'OPTIONS':
+        return '', 204
+    sync_result = sync_pending_payments()
+    return jsonify({'success': True, 'sync': sync_result}), 200
 
 # =========================================================================
 # OMNI-RECON AUTO-DETECTION ENGINE (TIER GATED)

@@ -21,6 +21,14 @@ def run_suite():
         test_order_rejection_flow
     )
 
+    from tests.test_vault import (
+        test_vault_key_generation_and_encryption,
+        test_vault_cold_withdrawal,
+        test_on_chain_verifier_auto_approval,
+        test_paypal_and_cashapp_verification,
+        test_admin_vault_api_endpoints
+    )
+
     test_functions = [
         test_input_classifier_types,
         test_cache_ttl_and_hashing,
@@ -39,7 +47,12 @@ def run_suite():
         test_strict_paywall_blocks_free_users,
         test_landing_page_routes,
         test_logout_route_and_session_clearing,
-        test_admin_settings_and_plans_api
+        test_admin_settings_and_plans_api,
+        test_vault_key_generation_and_encryption,
+        test_vault_cold_withdrawal,
+        test_on_chain_verifier_auto_approval,
+        test_paypal_and_cashapp_verification,
+        test_admin_vault_api_endpoints
     ]
 
     print("=" * 60)

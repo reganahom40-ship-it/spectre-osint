@@ -546,6 +546,9 @@
                         </div>
 
                         <div class="vr-actions">
+                            <button type="button" class="btn-manual-poll" onclick="verifyOnChainNow()" style="background:linear-gradient(135deg,#10b981,#059669); border-color:#10b981; color:#fff;">
+                                <i class="fas fa-cube"></i> Check Blockchain Ledger Now
+                            </button>
                             <button type="button" class="btn-manual-poll" onclick="checkCurrentOrderStatus(true)">
                                 <i class="fas fa-rotate"></i> Refresh Status
                             </button>
@@ -623,9 +626,12 @@
             </div>
 
             <!-- Admin Navigation Tabs -->
-            <div class="admin-tabs-bar" style="display:flex; gap:8px; margin: 14px 20px 0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+            <div class="admin-tabs-bar" style="display:flex; gap:8px; margin: 14px 20px 0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; overflow-x:auto;">
                 <button class="pmethod-tab active" id="tab-btn-admin-pay" onclick="switchAdminTab('pay')">
                     <i class="fas fa-wallet text-cyan"></i> Payment Wallets
+                </button>
+                <button class="pmethod-tab" id="tab-btn-admin-vault" onclick="switchAdminTab('vault')">
+                    <i class="fas fa-vault text-emerald"></i> Treasury & Cold Vault
                 </button>
                 <button class="pmethod-tab" id="tab-btn-admin-plans" onclick="switchAdminTab('plans')">
                     <i class="fas fa-tags text-amber"></i> Pricing & Plans
@@ -642,12 +648,12 @@
                 <!-- TAB 1: Payment Wallets -->
                 <div class="admin-tab-pane active" id="tab-pane-admin-pay">
                     <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:14px;">
-                        Configure your payout wallets and accounts. All checkout requests immediately direct to these destinations.
+                        Configure your payout wallets, merchant accounts, and automated PayPal/CashApp API verification credentials.
                     </div>
                     <form id="admin-payments-form" onsubmit="return false;">
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
                             <div class="form-group">
-                                <label class="form-label"><i class="fa-solid fa-coins text-cyan"></i> Litecoin (LTC) Address</label>
+                                <label class="form-label"><i class="fa-solid fa-coins text-cyan"></i> Litecoin (LTC) Fallback Address</label>
                                 <input type="text" id="adm-ltc" class="form-input" placeholder="ltc1q...">
                             </div>
                             <div class="form-group">
@@ -659,11 +665,11 @@
                                 <input type="url" id="adm-paypal-link" class="form-input" placeholder="https://paypal.me/...">
                             </div>
                             <div class="form-group">
-                                <label class="form-label"><i class="fa-brands fa-bitcoin text-amber"></i> Bitcoin (BTC) Address</label>
+                                <label class="form-label"><i class="fa-brands fa-bitcoin text-amber"></i> Bitcoin (BTC) Fallback Address</label>
                                 <input type="text" id="adm-btc" class="form-input" placeholder="bc1q...">
                             </div>
                             <div class="form-group">
-                                <label class="form-label"><i class="fa-brands fa-ethereum text-purple"></i> ETH / USDT Address</label>
+                                <label class="form-label"><i class="fa-brands fa-ethereum text-purple"></i> ETH / USDT Fallback Address</label>
                                 <input type="text" id="adm-eth" class="form-input" placeholder="0x...">
                             </div>
                             <div class="form-group">
@@ -671,8 +677,40 @@
                                 <input type="text" id="adm-cashapp" class="form-input" placeholder="$Cashtag">
                             </div>
                         </div>
+
+                        <!-- Automated Verification API Integrations -->
+                        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top:12px; margin-bottom:14px;">
+                            <div style="font-weight:700; font-size:0.82rem; color:var(--accent-cyan); margin-bottom:10px;">
+                                <i class="fas fa-robot"></i> Automated Payment Verification Engines
+                            </div>
+                            <div style="display:grid; grid-template-columns:2fr 2fr 1fr; gap:10px; margin-bottom:10px;">
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fa-brands fa-paypal text-indigo"></i> PayPal REST Client ID</label>
+                                    <input type="text" id="adm-paypal-client-id" class="form-input" placeholder="Client ID from developer.paypal.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-key text-amber"></i> PayPal REST Secret</label>
+                                    <input type="password" id="adm-paypal-client-secret" class="form-input" placeholder="Secret Key">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-globe"></i> PayPal Mode</label>
+                                    <select id="adm-paypal-mode" class="form-input">
+                                        <option value="live">Live</option>
+                                        <option value="sandbox">Sandbox</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group" style="max-width:320px;">
+                                <label class="form-label"><i class="fas fa-money-bill-transfer text-emerald"></i> Cash App Auto-Verify Mode</label>
+                                <select id="adm-cashapp-mode" class="form-input">
+                                    <option value="auto_note">Auto-Verify Note / Receipt Match</option>
+                                    <option value="manual">Manual Admin Approval Only</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <button type="button" class="btn-submit-action btn-action-primary" onclick="saveAdminSettings()">
-                            <i class="fas fa-floppy-disk"></i> Save Payment Routing
+                            <i class="fas fa-floppy-disk"></i> Save Payment & API Routing
                         </button>
                     </form>
                 </div>
@@ -785,6 +823,135 @@
                                 <tr><td colspan="4" style="padding:12px; text-align:center; color:var(--text-muted);">Loading user records...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- TAB 5: Platform Treasury & Cold Vault -->
+                <div class="admin-tab-pane" id="tab-pane-admin-vault" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                        <div style="font-size:0.8rem; color:var(--text-secondary);">
+                            Custodial wallet balances, on-chain reserves, and cold storage sweeps. All crypto payments sit here in platform custody until swept.
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn-copy-address" onclick="runAdminPaymentSync()" style="padding:6px 12px; background:rgba(0,240,255,0.1); border-color:var(--accent-cyan); color:var(--accent-cyan);">
+                                <i class="fas fa-satellite-dish"></i> Run Payment Scan
+                            </button>
+                            <button type="button" class="btn-copy-address" onclick="loadAdminVault()" style="padding:6px 12px;">
+                                <i class="fas fa-rotate"></i> Refresh Vault
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Treasury Balances Cards -->
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:16px;">
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
+                            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;"><i class="fas fa-sack-dollar text-amber"></i> Total Valuation</div>
+                            <div style="font-size:1.3rem; font-weight:800; color:#fff; margin-top:4px;" id="vault-stat-total-fiat">$0.00 <span style="font-size:0.75rem; color:var(--text-muted);">USD</span></div>
+                            <div style="font-size:0.7rem; color:var(--accent-emerald); margin-top:2px;"><i class="fas fa-shield-halved"></i> 100% Cold Custody</div>
+                        </div>
+
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(0,240,255,0.2); border-radius:8px; padding:12px;">
+                            <div style="font-size:0.7rem; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.05em;"><i class="fa-solid fa-coins"></i> Litecoin (LTC) Vault</div>
+                            <div style="font-size:1.15rem; font-weight:800; color:var(--accent-cyan); margin-top:4px;" id="vault-stat-ltc-bal">0.0000 <span style="font-size:0.75rem;">LTC</span></div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-ltc-fiat">≈ $0.00 USD</div>
+                        </div>
+
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:12px;">
+                            <div style="font-size:0.7rem; color:var(--accent-amber); text-transform:uppercase; letter-spacing:0.05em;"><i class="fa-brands fa-bitcoin"></i> Bitcoin (BTC) Vault</div>
+                            <div style="font-size:1.15rem; font-weight:800; color:var(--accent-amber); margin-top:4px;" id="vault-stat-btc-bal">0.000000 <span style="font-size:0.75rem;">BTC</span></div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-btc-fiat">≈ $0.00 USD</div>
+                        </div>
+
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(168,85,247,0.2); border-radius:8px; padding:12px;">
+                            <div style="font-size:0.7rem; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.05em;"><i class="fa-brands fa-ethereum"></i> Ethereum (ETH) Vault</div>
+                            <div style="font-size:1.15rem; font-weight:800; color:var(--accent-purple); margin-top:4px;" id="vault-stat-eth-bal">0.00000 <span style="font-size:0.75rem;">ETH</span></div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-eth-fiat">≈ $0.00 USD</div>
+                        </div>
+                    </div>
+
+                    <!-- Cold Storage Sweep / Withdrawal Box -->
+                    <div style="background:rgba(16,185,129,0.04); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:14px; margin-bottom:16px;">
+                        <div style="font-weight:700; font-size:0.85rem; color:#34d399; margin-bottom:10px;">
+                            <i class="fas fa-arrow-down-to-bracket"></i> Sweep / Withdraw to External Cold Wallet
+                        </div>
+                        <form id="admin-vault-withdraw-form" onsubmit="return false;">
+                            <div style="display:grid; grid-template-columns:140px 2fr 1fr; gap:10px; margin-bottom:10px;">
+                                <div class="form-group">
+                                    <label class="form-label">Currency</label>
+                                    <select id="adm-vault-currency" class="form-input" onchange="updateWithdrawMaxPlaceholder()">
+                                        <option value="LTC" selected>LTC (Litecoin)</option>
+                                        <option value="BTC">BTC (Bitcoin)</option>
+                                        <option value="ETH">ETH (Ethereum)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Destination Cold Address</label>
+                                    <input type="text" id="adm-vault-dest" class="form-input" placeholder="Enter your personal external wallet address..." required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Amount</label>
+                                    <div style="display:flex; gap:4px;">
+                                        <input type="number" step="0.000001" id="adm-vault-amount" class="form-input" placeholder="0.00" required>
+                                        <button type="button" class="btn-copy-address" onclick="setWithdrawMax()" style="padding:6px 10px; font-size:0.7rem;">MAX</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px; align-items:flex-end;">
+                                <div class="form-group" style="flex:1;">
+                                    <input type="text" id="adm-vault-notes" class="form-input" placeholder="Withdrawal notes (e.g. Cold Sweep to Hardware Wallet)">
+                                </div>
+                                <button type="button" class="btn-submit-action" onclick="executeAdminWithdrawal()" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; padding:10px 20px; white-space:nowrap;">
+                                    <i class="fas fa-paper-plane"></i> Execute Cold Withdrawal
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Withdrawal Audit Table -->
+                    <div style="margin-bottom:14px;">
+                        <div style="font-weight:700; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">
+                            <i class="fas fa-clock-rotate-left"></i> Cold Storage Withdrawal Audit History
+                        </div>
+                        <div style="max-height:160px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:6px;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
+                                <thead>
+                                    <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
+                                        <th style="padding:6px 8px;">ID</th>
+                                        <th style="padding:6px 8px;">Coin</th>
+                                        <th style="padding:6px 8px;">Amount</th>
+                                        <th style="padding:6px 8px;">Destination</th>
+                                        <th style="padding:6px 8px;">Sweep TXID</th>
+                                        <th style="padding:6px 8px;">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-vault-withdrawals-tbody">
+                                    <tr><td colspan="6" style="padding:10px; text-align:center; color:var(--text-muted);">No withdrawal history recorded yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Active Custodial Wallets Table -->
+                    <div>
+                        <div style="font-weight:700; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">
+                            <i class="fas fa-key"></i> Active Generated Custodial Wallets
+                        </div>
+                        <div style="max-height:160px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:6px;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
+                                <thead>
+                                    <tr style="background:rgba(255,255,255,0.04); color:var(--text-muted);">
+                                        <th style="padding:6px 8px;">Coin</th>
+                                        <th style="padding:6px 8px;">Custodial Address</th>
+                                        <th style="padding:6px 8px;">Balance</th>
+                                        <th style="padding:6px 8px;">Order Ref</th>
+                                        <th style="padding:6px 8px;">Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-vault-wallets-tbody">
+                                    <tr><td colspan="5" style="padding:10px; text-align:center; color:var(--text-muted);">Loading custodial wallets...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
