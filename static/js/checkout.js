@@ -1,4 +1,4 @@
-// SPECTRE Dedicated Checkout Page Logic
+// SPECTRE — Minimalist Auto-Detect Checkout Controller
 (function() {
     'use strict';
 
@@ -7,7 +7,7 @@
     let currentRail = 'ltc';
     let activeOrder = null;
     let paymentConfig = null;
-    let pollInterval = null;
+    let scanInterval = null;
     let countdownInterval = null;
     let qrcodeInstance = null;
 
@@ -24,71 +24,62 @@
                 paymentConfig = await resp.json();
             }
         } catch (e) {}
-        updateEstimatedAmount();
+        updateCalcAmount();
     }
 
     window.selectRail = function(rail) {
         currentRail = rail;
-        document.querySelectorAll('.rail-btn').forEach(btn => {
+        document.querySelectorAll('.rail-pill').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.rail === rail);
         });
-        updateEstimatedAmount();
+        updateCalcAmount();
     };
 
-    function updateEstimatedAmount() {
-        const estEl = document.getElementById('chk-estimated-amount');
-        if (!estEl) return;
+    function updateCalcAmount() {
+        const calcEl = document.getElementById('chk-calc-amount');
+        if (!calcEl) return;
 
         if (currentRail === 'ltc') {
             const val = (currentAmount / (cryptoRates.ltc || 85.0)).toFixed(4);
-            estEl.innerHTML = `<span style="color:#00f0ff;">${val} LTC</span> <span style="font-size:0.75rem;color:var(--text-muted);">(~$85 USD/LTC)</span>`;
+            calcEl.textContent = `${val} LTC (~$85/LTC)`;
         } else if (currentRail === 'btc') {
             const val = (currentAmount / (cryptoRates.btc || 65000.0)).toFixed(6);
-            estEl.innerHTML = `<span style="color:#f59e0b;">${val} BTC</span> <span style="font-size:0.75rem;color:var(--text-muted);">(~$65,000 USD/BTC)</span>`;
+            calcEl.textContent = `${val} BTC (~$65,000/BTC)`;
         } else if (currentRail === 'eth') {
             const val = (currentAmount / (cryptoRates.eth || 2600.0)).toFixed(5);
-            estEl.innerHTML = `<span style="color:#c084fc;">${val} ETH</span> <span style="font-size:0.75rem;color:var(--text-muted);">(~$2,600 USD/ETH)</span>`;
+            calcEl.textContent = `${val} ETH (~$2,600/ETH)`;
         } else if (currentRail === 'paypal') {
-            estEl.innerHTML = `<span style="color:#818cf8;">$${Number(currentAmount).toFixed(2)} USD</span> <span style="font-size:0.75rem;color:var(--text-muted);">(Direct PayPal)</span>`;
+            calcEl.textContent = `$${Number(currentAmount).toFixed(2)} USD (PayPal Direct)`;
         } else if (currentRail === 'cashapp') {
-            estEl.innerHTML = `<span style="color:#10b981;">$${Number(currentAmount).toFixed(2)} USD</span> <span style="font-size:0.75rem;color:var(--text-muted);">(CashApp Cashtag)</span>`;
+            calcEl.textContent = `$${Number(currentAmount).toFixed(2)} USD (Cash App)`;
         }
     }
 
-    function setStep(step) {
-        document.getElementById('chk-pane-1').style.display = (step === 1) ? 'block' : 'none';
-        document.getElementById('chk-pane-2').style.display = (step === 2) ? 'block' : 'none';
-        document.getElementById('chk-pane-3').style.display = (step === 3) ? 'block' : 'none';
+    window.setStep = function(step) {
+        document.getElementById('chk-pane-config').style.display = (step === 1) ? 'block' : 'none';
+        document.getElementById('chk-pane-deposit').style.display = (step === 2) ? 'block' : 'none';
+        document.getElementById('chk-pane-approved').style.display = (step === 3) ? 'block' : 'none';
 
-        const s1 = document.getElementById('chk-step-ind-1');
-        const s2 = document.getElementById('chk-step-ind-2');
-        const s3 = document.getElementById('chk-step-ind-3');
-
-        if (s1) {
-            s1.classList.toggle('active', step === 1);
-            s1.classList.toggle('completed', step > 1);
+        if (step === 1) {
+            if (scanInterval) clearInterval(scanInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
         }
-        if (s2) {
-            s2.classList.toggle('active', step === 2);
-            s2.classList.toggle('completed', step > 2);
-        }
-        if (s3) {
-            s3.classList.toggle('active', step === 3);
-            s3.classList.toggle('completed', step === 3);
-        }
-    }
+    };
 
     window.generateOrderVault = async function() {
-        const email = document.getElementById('chk-email-input').value.trim();
-        if (!email || !email.includes('@')) {
-            alert('Please provide a valid operator account email address.');
+        const emailInput = document.getElementById('chk-email-input');
+        const email = emailInput ? emailInput.value.trim() : '';
+
+        if (!email || !email.includes('@') || !email.includes('.')) {
+            alert('Please enter a valid operator email address.');
+            if (emailInput) emailInput.focus();
             return;
         }
 
-        const btn = document.getElementById('btn-create-chk-order');
+        const btn = document.getElementById('btn-create-order');
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deriving Keypair & Order Vault...';
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Initializing...';
         }
 
         try {
@@ -106,17 +97,17 @@
             if (resp.ok && data.success && data.order) {
                 activeOrder = data.order;
                 renderOrderDetails(activeOrder);
-                setStep(2);
-                startFastPolling(activeOrder.id);
+                window.setStep(2);
+                startAutoScanner(activeOrder.id);
             } else {
                 alert(data.error || 'Failed to initialize payment vault.');
             }
         } catch (err) {
-            alert('Network error initializing order: ' + err.message);
+            alert('Connection error: ' + err.message);
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<span>Generate Custodial Vault & Deposit Address</span> <i class="fas fa-arrow-right"></i>';
+                btn.innerHTML = `<span>Continue to Payment</span> <i class="fas fa-arrow-right"></i>`;
             }
         }
     };
@@ -143,57 +134,79 @@
         }
 
         if (addrDisp) addrDisp.textContent = order.deposit_address;
-        if (addrLbl) addrLbl.textContent = `${method.toUpperCase()} VAULT DESTINATION ADDRESS:`;
+        if (addrLbl) addrLbl.textContent = `${method.toUpperCase()} DEPOSIT ADDRESS:`;
 
         if (method === 'paypal' || method === 'cashapp') {
             if (qrWrap) qrWrap.style.display = 'none';
             if (dirLinkBox && extPayLink) {
                 dirLinkBox.style.display = 'block';
                 if (method === 'paypal') {
-                    extPayLink.href = (paymentConfig && paymentConfig.PAYPAL_LINK) || `https://paypal.me/${order.deposit_address}`;
-                    extPayLink.innerHTML = '<i class="fa-brands fa-paypal"></i> Pay via PayPal Direct Portal';
+                    extPayLink.href = (paymentConfig && paymentConfig.PAYPAL_LINK) || `mailto:${order.deposit_address}`;
+                    extPayLink.innerHTML = `<i class="fa-brands fa-paypal"></i> Pay with PayPal`;
+                    extPayLink.style.background = 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
                 } else {
                     const tag = (order.deposit_address || '').replace('$', '');
-                    extPayLink.href = `https://cash.app/$${tag}`;
-                    extPayLink.innerHTML = '<i class="fas fa-dollar-sign"></i> Open Cash App ($' + tag + ')';
+                    extPayLink.href = `https://cash.app/$${tag}/${order.amount_usd}`;
+                    extPayLink.innerHTML = `<i class="fas fa-dollar-sign"></i> Pay with Cash App`;
+                    extPayLink.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                 }
             }
         } else {
-            if (qrWrap) qrWrap.style.display = 'flex';
-            if (dirLinkBox) dirLinkBox.style.display = 'none';
-
-            const qrTarget = document.getElementById('chk-qrcode-target');
-            if (qrTarget) {
-                qrTarget.innerHTML = '';
-                let qrData = order.deposit_address;
-                if (method === 'ltc') qrData = `litecoin:${order.deposit_address}?amount=${order.crypto_amount}`;
-                else if (method === 'btc') qrData = `bitcoin:${order.deposit_address}?amount=${order.crypto_amount}`;
-                else if (method === 'eth') qrData = `ethereum:${order.deposit_address}`;
-
-                new QRCode(qrTarget, {
-                    text: qrData,
-                    width: 170,
-                    height: 170,
-                    colorDark: "#04060a",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
-                });
+            if (qrWrap) {
+                qrWrap.style.display = 'flex';
+                renderQRCode(order);
             }
+            if (dirLinkBox) dirLinkBox.style.display = 'none';
         }
 
-        startCountdown(30 * 60);
+        startCountdown(order.expires_at);
     }
 
-    function startCountdown(seconds) {
+    function renderQRCode(order) {
+        const target = document.getElementById('chk-qrcode-target');
+        if (!target) return;
+        target.innerHTML = '';
+
+        const method = (order.payment_method || 'ltc').toLowerCase();
+        let uri = order.deposit_address;
+        if (method === 'ltc') uri = `litecoin:${order.deposit_address}?amount=${order.crypto_amount}`;
+        else if (method === 'btc') uri = `bitcoin:${order.deposit_address}?amount=${order.crypto_amount}`;
+        else if (method === 'eth') uri = `ethereum:${order.deposit_address}?value=${order.crypto_amount}`;
+
+        try {
+            if (typeof QRCode !== 'undefined') {
+                qrcodeInstance = new QRCode(target, {
+                    text: uri,
+                    width: 160,
+                    height: 160,
+                    colorDark: '#00f0ff',
+                    colorLight: '#0d1117',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } else {
+                const img = document.createElement('img');
+                img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(uri)}&color=00f0ff&bgcolor=0d1117`;
+                img.alt = 'Scan Deposit Address';
+                img.style.width = '160px';
+                img.style.height = '160px';
+                target.appendChild(img);
+            }
+        } catch (e) {
+            console.warn('QR Code render fallback:', e);
+        }
+    }
+
+    function startCountdown(expiresAt) {
         if (countdownInterval) clearInterval(countdownInterval);
-        let rem = seconds;
         const timerEl = document.getElementById('chk-countdown-timer');
 
+        let target = expiresAt ? new Date(expiresAt).getTime() : Date.now() + 30 * 60 * 1000;
+
         countdownInterval = setInterval(() => {
-            rem--;
+            const rem = Math.max(0, Math.floor((target - Date.now()) / 1000));
             if (rem <= 0) {
-                clearInterval(countdownInterval);
                 if (timerEl) timerEl.textContent = 'EXPIRED';
+                clearInterval(countdownInterval);
                 return;
             }
             const m = String(Math.floor(rem / 60)).padStart(2, '0');
@@ -202,110 +215,103 @@
         }, 1000);
     }
 
-    function startFastPolling(orderId) {
-        if (pollInterval) clearInterval(pollInterval);
-        // Fast polling every 1200ms
-        pollInterval = setInterval(async () => {
+    // AUTOMATIC NETWORK SCANNER (Checks automatically every 1500ms — NO TXID INPUT NEEDED)
+    function startAutoScanner(orderId) {
+        if (scanInterval) clearInterval(scanInterval);
+
+        // Immediate first check
+        performAutoCheck(orderId);
+
+        // Poll every 1500ms
+        scanInterval = setInterval(() => {
             if (!activeOrder || activeOrder.status === 'approved') {
-                clearInterval(pollInterval);
+                clearInterval(scanInterval);
                 return;
             }
-            try {
-                const resp = await fetch(`/api/payment/order-status/${encodeURIComponent(orderId)}`);
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (data.success && data.approved) {
-                        clearInterval(pollInterval);
-                        onOrderConfirmed(data.order);
-                    }
-                }
-            } catch (e) {}
-        }, 1200);
+            performAutoCheck(orderId);
+        }, 1500);
     }
 
-    window.submitProofFast = async function() {
-        const txInput = document.getElementById('chk-proof-input');
-        const errBox = document.getElementById('chk-proof-err');
-        const btn = document.getElementById('btn-submit-chk-proof');
-        if (errBox) errBox.style.display = 'none';
-
-        const hash = txInput ? txInput.value.trim() : '';
-        if (!hash || hash.length < 4) {
-            if (errBox) {
-                errBox.textContent = 'Please enter a valid transaction hash or transfer reference identifier.';
-                errBox.style.display = 'block';
+    async function performAutoCheck(orderId) {
+        try {
+            const resp = await fetch(`/api/payment/auto-check/${encodeURIComponent(orderId)}`);
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.success && data.approved) {
+                    onOrderApproved(data.order);
+                }
             }
-            return;
-        }
+        } catch (e) {}
+    }
 
+    // Manual "Check Now" button
+    window.checkPaymentNow = async function() {
+        if (!activeOrder || !activeOrder.id) return;
+
+        const btn = document.getElementById('btn-manual-scan');
+        const titleEl = document.getElementById('chk-scan-status-title');
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
         }
+        if (titleEl) titleEl.textContent = 'Scanning ledger mempool now...';
 
         try {
-            const resp = await fetch('/api/payment/submit-proof', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    order_id: activeOrder.id,
-                    tx_hash: hash
-                })
-            });
-
+            const resp = await fetch(`/api/payment/auto-check/${encodeURIComponent(activeOrder.id)}`);
             const data = await resp.json();
-            if (resp.ok && data.success) {
-                if (data.approved) {
-                    onOrderConfirmed(data.order);
-                } else {
-                    // Check on-chain immediately
-                    await verifyOnChainFast();
-                }
+            if (resp.ok && data.success && data.approved) {
+                onOrderApproved(data.order);
             } else {
-                if (errBox) {
-                    errBox.textContent = data.error || 'Proof submission failed.';
-                    errBox.style.display = 'block';
-                }
+                if (titleEl) titleEl.textContent = 'Listening for incoming transfer...';
             }
         } catch (e) {
-            if (errBox) {
-                errBox.textContent = 'Network error: ' + e.message;
-                errBox.style.display = 'block';
-            }
+            if (titleEl) titleEl.textContent = 'Network check retry...';
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-shield-check"></i> Verify Settlement';
+                btn.innerHTML = '<i class="fas fa-rotate"></i> Check Now';
             }
         }
     };
 
-    window.verifyOnChainFast = async function() {
-        if (!activeOrder || !activeOrder.id) return;
-        try {
-            const resp = await fetch(`/api/payment/verify-on-chain/${encodeURIComponent(activeOrder.id)}`, { method: 'POST' });
-            const data = await resp.json();
-            if (resp.ok && data.verified) {
-                onOrderConfirmed(data.order);
-            }
-        } catch (e) {}
-    };
-
-    function onOrderConfirmed(order) {
-        if (pollInterval) clearInterval(pollInterval);
+    function onOrderApproved(order) {
+        if (scanInterval) clearInterval(scanInterval);
         if (countdownInterval) clearInterval(countdownInterval);
 
-        const tierEl = document.getElementById('chk-confirmed-tier');
-        if (tierEl) tierEl.textContent = ((order && order.plan_id) || 'LIFETIME').toUpperCase();
+        const emailEl = document.getElementById('chk-approved-email');
+        if (emailEl) emailEl.textContent = (order && order.email) || 'Your Account';
 
-        setStep(3);
+        window.setStep(3);
 
+        // Auto launch console after 1.2s
         setTimeout(() => {
             window.location.href = '/app';
-        }, 1800);
+        }, 1200);
     }
+
+    window.copyDynamicText = function(targetId, btnId, label) {
+        const el = document.getElementById(targetId);
+        if (!el) return;
+        const text = el.innerText || el.textContent;
+
+        navigator.clipboard.writeText(text.trim()).then(() => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                const orig = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-check text-emerald"></i> Copied!`;
+                btn.style.borderColor = 'var(--chk-emerald)';
+                btn.style.color = 'var(--chk-emerald)';
+                setTimeout(() => {
+                    btn.innerHTML = orig;
+                    btn.style.borderColor = '';
+                    btn.style.color = '';
+                }, 1500);
+            }
+        });
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
         loadConfig();
     });
+
 })();

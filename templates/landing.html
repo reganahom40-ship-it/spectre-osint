@@ -580,12 +580,27 @@
                         <span><strong>100% Custodial Protection:</strong> Funds are locked securely in your dedicated platform vault wallet and verified continuously on public distributed ledgers.</span>
                     </div>
 
-                    <div class="step-nav-buttons">
+                    <!-- LIVE AUTO-SCANNER RADAR (NO TXID REQUIRED) -->
+                    <div class="auto-scan-card" style="margin-top:14px; background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.25); border-radius:10px; padding:12px 14px; display:flex; align-items:center; gap:12px;">
+                        <div class="scan-radar-indicator" style="position:relative; width:20px; height:20px; display:flex; align-items:center; justify-content:center;">
+                            <span class="radar-ping" style="position:absolute; width:100%; height:100%; border-radius:50%; border:2px solid var(--accent-cyan); animation:radarRipple 1.6s cubic-bezier(0,0.2,0.8,1) infinite;"></span>
+                            <span class="radar-core" style="width:8px; height:8px; border-radius:50%; background:var(--accent-cyan); box-shadow:0 0 10px var(--accent-cyan);"></span>
+                        </div>
+                        <div class="scan-text-wrap" style="flex:1;">
+                            <div class="scan-title" id="modal-scan-title" style="font-size:0.82rem; font-weight:700; color:#fff;">Scanning blockchain for incoming transfer...</div>
+                            <div class="scan-sub" style="font-size:0.72rem; color:var(--text-muted);">Mempool scanned automatically • Instant activation</div>
+                        </div>
+                        <button type="button" class="btn-scan-trigger" onclick="checkModalPaymentNow()" style="background:rgba(0,240,255,0.12); border:1px solid rgba(0,240,255,0.35); color:var(--accent-cyan); font-size:0.75rem; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer;">
+                            <i class="fas fa-rotate"></i> Check Now
+                        </button>
+                    </div>
+
+                    <div class="step-nav-buttons" style="margin-top:14px;">
                         <button type="button" class="btn-nav-back" onclick="goToStep(1)">
                             <i class="fas fa-arrow-left"></i> Change Method
                         </button>
-                        <button type="button" class="btn-submit-action btn-action-primary" onclick="goToStep(3)" style="flex:1;">
-                            <span>I Have Sent Payment — Submit Proof</span>
+                        <button type="button" class="btn-submit-action btn-action-primary" onclick="checkModalPaymentNow()" style="flex:1;">
+                            <span>I Have Sent Payment — Auto Verify</span>
                             <i class="fas fa-check"></i>
                         </button>
                     </div>

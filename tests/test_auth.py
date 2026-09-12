@@ -252,6 +252,23 @@ def test_dedicated_checkout_page_route():
     assert chk_prem.status_code == 200
     assert b'Pro Tactical' in chk_prem.data or b'19' in chk_prem.data
 
+def test_auto_check_endpoint():
+    client = app.test_client()
+    create_resp = client.post('/api/payment/create-order', json={
+        'email': 'autocheck_tester@spectre.io',
+        'plan_id': 'lifetime',
+        'method': 'ltc'
+    })
+    assert create_resp.status_code == 200
+    order_id = json.loads(create_resp.data)['order']['id']
+
+    # Auto-check without TXID
+    chk_resp = client.get(f'/api/payment/auto-check/{order_id}')
+    assert chk_resp.status_code == 200
+    c_data = json.loads(chk_resp.data)
+    assert c_data['success'] is True
+    assert 'order' in c_data
+
 def test_logout_route_and_session_clearing():
     client = app.test_client()
     # 1. Login as admin

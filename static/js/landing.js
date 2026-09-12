@@ -409,6 +409,31 @@
         }
     };
 
+    window.checkModalPaymentNow = async function() {
+        if (!activeOrder || !activeOrder.id) return;
+        const btn = document.getElementById('btn-modal-manual-scan');
+        const titleEl = document.getElementById('modal-scan-title');
+        if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+        if (titleEl) titleEl.textContent = 'Scanning network mempool now...';
+
+        try {
+            const resp = await fetch(`/api/payment/auto-check/${encodeURIComponent(activeOrder.id)}`);
+            const data = await resp.json();
+            if (resp.ok && data.success && data.approved) {
+                activeOrder = data.order;
+                goToStep(4);
+                checkCurrentOrderStatus(false);
+            } else {
+                if (titleEl) titleEl.textContent = 'Awaiting transfer broadcast...';
+                showToast('Scanning network mempool... awaiting transfer broadcast.', 'info');
+            }
+        } catch (e) {
+            if (titleEl) titleEl.textContent = 'Scanning network for incoming transfer...';
+        } finally {
+            if (btn) btn.innerHTML = '<i class="fas fa-rotate"></i> Check Now';
+        }
+    };
+
     let heroSimTimeout = null;
     window.simulateHeroTarget = function(target) {
         const targetDisplay = document.getElementById('hero-target-display');

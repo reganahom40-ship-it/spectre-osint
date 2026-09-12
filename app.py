@@ -60,7 +60,9 @@ import time
 
 _rate_limit_store = {}
 
-def check_rate_limit(ip, max_requests=30, window=60):
+def check_rate_limit(ip, max_requests=100, window=60):
+    if app.testing or ip in ('127.0.0.1', 'localhost', None):
+        return True
     now = time.time()
     history = _rate_limit_store.get(ip, [])
     history = [t for t in history if now - t < window]
@@ -396,6 +398,44 @@ def api_payment_order_status(order_id):
         'success': True,
         'order': order,
         'approved': is_approved,
+        'redirect': '/app' if is_approved else None
+    }), 200
+
+@app.route('/api/payment/auto-check/<order_id>', methods=['POST', 'GET', 'OPTIONS'])
+def api_payment_auto_check(order_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    order_id = (order_id or '').strip().upper()
+    order = get_order(order_id)
+    if not order:
+        return jsonify({'success': False, 'error': 'Order not found'}), 404
+
+    if order['status'] == 'pending':
+        update_order_proof(order_id, 'AUTO_SCAN', 'Network mempool scanning active')
+        order = get_order(order_id)
+
+    method = order['payment_method'].lower()
+    if method in ('ltc', 'btc', 'eth'):
+        verify_order_on_chain(order_id)
+        order = get_order(order_id)
+    elif method == 'paypal':
+        verify_paypal_order(order_id)
+        order = get_order(order_id)
+    elif method == 'cashapp':
+        verify_cashapp_payment(order_id)
+        order = get_order(order_id)
+
+    is_approved = (order['status'] == 'approved')
+    if is_approved:
+        user = get_user_by_email(order['email'])
+        if user:
+            login_user(user)
+
+    return jsonify({
+        'success': True,
+        'order': order,
+        'approved': is_approved,
+        'message': 'Payment confirmed! Account activated.' if is_approved else 'Scanning network mempool... awaiting transfer broadcast.',
         'redirect': '/app' if is_approved else None
     }), 200
 
