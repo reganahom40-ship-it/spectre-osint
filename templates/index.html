@@ -18,6 +18,12 @@
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="/static/css/style.css?v=20260910_real_upgrade_v39">
+    <script>
+    window.__page_errors = [];
+    window.addEventListener('error', function(e) {
+        window.__page_errors.push(e.message + ' at ' + e.filename + ':' + e.lineno);
+    });
+    </script>
 </head>
 <body>
 
@@ -1019,6 +1025,15 @@
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260910_real_upgrade_v39"></script>
+    <script src="/static/js/app.js?v=20260912_auth_v43"></script>
+    <div id="__err_report" style="display:none;"></div>
+    <script>
+    window.addEventListener('load', function() {
+        var rep = document.getElementById('__err_report');
+        if (rep) {
+            rep.textContent = window.__page_errors.length === 0 ? "PAGE_NO_ERRORS_CLEAN" : window.__page_errors.join(' | ');
+        }
+    });
+    </script>
 </body>
 </html>

@@ -2137,6 +2137,11 @@
                     </div>
                     <div class="hit-tags-grid" style="max-height:160px;overflow-y:auto;">
                         ${dorkList.slice(0, 10).map(d => `<a href="${d.search_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3);color:#a5b4fc;"><i class="fas fa-arrow-up-right-from-square"></i> ${d.name}</a>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         // 13. Breach Intelligence & Risk Engine Card
         const breachData = res.breaches || (data.data && data.data.dossier && data.data.dossier.breaches);
         const riskData = data.risk || (data.data && data.data.risk);
