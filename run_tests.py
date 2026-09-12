@@ -16,7 +16,7 @@ def run_suite():
         test_user_registration_and_hashing, test_tier_upgrade_and_persistence,
         test_admin_upgrade_api_routes, test_payment_checkout_flow,
         test_payment_config_endpoint, test_strict_paywall_blocks_free_users,
-        test_landing_page_routes
+        test_landing_page_routes, test_logout_route_and_session_clearing
     )
 
     test_functions = [
@@ -34,7 +34,8 @@ def run_suite():
         test_payment_checkout_flow,
         test_payment_config_endpoint,
         test_strict_paywall_blocks_free_users,
-        test_landing_page_routes
+        test_landing_page_routes,
+        test_logout_route_and_session_clearing
     ]
 
     print("=" * 60)

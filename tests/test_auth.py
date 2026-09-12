@@ -128,3 +128,21 @@ def test_landing_page_routes():
     # Explicit /landing route
     explicit_landing = client.get('/landing')
     assert explicit_landing.status_code == 200
+
+def test_logout_route_and_session_clearing():
+    client = app.test_client()
+    # 1. Login as admin
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+    # 2. Verify dashboard renders for admin
+    dash_resp = client.get('/')
+    assert dash_resp.status_code == 200
+    assert b'TOPOLOGY' in dash_resp.data or b'SPECTRE' in dash_resp.data
+    
+    # 3. Hit /logout route directly
+    logout_resp = client.get('/logout', follow_redirects=True)
+    assert logout_resp.status_code == 200
+    # 4. Now root renders landing page
+    assert b'CONFIDENTIAL // OPERATOR ACCESS ONLY' in logout_resp.data or b'RESTRICTED OPERATOR' in logout_resp.data

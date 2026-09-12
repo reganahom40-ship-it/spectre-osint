@@ -108,19 +108,28 @@ def before_request_access_guard():
 def index():
     user = get_current_user()
     if user and user.get('tier') in ('premium', 'lifetime', 'admin'):
-        return render_template('index.html')
-    return render_template('landing.html')
+        return render_template('index.html', user=user)
+    return render_template('landing.html', user=user)
 
 @app.route('/app', methods=['GET'])
 def member_dashboard():
     user = get_current_user()
     if not user or user.get('tier') not in ('premium', 'lifetime', 'admin'):
         return redirect('/?access=required')
-    return render_template('index.html')
+    return render_template('index.html', user=user)
 
 @app.route('/landing', methods=['GET'])
 def landing_page():
-    return render_template('landing.html')
+    user = get_current_user()
+    return render_template('landing.html', user=user)
+
+@app.route('/logout', methods=['GET', 'POST'])
+def direct_logout():
+    logout_user()
+    session.clear()
+    resp = redirect('/?logged_out=1')
+    resp.delete_cookie('session')
+    return resp
 
 @app.route('/health', methods=['GET'])
 def health():

@@ -45,12 +45,28 @@
             </ul>
 
             <div class="nav-actions">
+                {% if user and user.get('tier') in ('premium', 'lifetime', 'admin') %}
+                <a href="/app" class="btn-nav-cta" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fas fa-terminal"></i> Console Active
+                </a>
+                <a href="/logout" class="btn-nav-signin" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-color:rgba(244,63,94,0.5); color:#f43f5e;">
+                    <i class="fas fa-power-off"></i> Logout
+                </a>
+                {% elif user %}
+                <button class="btn-nav-cta" onclick="openCheckoutModal('lifetime')">
+                    <i class="fas fa-crown"></i> Upgrade
+                </button>
+                <a href="/logout" class="btn-nav-signin" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-color:rgba(244,63,94,0.5); color:#f43f5e;">
+                    <i class="fas fa-power-off"></i> Logout
+                </a>
+                {% else %}
                 <button class="btn-nav-signin" onclick="openAuthModal('login')">
                     <i class="fas fa-user-lock"></i> Operator Sign In
                 </button>
                 <button class="btn-nav-cta" onclick="openCheckoutModal('lifetime')">
                     <i class="fas fa-bolt"></i> Get Access
                 </button>
+                {% endif %}
             </div>
         </div>
     </header>

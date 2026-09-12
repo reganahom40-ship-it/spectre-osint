@@ -2850,17 +2850,28 @@
             });
         }
 
-        const menuItemLogout = document.getElementById('menu-item-logout');
-        if (menuItemLogout) {
-            menuItemLogout.addEventListener('click', async () => {
-                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
+        const directLogoutBtn = document.getElementById('btn-direct-logout');
+        if (directLogoutBtn) {
+            directLogoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                showToast('Logging out...', 'fas fa-power-off');
                 try {
                     await fetch('/api/auth/logout', { method: 'POST' });
-                    showToast('Signed out of session', 'fas fa-arrow-right-from-bracket');
-                    await auth.fetchCurrentUser();
-                } catch (e) {
-                    showToast('Logout error', 'fas fa-triangle-exclamation');
-                }
+                } catch (err) {}
+                window.location.href = '/logout';
+            });
+        }
+
+        const menuItemLogout = document.getElementById('menu-item-logout');
+        if (menuItemLogout) {
+            menuItemLogout.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
+                showToast('Logging out...', 'fas fa-power-off');
+                try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                } catch (err) {}
+                window.location.href = '/logout';
             });
         }
 
