@@ -1,27 +1,57 @@
 import requests
 import ssl
 import socket
+import ipaddress
 from urllib.parse import urlparse
+
+def is_safe_url(url: str) -> bool:
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    if not hostname:
+        return False
+    try:
+        addr_info = socket.getaddrinfo(hostname, None)
+        for _, _, _, _, sockaddr in addr_info:
+            ip = sockaddr[0]
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved or ip_obj.is_link_local or ip_obj.is_multicast:
+                return False
+    except Exception:
+        return False
+    return True
 
 def analyze_headers(url: str) -> dict:
     if not url.startswith('http://') and not url.startswith('https://'):
         url = 'https://' + url
+        
+    if not is_safe_url(url):
+        raise ValueError('Blocked: target resolves to internal/reserved IP address')
 
     try:
-        response = requests.get(url, allow_redirects=True, timeout=10, stream=True)
+        with requests.get(url, allow_redirects=True, timeout=10, stream=True) as response:
+            final_url = response.url
+            status_code = response.status_code
+            headers = dict(response.headers)
+            
+            redirect_chain = []
+            for r in response.history:
+                redirect_chain.append({
+                    'status_code': r.status_code,
+                    'url': r.url
+                })
+            
+            cookies = []
+            for c in response.cookies:
+                cookies.append({
+                    'name': c.name,
+                    'domain': c.domain,
+                    'path': c.path,
+                    'secure': c.secure,
+                    'httponly': c.has_nonstandard_attr('httponly') or c.has_nonstandard_attr('HttpOnly'),
+                    'samesite': c._rest.get('samesite') or c._rest.get('SameSite')
+                })
     except Exception as e:
         raise RuntimeError(f"Failed to fetch {url}: {str(e)}")
-
-    final_url = response.url
-    status_code = response.status_code
-    headers = dict(response.headers)
-
-    redirect_chain = []
-    for r in response.history:
-        redirect_chain.append({
-            'status_code': r.status_code,
-            'url': r.url
-        })
 
     sec_headers_to_check = [
         'Strict-Transport-Security',
@@ -57,17 +87,6 @@ def analyze_headers(url: str) -> dict:
             server = headers[key]
         elif key.lower() == 'x-powered-by':
             powered_by = headers[key]
-
-    cookies = []
-    for c in response.cookies:
-        cookies.append({
-            'name': c.name,
-            'domain': c.domain,
-            'path': c.path,
-            'secure': c.secure,
-            'httponly': c.has_nonstandard_attr('httponly') or c.has_nonstandard_attr('HttpOnly'),
-            'samesite': c._rest.get('samesite') or c._rest.get('SameSite')
-        })
 
     ssl_info = None
     parsed = urlparse(final_url)

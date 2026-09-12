@@ -354,19 +354,19 @@
                                 </div>
                                 <div class="telemetry-meters-row">
                                     <div class="tmeter-item">
-                                        <span class="tmeter-label">SOCKET POOL</span>
-                                        <span class="tmeter-val text-green">50 / 50 ACTIVE</span>
+                                        <span class="tmeter-label">INVESTIGATION ENGINE</span>
+                                        <span class="tmeter-val text-green" id="engine-status-val">READY</span>
                                     </div>
                                     <div class="tmeter-item">
-                                        <span class="tmeter-label">STREAM LATENCY</span>
-                                        <span class="tmeter-val text-cyan">~14ms</span>
+                                        <span class="tmeter-label">LAST EXECUTION</span>
+                                        <span class="tmeter-val text-cyan" id="omni-latency-meter">READY</span>
                                     </div>
                                 </div>
                                 <div class="telemetry-event-feed" id="home-event-feed">
-                                    <div class="tevent-item"><span class="tevent-time">LIVE</span> <span class="tevent-badge badge-green">PASSIVE</span> Ingestion sockets initialized</div>
-                                    <div class="tevent-item"><span class="tevent-time">10:04</span> <span class="tevent-badge badge-cyan">BGP</span> RIPE Routing tables synchronized</div>
-                                    <div class="tevent-item"><span class="tevent-time">10:04</span> <span class="tevent-badge badge-purple">SSL</span> CT Log certificate stream active</div>
-                                    <div class="tevent-item"><span class="tevent-time">10:04</span> <span class="tevent-badge badge-amber">TELCO</span> E.164 ITU-T database loaded</div>
+                                    <div class="tevent-item"><span class="tevent-time">ENGINE</span> <span class="tevent-badge badge-green">ONLINE</span> SPECTRE Multi-Vector Recon Pipeline Active</div>
+                                    <div class="tevent-item"><span class="tevent-time">HIBP</span> <span class="tevent-badge badge-cyan">BREACH</span> Have I Been Pwned API v3 Integration Ready</div>
+                                    <div class="tevent-item"><span class="tevent-time">RIPE</span> <span class="tevent-badge badge-purple">BGP</span> Autonomous Routing Tables Available</div>
+                                    <div class="tevent-item"><span class="tevent-time">SEC</span> <span class="tevent-badge badge-amber">SSRF</span> Hardened Boundary Filter Enabled</div>
                                 </div>
                             </div>
                         </div>
@@ -585,15 +585,15 @@
                     <div class="feed-sidebar-col">
                         <div class="stat-hud-card">
                             <span class="shud-lbl">Probes Executed</span>
-                            <span class="shud-val text-cyan" id="counter-probes">1,248</span>
+                            <span class="shud-val text-cyan" id="counter-probes">0</span>
                         </div>
                         <div class="stat-hud-card">
-                            <span class="shud-lbl">Active Async Sockets</span>
-                            <span class="shud-val text-green">50 POOL</span>
+                            <span class="shud-lbl">Worker Concurrency</span>
+                            <span class="shud-val text-green">12 THREADS</span>
                         </div>
                         <div class="stat-hud-card">
-                            <span class="shud-lbl">Average Pipeline Latency</span>
-                            <span class="shud-val">120ms</span>
+                            <span class="shud-lbl">Measured Pipeline Latency</span>
+                            <span class="shud-val" id="hud-avg-latency">—</span>
                         </div>
                         <div class="stat-hud-card">
                             <span class="shud-lbl">Active Cyber Profile</span>

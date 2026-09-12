@@ -74,28 +74,43 @@ def lookup_domain(domain: str) -> dict:
     except Exception:
         pass
 
-    robots_txt = None
+    is_internal = False
     try:
-        resp = requests.get(f"http://{domain}/robots.txt", timeout=5)
-        if resp.status_code == 200:
-            robots_txt = resp.text
+        import ipaddress
+        addr_info = socket.getaddrinfo(domain, None)
+        for _, _, _, _, sockaddr in addr_info:
+            ip = sockaddr[0]
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved or ip_obj.is_link_local or ip_obj.is_multicast:
+                is_internal = True
+                break
     except Exception:
         pass
 
+    robots_txt = None
+    if not is_internal:
+        try:
+            resp = requests.get(f"http://{domain}/robots.txt", timeout=5)
+            if resp.status_code == 200:
+                robots_txt = resp.text
+        except Exception:
+            pass
+
     sitemap = None
-    try:
-        resp = requests.get(f"http://{domain}/sitemap.xml", timeout=5)
-        if resp.status_code == 200:
-            sitemap = resp.text[:500]
-    except Exception:
-        pass
+    if not is_internal:
+        try:
+            resp = requests.get(f"http://{domain}/sitemap.xml", timeout=5)
+            if resp.status_code == 200:
+                sitemap = resp.text[:500]
+        except Exception:
+            pass
 
     return {
         'domain': domain,
         'whois': domain_whois,
         'dns': dns_records,
         'ssl': ssl_info,
-        'subdomains': subdomains,
+        'subdomains_ct': subdomains,
         'robots_txt': robots_txt,
         'sitemap': sitemap
     }

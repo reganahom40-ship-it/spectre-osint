@@ -65,6 +65,10 @@ def lookup_discord(user_id: str) -> dict:
         'created_timestamp': int(timestamp_ms / 1000),
         'account_age_days': account_age_days,
         'account_age_years': round(account_age_days / 365.25, 2),
+        'valid': True,
+        'year': creation_date.year,
+        'timestamp_utc': creation_date.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        'age_days': account_age_days,
         'snowflake_metadata': {
             'worker_id': worker_id,
             'process_id': process_id,

@@ -10,7 +10,7 @@
     let audioCtx = null;
     let networkGraph = null;
     let currentOmniTarget = null;
-    let totalProbesCounter = 1248;
+    let totalProbesCounter = 0;
     let streamPaused = false;
     let streamInterval = null;
 
@@ -1468,7 +1468,59 @@
             const tNodeId = `target_${Date.now()}`;
             latestTargetNodeId = tNodeId;
 
-            // 1. Root Target Node
+            // Direct Engine Topology Ingestion
+            if (data.graph && data.graph.nodes && data.graph.nodes.length > 1) {
+                const gNodes = data.graph.nodes;
+                const gEdges = data.graph.edges || [];
+                const rootId = gNodes[0].id;
+                latestTargetNodeId = rootId;
+
+                try {
+                    edges.add({ id: `e_root_${rootId}`, from: 'spectre', to: rootId, color: { color: '#00f0ff' }, width: 2, arrows: 'to' });
+                } catch (e) {}
+
+                gNodes.forEach((gn, idx) => {
+                    setTimeout(() => {
+                        if (!nodes.get(gn.id)) {
+                            nodes.add({
+                                id: gn.id,
+                                label: gn.label,
+                                type: gn.group || 'INTEL_NODE',
+                                meta: gn.title || `${gn.label} (${gn.group || 'NODE'})`,
+                                color: gn.color || '#00f0ff',
+                                shape: gn.shape || 'dot',
+                                size: gn.size || 14,
+                                font: { color: '#e2e8f0', face: 'JetBrains Mono', size: 10 }
+                            });
+                        }
+                    }, idx * 25);
+                });
+
+                gEdges.forEach((ge, idx) => {
+                    setTimeout(() => {
+                        const edgeId = `ge_${ge.from}_${ge.to}`;
+                        if (!edges.get(edgeId)) {
+                            edges.add({
+                                id: edgeId,
+                                from: ge.from,
+                                to: ge.to,
+                                label: ge.label || '',
+                                color: ge.color || { color: 'rgba(0,240,255,0.45)' },
+                                arrows: 'to',
+                                font: { color: 'rgba(255,255,255,0.45)', size: 9, align: 'middle' }
+                            });
+                        }
+                    }, (gNodes.length * 25) + (idx * 20));
+                });
+
+                setTimeout(() => {
+                    updateGraphNodeCount();
+                    networkGraph.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+                }, (gNodes.length * 25) + (gEdges.length * 20) + 80);
+                return;
+            }
+
+            // 1. Root Target Node Fallback
             nodes.add({
                 id: tNodeId,
                 label: `TARGET: ${target}`,
@@ -1664,9 +1716,17 @@
             const data = await resp.json();
             const latencyMs = Date.now() - startTime;
 
-            totalProbesCounter += 10;
+            const executedCount = (data.provenance && data.provenance.length) ? data.provenance.length : 4;
+            totalProbesCounter += executedCount;
             const counterEl = document.getElementById('counter-probes');
             if (counterEl) counterEl.textContent = totalProbesCounter.toLocaleString();
+
+            const latencyMeter = document.getElementById('omni-latency-meter');
+            if (latencyMeter) latencyMeter.textContent = `${latencyMs}ms`;
+            const hudLatency = document.getElementById('hud-avg-latency');
+            if (hudLatency) hudLatency.textContent = `${latencyMs}ms`;
+            const engineStatus = document.getElementById('engine-status-val');
+            if (engineStatus) engineStatus.textContent = 'SYNCHRONIZED';
 
             renderOmniDossier(target, data, latencyMs);
             updateGraphWithTarget(target, data);
@@ -2040,6 +2100,133 @@
                     </div>
                     <div class="hit-tags-grid" style="max-height:160px;overflow-y:auto;">
                         ${dorkList.slice(0, 10).map(d => `<a href="${d.search_url}" target="_blank" rel="noopener" class="hit-badge" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3);color:#a5b4fc;"><i class="fas fa-arrow-up-right-from-square"></i> ${d.name}</a>`).join('')}
+        // 13. Breach Intelligence & Risk Engine Card
+        const breachData = res.breaches || (data.data && data.data.dossier && data.data.dossier.breaches);
+        const riskData = data.risk || (data.data && data.data.risk);
+        if (riskData || (breachData && breachData.total_breaches !== undefined)) {
+            const rScore = riskData ? riskData.score : 0;
+            const rSev = riskData ? riskData.severity : 'MINIMAL';
+            let sevColor = '#10b981';
+            if (rSev === 'CRITICAL') sevColor = '#ef4444';
+            else if (rSev === 'HIGH') sevColor = '#f43f5e';
+            else if (rSev === 'MEDIUM') sevColor = '#f59e0b';
+            else if (rSev === 'LOW') sevColor = '#06b6d4';
+
+            const bList = breachData ? (breachData.breaches || []) : [];
+            const pList = breachData ? (breachData.pastes || []) : [];
+
+            html += `
+                <div class="dossier-card" style="border-color:${sevColor}40;">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-shield-virus" style="color:${sevColor};"></i><h4>Breach Intelligence & Risk Engine</h4></div>
+                        <span class="dcard-badge" style="background:${sevColor}20;color:${sevColor};border-color:${sevColor}60;">${rScore}/100 ${rSev}</span>
+                    </div>
+                    <div style="margin-bottom:12px;font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">
+                        ${riskData && riskData.summary ? escapeHtml(riskData.summary) : 'No critical exposure detected across indexed breach records.'}
+                    </div>
+                    ${riskData && riskData.factors && riskData.factors.length > 0 ? `
+                        <div style="margin-bottom:14px;">
+                            <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">RISK FACTOR BREAKDOWN:</span>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:6px;">
+                                ${riskData.factors.map(f => `
+                                    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:8px;">
+                                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;">
+                                            <span style="color:var(--text-secondary);">${f.name}</span>
+                                            <strong style="color:${f.score > 0 ? sevColor : '#94a3b8'};">${f.score}/${f.max_score}</strong>
+                                        </div>
+                                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">${escapeHtml(f.explanation)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${bList.length > 0 ? `
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">EXPOSED IN ${bList.length} BREACHES:</span>
+                        <div style="max-height:220px;overflow-y:auto;margin-top:6px;display:flex;flex-direction:column;gap:6px;">
+                            ${bList.map(b => `
+                                <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:8px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <strong style="color:#fca5a5;font-size:0.85rem;">${escapeHtml(b.name)}</strong>
+                                        <span style="font-size:0.75rem;color:var(--text-muted);">${b.breach_date || 'Date unknown'}</span>
+                                    </div>
+                                    <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">
+                                        ${b.pwn_count ? `PwnCount: <strong>${b.pwn_count.toLocaleString()}</strong> • ` : ''}
+                                        Domain: <code>${escapeHtml(b.domain || '—')}</code>
+                                    </div>
+                                    ${b.data_classes && b.data_classes.length > 0 ? `
+                                        <div class="hit-tags-grid" style="margin-top:6px;">
+                                            ${b.data_classes.slice(0, 8).map(dc => `<span class="hit-badge" style="background:rgba(239,68,68,0.1);color:#fca5a5;border-color:rgba(239,68,68,0.25);font-size:0.65rem;">${escapeHtml(dc)}</span>`).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    ${pList.length > 0 ? `
+                        <div style="margin-top:12px;">
+                            <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">FOUND IN ${pList.length} PASTE DUMPS:</span>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                                ${pList.slice(0, 5).map(p => `<span class="hit-badge" style="background:rgba(245,158,11,0.1);color:#fcd34d;border-color:rgba(245,158,11,0.3);font-size:0.75rem;">${escapeHtml(p.source || 'Paste')}: ${escapeHtml(p.title || p.id)}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // 14. Normalized Chronological Timeline Card
+        const timelineEvents = data.timeline || (data.data && data.data.timeline) || [];
+        if (timelineEvents.length > 0) {
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-clock-rotate-left text-cyan"></i><h4>Investigation Timeline</h4></div>
+                        <span class="dcard-badge">${timelineEvents.length} VERIFIED EVENTS</span>
+                    </div>
+                    <div style="max-height:240px;overflow-y:auto;padding-left:12px;border-left:2px solid var(--border-glow);display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+                        ${timelineEvents.map(ev => `
+                            <div style="position:relative;">
+                                <div style="position:absolute;left:-18px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--accent-secondary);box-shadow:0 0 8px var(--accent-secondary);"></div>
+                                <div style="display:flex;justify-content:space-between;font-size:0.75rem;">
+                                    <strong style="color:var(--text-primary);">${escapeHtml(ev.title || ev.event_type)}</strong>
+                                    <span style="color:var(--accent-secondary);">${ev.timestamp ? ev.timestamp.slice(0, 10) : ''}</span>
+                                </div>
+                                <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">${escapeHtml(ev.description || '')}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 15. Cross-Module Correlations Card
+        const correlations = data.correlations || (data.data && data.data.correlations) || [];
+        if (correlations.length > 0) {
+            html += `
+                <div class="dossier-card">
+                    <div class="dcard-header">
+                        <div class="dcard-title-wrap"><i class="fas fa-brain-circuit text-purple"></i><h4>Cross-Module Correlations & Pivots</h4></div>
+                        <span class="dcard-badge">${correlations.length} INSIGHTS</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;">
+                        ${correlations.map(c => `
+                            <div style="background:rgba(168,85,247,0.05);border:1px solid rgba(168,85,247,0.2);border-radius:6px;padding:8px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <strong style="color:#d8b4fe;font-size:0.85rem;">${escapeHtml(c.title)}</strong>
+                                    <span class="dcard-badge" style="font-size:0.65rem;background:rgba(168,85,247,0.15);color:#d8b4fe;">${c.confidence || 'HIGH'}</span>
+                                </div>
+                                <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">${escapeHtml(c.description)}</div>
+                                ${c.suggested_targets && c.suggested_targets.length > 0 ? `
+                                    <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">
+                                        ${c.suggested_targets.map(st => `
+                                            <button onclick="executeOmniRecon('${escapeHtml(st)}')" class="hit-badge" style="cursor:pointer;background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.3);color:#e9d5ff;font-size:0.75rem;">
+                                                <i class="fas fa-arrow-right"></i> Pivot to <strong>${escapeHtml(st)}</strong>
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `;

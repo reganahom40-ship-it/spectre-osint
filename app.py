@@ -13,6 +13,11 @@ from modules.hash_lookup import analyze_hash
 from modules.dork_generator import generate_dorks
 from modules.bgp_lookup import lookup_bgp
 from modules.number_forensics import analyze_number
+from modules.engine import InvestigationEngine
+from modules.logging_config import setup_logging, log_investigation_summary
+
+setup_logging()
+engine = InvestigationEngine()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -26,14 +31,34 @@ def add_cors_headers(response):
     response.headers['Expires'] = '0'
     return response
 
+import time
+
+_rate_limit_store = {}
+
+def check_rate_limit(ip, max_requests=30, window=60):
+    now = time.time()
+    history = _rate_limit_store.get(ip, [])
+    history = [t for t in history if now - t < window]
+    if len(history) >= max_requests:
+        return False
+    history.append(now)
+    _rate_limit_store[ip] = history
+    return True
+
 def get_param(key):
     if request.method == 'GET':
-        return str(request.args.get(key, '')).strip()
-    json_data = request.get_json(silent=True) or {}
-    val = json_data.get(key)
-    if val is None:
-        val = request.form.get(key, '')
-    return str(val).strip()
+        val = str(request.args.get(key, ''))
+    else:
+        json_data = request.get_json(silent=True) or {}
+        val = json_data.get(key)
+        if val is None:
+            val = request.form.get(key, '')
+        val = str(val)
+        
+    val = val.replace('\x00', '').strip()
+    if len(val) > 500:
+        val = val[:500]
+    return val
 
 def make_response_json(success, module, query, data=None, error=None):
     return jsonify({
@@ -44,6 +69,13 @@ def make_response_json(success, module, query, data=None, error=None):
         'error': error,
         'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
     })
+
+@app.before_request
+def before_request_rate_limit():
+    if request.path.startswith('/api/'):
+        ip = request.remote_addr
+        if not check_rate_limit(ip):
+            return jsonify({'success': False, 'error': 'Rate limit exceeded'}), 429
 
 @app.route('/', methods=['GET'])
 def index():
@@ -56,6 +88,7 @@ def health():
 # =========================================================================
 # OMNI-RECON AUTO-DETECTION ENGINE
 # =========================================================================
+@app.route('/api/investigate', methods=['GET', 'POST', 'OPTIONS'])
 @app.route('/api/omni', methods=['GET', 'POST', 'OPTIONS'])
 def api_omni():
     if request.method == 'OPTIONS':
@@ -65,233 +98,75 @@ def api_omni():
         return make_response_json(False, 'omni', '', error='Missing target query string'), 400
 
     target = target.strip()
-    detected_type = 'username'
-    confidence = 0.95
-    schema_info = 'Alphanumeric Username / Handle'
-    summary_intel = {}
-    dossier = {}
+    try:
+        resp_data = engine.investigate(target)
+        log_investigation_summary(
+            resp_data.get('investigation_id', ''),
+            target,
+            resp_data.get('detected_type', 'unknown'),
+            resp_data.get('duration_ms', 0.0),
+            len(resp_data.get('errors', []))
+        )
+        return jsonify({
+            'success': True,
+            'module': 'omni',
+            'query': target,
+            'data': resp_data,
+            **resp_data
+        }), 200
+    except Exception as e:
+        return make_response_json(False, 'omni', target, error=str(e)), 500
 
-    digits_only = ''.join(c for c in target if c.isdigit())
-    is_pure_digits = target.isdigit()
-
-    # 1. ASN Check (e.g. AS15169 or AS13335)
-    if re.match(r'^AS\d+$', target, re.IGNORECASE):
-        detected_type = 'asn'
-        schema_info = 'Autonomous System Number (BGP)'
-        confidence = 0.99
-        try:
-            bgp_res = lookup_bgp(target.upper())
-            dossier['bgp'] = bgp_res
-            summary_intel['asn_name'] = bgp_res.get('holder', 'Unknown Carrier')
-            summary_intel['prefixes_count'] = len(bgp_res.get('prefixes', []))
-        except Exception as e:
-            dossier['bgp_error'] = str(e)
-
-    # 2. IPv4 Address Check (e.g. 1.1.1.1 or 192.168.1.1)
-    elif re.match(r'^(\d{1,3}\.){3}\d{1,3}$', target):
-        detected_type = 'ip'
-        schema_info = 'IPv4 Global Unicast Address'
-        confidence = 0.99
-        try:
-            ip_res = lookup_ip(target)
-            dossier['ip'] = ip_res
-            summary_intel['location'] = f"{ip_res.get('city', 'Unknown')}, {ip_res.get('country', 'Unknown')}"
-            summary_intel['isp'] = ip_res.get('isp', ip_res.get('org', 'Unknown ISP'))
-            
-            asn = ip_res.get('asn') or ip_res.get('as') or ''
-            asn_match = re.search(r'AS\d+', asn, re.IGNORECASE)
-            if asn_match:
-                try:
-                    bgp_data = lookup_bgp(asn_match.group(0))
-                    dossier['bgp'] = bgp_data
-                except Exception:
-                    pass
-        except Exception as e:
-            dossier['ip_error'] = str(e)
-
-    # 3. Pure Numbers & Integer Intelligence (Ports, Phones, Epochs, Snowflakes, Math)
-    elif is_pure_digits:
-        num_val = int(target)
-        digit_len = len(target)
-        num_forensics = analyze_number(target)
-        dossier['number'] = num_forensics
-
-        # Test phone validity
-        p_res = lookup_phone(target)
+@app.route('/api/breaches', methods=['GET', 'POST', 'OPTIONS'])
+def api_breaches():
+    if request.method == 'OPTIONS':
+        return '', 204
+    email = get_param('email') or get_param('target') or get_param('q')
+    if not email:
+        return make_response_json(False, 'breaches', '', error='Missing email target'), 400
+    try:
+        breaches_res = engine.hibp_breach_provider.search(email)
+        pastes_res = engine.hibp_paste_provider.search(email)
         
-        # Test Discord snowflake validity
-        disc_res = lookup_discord(target) if (15 <= digit_len <= 20) else None
-
-        if p_res.get('valid'):
-            detected_type = 'phone'
-            schema_info = f"Global Telephone ({p_res.get('country', 'E.164')})"
-            confidence = '100% VALIDATED E.164'
-            dossier['phone'] = p_res
-            summary_intel['country'] = p_res.get('country', 'Unknown')
-            summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
-            summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
-
-        elif disc_res and disc_res.get('valid') and 2015 <= disc_res.get('year', 0) <= 2030:
-            detected_type = 'discord'
-            schema_info = '64-Bit Discord/Twitter Snowflake Timestamp'
-            confidence = 'VERIFIED DISCORD EPOCH'
-            dossier['discord'] = disc_res
-            summary_intel['account_age_days'] = disc_res.get('age_days', 0)
-            summary_intel['created_utc'] = disc_res.get('timestamp_utc', 'Unknown')
-
-        elif 1 <= num_val <= 65535 and digit_len <= 5:
-            detected_type = 'port'
-            port_data = num_forensics.get('port_analysis', {})
-            schema_info = f"IANA Port {num_val} ({port_data.get('service', 'Service')})"
-            confidence = 'IANA PORT STANDARD'
-            summary_intel['service'] = port_data.get('service', 'Standard Port')
-            summary_intel['protocol'] = port_data.get('protocol', 'TCP/UDP')
-            summary_intel['risk'] = port_data.get('risk_profile', 'Standard')
-            
-            if 1 <= num_val <= 400000:
-                try:
-                    dossier['bgp'] = lookup_bgp(f'AS{num_val}')
-                except Exception:
-                    pass
-
-        else:
-            detected_type = 'number'
-            schema_info = f'Numeric Identifier ({digit_len} Digits / {num_val.bit_length()} Bits)'
-            confidence = f'EXACT NUMERIC / {num_val.bit_length()}-BIT MATH'
-            summary_intel['hex'] = hex(num_val)
-            summary_intel['bit_length'] = num_val.bit_length()
-            if num_forensics.get('ipv4_decimal'):
-                summary_intel['decimal_ipv4'] = num_forensics['ipv4_decimal']['resolved_ip']
-            if num_forensics.get('timestamp_epoch'):
-                summary_intel['epoch_utc'] = num_forensics['timestamp_epoch']['utc_datetime']
-
-        try:
-            dossier['dorks'] = generate_dorks(target)
-        except Exception:
-            pass
-
-    # 4. Formatted Phone Number (+, -, (), spaces)
-    elif target.startswith('+') or (re.match(r'^\+?[\d\s\-\(\)\.]{7,25}$', target) and len(digits_only) >= 7):
-        p_res = lookup_phone(target)
-        dossier['phone'] = p_res
-        dossier['number'] = analyze_number(digits_only)
+        # Calculate risk score
+        b_sum_data = breaches_res.data or {}
+        p_data = pastes_res.data or {}
         
-        if p_res.get('valid'):
-            detected_type = 'phone'
-            schema_info = f"ITU-T E.164 Telephone ({p_res.get('country', 'Valid')})"
-            confidence = '100% VALIDATED E.164'
-        else:
-            detected_type = 'phone'
-            schema_info = 'Unallocated / Invalid Telephone Range'
-            confidence = 'INVALID ITU-T PREFIX (0% MATCH)'
-
-        summary_intel['country'] = p_res.get('country', 'Unknown')
-        summary_intel['carrier'] = p_res.get('carrier', 'Unknown')
-        summary_intel['e164'] = p_res.get('formatted', {}).get('e164', target)
-        try:
-            dossier['dorks'] = generate_dorks(digits_only)
-        except Exception:
-            pass
-
-    # 5. Email Address Check
-    elif '@' in target and '.' in target:
-        detected_type = 'email'
-        schema_info = 'RFC 5322 Standard Email Address'
-        try:
-            email_res = lookup_email(target)
-            dossier['email'] = email_res
-            mx_count = len(email_res.get('mx_records', []))
-            if mx_count > 0:
-                confidence = f'{mx_count} MX HOSTS VERIFIED'
-            else:
-                confidence = 'NO MX RECORDS (UNRESOLVED DOMAIN)'
-            summary_intel['mx_servers'] = email_res.get('mx_records', [])
-            summary_intel['has_gravatar'] = email_res.get('gravatar_exists', False)
-        except Exception as e:
-            confidence = 'INVALID EMAIL FORMAT'
-            dossier['email_error'] = str(e)
+        breaches_list = [
+            BreachRecord(**b) if isinstance(b, dict) and 'name' in b else b
+            for b in b_sum_data.get('breaches', [])
+        ]
+        pastes_list = [
+            PasteRecord(**p) if isinstance(p, dict) and 'source' in p else p
+            for p in p_data.get('pastes', [])
+        ]
+        summary = BreachSummary(
+            email=email,
+            total_breaches=b_sum_data.get('total_breaches', len(breaches_list)),
+            total_pastes=p_data.get('total_pastes', len(pastes_list)),
+            earliest_breach=b_sum_data.get('earliest_breach', ''),
+            latest_breach=b_sum_data.get('latest_breach', ''),
+            total_records_exposed=b_sum_data.get('total_records_exposed', 0),
+            unique_data_classes=b_sum_data.get('unique_data_classes', []),
+            breaches=breaches_list,
+            pastes=pastes_list
+        )
+        risk = engine.risk_engine.calculate(summary)
         
-        domain_part = target.split('@')[-1]
-        try:
-            dossier['dorks'] = generate_dorks(domain_part)
-        except Exception:
-            pass
-
-    # 6. Cryptographic Hash Check
-    elif re.match(r'^[a-fA-F0-9]{32}$|^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{64}$', target):
-        detected_type = 'hash'
-        schema_info = 'Hexadecimal Digest / Cryptographic Checksum'
-        confidence = 0.99
-        try:
-            hash_res = analyze_hash(target)
-            dossier['hash'] = hash_res
-            summary_intel['possible_algos'] = hash_res.get('possible_algorithms', [])
-            summary_intel['entropy'] = hash_res.get('entropy', 0)
-        except Exception as e:
-            dossier['hash_error'] = str(e)
-
-    # 7. Domain / URL Check
-    elif '.' in target and not target.startswith('+') and not ' ' in target:
-        detected_type = 'domain'
-        schema_info = 'Fully Qualified Domain Name (FQDN)'
-        confidence = 0.97
-        clean_domain = re.sub(r'^https?://', '', target).split('/')[0]
-        try:
-            dom_res = lookup_domain(clean_domain)
-            dossier['domain'] = dom_res
-            summary_intel['registrar'] = dom_res.get('registrar', 'Unknown')
-            summary_intel['subdomains_count'] = len(dom_res.get('subdomains_ct', []))
-        except Exception as e:
-            dossier['domain_error'] = str(e)
-        try:
-            dossier['dorks'] = generate_dorks(clean_domain)
-        except Exception:
-            pass
-        try:
-            url = f"https://{clean_domain}" if not target.startswith('http') else target
-            dossier['headers'] = analyze_headers(url)
-        except Exception:
-            pass
-
-    # 8. Username Discovery Default
-    else:
-        detected_type = 'username'
-        clean_user = target.lstrip('@')
-        schema_info = f'Social / Web Handle (@{clean_user})'
-        confidence = 0.95
-        try:
-            user_res = check_username(clean_user)
-            dossier['username'] = user_res
-            summary_intel['found_count'] = len(user_res.get('found', []))
-            summary_intel['total_checked'] = user_res.get('total_checked', 112)
-        except Exception as e:
-            dossier['username_error'] = str(e)
-        try:
-            dossier['dorks'] = generate_dorks(clean_user)
-        except Exception:
-            pass
-
-    resp_data = {
-        'detected_type': detected_type,
-        'schema_info': schema_info,
-        'confidence': confidence,
-        'summary_intel': summary_intel,
-        'dossier': dossier,
-        'results': dossier
-    }
-
-    return jsonify({
-        'success': True,
-        'module': 'omni',
-        'query': target,
-        'data': resp_data,
-        'detected_type': detected_type,
-        'schema_info': schema_info,
-        'confidence': confidence,
-        'summary_intel': summary_intel,
-        'results': dossier,
-        'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
-    }), 200
+        return jsonify({
+            'success': True,
+            'module': 'breaches',
+            'query': email,
+            'data': {
+                'summary': summary.to_dict(),
+                'risk': risk.to_dict(),
+                'breaches': [b.to_dict() for b in breaches_list],
+                'pastes': [p.to_dict() for p in pastes_list]
+            },
+            'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
+        }), 200
+    except Exception as e:
+        return make_response_json(False, 'breaches', email, error=str(e)), 500
 
 # =========================================================================
 # DEDICATED INDIVIDUAL API ROUTES
