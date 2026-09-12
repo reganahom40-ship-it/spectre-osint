@@ -2635,6 +2635,7 @@
 
             const panels = {
                 card: document.getElementById('panel-pay-card'),
+                paypal: document.getElementById('panel-pay-paypal'),
                 crypto: document.getElementById('panel-pay-crypto'),
                 cashapp: document.getElementById('panel-pay-cashapp'),
                 instant: document.getElementById('panel-pay-instant')
@@ -2945,11 +2946,13 @@
 
         // Checkout Action Triggers
         const btnPayCard = document.getElementById('btn-pay-card-submit');
+        const btnPayPaypal = document.getElementById('btn-pay-paypal-confirm');
         const btnPayCrypto = document.getElementById('btn-pay-crypto-confirm');
         const btnPayCashapp = document.getElementById('btn-pay-cashapp-confirm');
         const btnPayInstant = document.getElementById('btn-pay-instant-submit');
 
         if (btnPayCard) btnPayCard.addEventListener('click', () => auth.processCheckout());
+        if (btnPayPaypal) btnPayPaypal.addEventListener('click', () => auth.processCheckout());
         if (btnPayCrypto) btnPayCrypto.addEventListener('click', () => auth.processCheckout());
         if (btnPayCashapp) btnPayCashapp.addEventListener('click', () => auth.processCheckout());
         if (btnPayInstant) btnPayInstant.addEventListener('click', () => auth.processCheckout());

@@ -12,7 +12,12 @@ def run_suite():
     from tests.test_engine import test_input_classifier_types, test_cache_ttl_and_hashing, test_engine_investigate_structure
     from tests.test_ssrf import test_ssrf_blocked_urls, test_headers_raises_on_ssrf, test_ip_lookup_blocks_private
     from tests.test_risk_engine import test_risk_score_zero_on_clean, test_risk_score_high_on_sensitive_recent_breach
-    from tests.test_auth import test_user_registration_and_hashing, test_tier_upgrade_and_persistence, test_admin_upgrade_api_routes, test_payment_checkout_flow
+    from tests.test_auth import (
+        test_user_registration_and_hashing, test_tier_upgrade_and_persistence,
+        test_admin_upgrade_api_routes, test_payment_checkout_flow,
+        test_payment_config_endpoint, test_strict_paywall_blocks_free_users,
+        test_landing_page_routes
+    )
 
     test_functions = [
         test_input_classifier_types,
@@ -26,7 +31,10 @@ def run_suite():
         test_user_registration_and_hashing,
         test_tier_upgrade_and_persistence,
         test_admin_upgrade_api_routes,
-        test_payment_checkout_flow
+        test_payment_checkout_flow,
+        test_payment_config_endpoint,
+        test_strict_paywall_blocks_free_users,
+        test_landing_page_routes
     ]
 
     print("=" * 60)

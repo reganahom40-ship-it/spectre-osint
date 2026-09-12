@@ -82,10 +82,49 @@ def test_payment_checkout_flow():
     client = app.test_client()
     pay_resp = client.post('/api/payment/checkout', json={
         'tier': 'lifetime',
-        'method': 'card',
+        'method': 'ltc',
         'amount': 99
     })
     assert pay_resp.status_code == 200, f"Checkout failed: {pay_resp.data}"
     pay_data = json.loads(pay_resp.data)
     assert pay_data.get('success') is True
     assert pay_data.get('tier') == 'lifetime'
+
+def test_payment_config_endpoint():
+    client = app.test_client()
+    cfg_resp = client.get('/api/payment/config')
+    assert cfg_resp.status_code == 200
+    cfg_data = json.loads(cfg_resp.data)
+    assert 'LTC_ADDRESS' in cfg_data
+    assert 'PAYPAL_EMAIL' in cfg_data
+    assert 'BTC_ADDRESS' in cfg_data
+    assert 'ETH_ADDRESS' in cfg_data
+    assert 'CASHAPP_TAG' in cfg_data
+
+def test_strict_paywall_blocks_free_users():
+    client = app.test_client()
+    # 1. Unauthenticated request to omni must return 403
+    omni_resp = client.get('/api/omni?target=8.8.8.8')
+    assert omni_resp.status_code == 403
+    omni_data = json.loads(omni_resp.data)
+    assert omni_data.get('upgrade_required') is True
+
+    # 2. Free user request to omni must also return 403
+    free_email = "strictly_free_user@spectre.io"
+    if not get_user_by_email(free_email):
+        create_user(free_email, "FreePass12345", tier='free')
+    client.post('/api/auth/login', json={'email': free_email, 'password': "FreePass12345"})
+    
+    omni_resp_free = client.get('/api/omni?target=8.8.8.8')
+    assert omni_resp_free.status_code == 403
+
+def test_landing_page_routes():
+    client = app.test_client()
+    # Guest visiting / gets landing page
+    landing_resp = client.get('/')
+    assert landing_resp.status_code == 200
+    assert b'CONFIDENTIAL // OPERATOR ACCESS ONLY' in landing_resp.data or b'RESTRICTED OPERATOR' in landing_resp.data
+
+    # Explicit /landing route
+    explicit_landing = client.get('/landing')
+    assert explicit_landing.status_code == 200

@@ -918,8 +918,9 @@
                 <h4>Pay With Anything</h4>
                 <div class="pmethods-pills">
                     <button class="pmethod-pill active" data-method="card"><i class="fas fa-credit-card"></i> Card / Apple Pay</button>
-                    <button class="pmethod-pill" data-method="crypto"><i class="fa-brands fa-bitcoin"></i> Crypto (BTC / ETH / USDT)</button>
-                    <button class="pmethod-pill" data-method="cashapp"><i class="fas fa-dollar-sign"></i> CashApp / PayPal</button>
+                    <button class="pmethod-pill" data-method="paypal"><i class="fa-brands fa-paypal" style="color:#6366f1;"></i> PayPal</button>
+                    <button class="pmethod-pill" data-method="crypto"><i class="fa-brands fa-bitcoin"></i> Crypto (LTC / BTC / ETH)</button>
+                    <button class="pmethod-pill" data-method="cashapp"><i class="fas fa-dollar-sign"></i> CashApp</button>
                     <button class="pmethod-pill" data-method="instant"><i class="fas fa-bolt text-amber"></i> Instant Unlock</button>
                 </div>
 
@@ -936,14 +937,35 @@
                     </button>
                 </div>
 
-                <!-- Method View: Crypto -->
+                <!-- Method View: PayPal -->
+                <div class="pmethod-panel" id="panel-pay-paypal" style="display:none;">
+                    <div class="crypto-addr-card">
+                        <div><span style="color:#6366f1;font-weight:700;">PayPal:</span> <code>payments@spectre.io</code></div>
+                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('payments@spectre.io'); showToast('PayPal email copied', 'fas fa-copy');">Copy</button>
+                    </div>
+                    <div style="margin:8px 0 12px;">
+                        <a href="https://paypal.me/SpectreIntel" target="_blank" rel="noopener" style="color:var(--accent-secondary);text-decoration:none;font-size:0.8rem;font-weight:600;">
+                            <i class="fas fa-arrow-up-right-from-square"></i> Open PayPal.me Link
+                        </a>
+                    </div>
+                    <button class="btn-auth-action" id="btn-pay-paypal-confirm" style="background:#4f46e5;color:#fff;">
+                        <i class="fa-brands fa-paypal"></i>
+                        <span>Confirm PayPal Transfer</span>
+                    </button>
+                </div>
+
+                <!-- Method View: Crypto (LTC / BTC / ETH) -->
                 <div class="pmethod-panel" id="panel-pay-crypto" style="display:none;">
+                    <div class="crypto-addr-card">
+                        <div><span style="color:#06b6d4;font-weight:700;">LTC:</span> <code>ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code></div>
+                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8'); showToast('Litecoin address copied', 'fas fa-copy');">Copy</button>
+                    </div>
                     <div class="crypto-addr-card">
                         <div><span style="color:#f59e0b;font-weight:700;">BTC:</span> <code>bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code></div>
                         <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8'); showToast('Bitcoin address copied', 'fas fa-copy');">Copy</button>
                     </div>
                     <div class="crypto-addr-card">
-                        <div><span style="color:#6366f1;font-weight:700;">ETH / USDT:</span> <code>0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code></div>
+                        <div><span style="color:#a855f7;font-weight:700;">ETH / USDT:</span> <code>0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code></div>
                         <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('0x71C7656EC7ab88b098defB751B7401B5f6d8976F'); showToast('ETH/USDT address copied', 'fas fa-copy');">Copy</button>
                     </div>
                     <button class="btn-auth-action" id="btn-pay-crypto-confirm" style="background:#059669;">

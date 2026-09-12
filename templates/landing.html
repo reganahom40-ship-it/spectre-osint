@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPECTRE — Autonomous OSINT Reconnaissance Platform</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/landing.css?v=20260912_paywall_v1">
+</head>
+<body>
+
+    <!-- Ambient Lighting & Canvas Background -->
+    <div class="landing-ambient-bg">
+        <div class="ambient-orb orb-top-left"></div>
+        <div class="ambient-orb orb-mid-right"></div>
+        <div class="ambient-orb orb-bottom-center"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="landing-nav">
+        <div class="landing-nav-inner">
+            <a href="/" class="nav-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="brand-text">
+                    SPECTRE <span class="brand-badge">INTELLIGENCE</span>
+                </div>
+            </a>
+            
+            <ul class="nav-links">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#vectors">Capabilities</a></li>
+                <li><a href="#pricing">Access Plans</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <button class="btn-nav-signin" onclick="openAuthModal('login')">
+                    <i class="fas fa-user-lock"></i> Operator Sign In
+                </button>
+                <button class="btn-nav-cta" onclick="openCheckoutModal('lifetime')">
+                    <i class="fas fa-bolt"></i> Get Access
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="landing-container">
+        
+        <!-- Hero Section -->
+        <section class="landing-hero" id="overview">
+            <div class="hero-pill">
+                <span class="dot"></span>
+                <span>RESTRICTED OPERATOR CLEARANCE // MEMBERSHIP GATED</span>
+            </div>
+            
+            <h1 class="hero-title">
+                Autonomous Cyber <span class="gradient-text">OSINT Intelligence</span> & Threat Mapping
+            </h1>
+            
+            <p class="hero-description">
+                SPECTRE synthesizes deep digital footprints across multi-vector infrastructure, autonomous BGP routes, breached credential databases, and subdomains in real time. Access is strictly members-only.
+            </p>
+
+            <div class="hero-actions">
+                <button class="btn-hero-primary" onclick="openCheckoutModal('lifetime')">
+                    <i class="fas fa-crown text-amber"></i>
+                    <span>Unlock Full Access ($99 Lifetime)</span>
+                </button>
+                <button class="btn-hero-secondary" onclick="openCheckoutModal('premium')">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Pro Monthly ($19/mo)</span>
+                </button>
+            </div>
+
+            <div class="hero-paywall-badge">
+                <i class="fas fa-shield-halved"></i>
+                <span><strong>No Free Quota:</strong> All intelligence modules, search cascades, and 3D spatial graphs are locked behind active membership.</span>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="hero-metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-val text-cyan">10+</div>
+                    <div class="metric-lbl">INTELLIGENCE VECTORS</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-val text-purple">0.0s</div>
+                    <div class="metric-lbl">AVERAGE TTL CACHE</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-val text-amber">100%</div>
+                    <div class="metric-lbl">PRIVATE & LOGLESS</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-val text-emerald">3D</div>
+                    <div class="metric-lbl">SPATIAL TOPOLOGY</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vectors & Capabilities Showcase -->
+        <section class="vectors-section" id="vectors">
+            <div class="section-header">
+                <div class="section-tag">ENGINE SPECS</div>
+                <h2 class="section-title">Deep Autonomous Reconnaissance</h2>
+                <p class="section-subtitle">What you unlock once your credential is authenticated inside the SPECTRE Console.</p>
+            </div>
+
+            <div class="vectors-grid">
+                <!-- Card 1 -->
+                <div class="vector-card">
+                    <div class="vcard-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h3 class="vcard-title">Infrastructure & BGP Cartography</h3>
+                    <p class="vcard-desc">
+                        Deep IPv4/IPv6 forensics, autonomous system number (ASN) origin lookups, BGP prefix announcements, reverse DNS hostnames, and ISP ownership tracking.
+                    </p>
+                    <div class="vcard-tags">
+                        <span class="vtag">BGP PEERING</span>
+                        <span class="vtag">ASN MAPPING</span>
+                        <span class="vtag">IP GEOLOCATION</span>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="vector-card">
+                    <div class="vcard-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3 class="vcard-title">Domain & Subdomain Enumeration</h3>
+                    <p class="vcard-desc">
+                        Full passive attack surface discovery. Enumerates subdomains via Certificate Transparency logs, analyzes SSL SAN certificates, nameservers, and robots.txt.
+                    </p>
+                    <div class="vcard-tags">
+                        <span class="vtag">CT LOG MINING</span>
+                        <span class="vtag">WHOIS INTEL</span>
+                        <span class="vtag">DNS RECORD CHROME</span>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="vector-card">
+                    <div class="vcard-icon">
+                        <i class="fas fa-shield-virus"></i>
+                    </div>
+                    <h3 class="vcard-title">Breach Intelligence & Risk Engine</h3>
+                    <p class="vcard-desc">
+                        Correlates targets across indexed breach dumps and public paste sources. Computes an explainable 0–100 threat severity risk score with factor breakdowns.
+                    </p>
+                    <div class="vcard-tags">
+                        <span class="vtag">HIBP TELEMETRY</span>
+                        <span class="vtag">PASTE EXTRACTION</span>
+                        <span class="vtag">RISK SCORING</span>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="vector-card">
+                    <div class="vcard-icon">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <h3 class="vcard-title">Digital Identity & Handle Discovery</h3>
+                    <p class="vcard-desc">
+                        Probes 20+ social platforms, developer ecosystems, and forums in parallel. Identifies linked accounts, avatar gravatars, and digital footprint clusters.
+                    </p>
+                    <div class="vcard-tags">
+                        <span class="vtag">CROSS-PLATFORM</span>
+                        <span class="vtag">AVATAR CORRELATION</span>
+                        <span class="vtag">IDENTITY CLUSTERING</span>
+                    </div>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="vector-card">
+                    <div class="vcard-icon">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                    <h3 class="vcard-title">3D Spatial Topology Graph</h3>
+                    <p class="vcard-desc">
+                        Synthesized findings are projected into a dynamic 3D physics-based spatial topology canvas with interactive node clustering, edge typing, and 1-click pivot exploration.
+                    </p>
+                    <div class="vcard-tags">
+                        <span class="vtag">PHYSICS ENGINE</span>
+                        <span class="vtag">INTERACTIVE PIVOTS</span>
+                        <span class="vtag">GRAPH EXPORT</span>
+                    </div>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="vector-card">
+                    <div class="vcard-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <h3 class="vcard-title">Telecom & Snowflake Forensics</h3>
+                    <p class="vcard-desc">
+                        E.164 international phone number validation, carrier identification, line-type forensics (mobile vs VOIP), and Discord snowflake epoch timestamps.
+                    </p>
+                    <div class="vcard-tags">
+                        <span class="vtag">CARRIER AUDIT</span>
+                        <span class="vtag">EPOCH RECON</span>
+                        <span class="vtag">VOIP DETECTION</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section class="pricing-section" id="pricing">
+            <div class="section-header">
+                <div class="section-tag">MEMBERSHIP ACCESS</div>
+                <h2 class="section-title">Select Your Intelligence Credential</h2>
+                <p class="section-subtitle">No free tier. Choose between flexible monthly billing or permanent lifetime access.</p>
+            </div>
+
+            <div class="pricing-cards-grid">
+                <!-- Pro Card -->
+                <div class="pricing-card">
+                    <div class="pcard-header">
+                        <div class="pcard-tier">Pro Monthly</div>
+                        <div class="pcard-price">$19 <span class="pcard-period">/ month</span></div>
+                        <div class="pcard-sub">Full access billed monthly. Cancel anytime.</div>
+                    </div>
+
+                    <ul class="pcard-features">
+                        <li><i class="fas fa-check"></i> Unlimited Parallel Recon Cascades</li>
+                        <li><i class="fas fa-check"></i> All 10 OSINT Intelligence Modules</li>
+                        <li><i class="fas fa-check"></i> 3D Spatial Knowledge Graph</li>
+                        <li><i class="fas fa-check"></i> Explainable Risk Engine (0-100)</li>
+                        <li><i class="fas fa-check"></i> JSON & Markdown Dossier Export</li>
+                    </ul>
+
+                    <button class="btn-select-plan btn-plan-pro" onclick="openCheckoutModal('premium')">
+                        <span>Subscribe Pro ($19/mo)</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Lifetime Card -->
+                <div class="pricing-card featured">
+                    <div class="pricing-ribbon">POPULAR CHOICE</div>
+                    <div class="pcard-header">
+                        <div class="pcard-tier" style="color:var(--accent-amber);">Lifetime Pass</div>
+                        <div class="pcard-price" style="color:var(--accent-amber);">$99 <span class="pcard-period" style="color:var(--accent-amber);">one-time</span></div>
+                        <div class="pcard-sub">Single payment. Permanent unrestricted access forever.</div>
+                    </div>
+
+                    <ul class="pcard-features">
+                        <li><i class="fas fa-check"></i> <strong>Permanent Lifetime Access</strong> (Never pay again)</li>
+                        <li><i class="fas fa-check"></i> Unlimited Concurrent Intelligence Cascades</li>
+                        <li><i class="fas fa-check"></i> Priority Rate Limit & Circuit-Breaker Sockets</li>
+                        <li><i class="fas fa-check"></i> All Future OSINT Modules & Feeds Included</li>
+                        <li><i class="fas fa-check"></i> 1-on-1 Priority Technical Assistance</li>
+                    </ul>
+
+                    <button class="btn-select-plan btn-plan-lifetime" onclick="openCheckoutModal('lifetime')">
+                        <i class="fas fa-bolt"></i>
+                        <span>Get Lifetime Access ($99)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payment Trust Bar -->
+            <div class="payment-trust-bar">
+                <span class="pt-title">Accepted Payment Methods:</span>
+                <div class="pt-icons">
+                    <span><i class="fa-solid fa-coins text-cyan"></i> Litecoin (LTC)</span>
+                    <span><i class="fa-brands fa-paypal text-indigo"></i> PayPal</span>
+                    <span><i class="fa-brands fa-bitcoin text-amber"></i> Bitcoin</span>
+                    <span><i class="fa-brands fa-ethereum text-purple"></i> ETH / USDT</span>
+                    <span><i class="fas fa-dollar-sign text-emerald"></i> CashApp</span>
+                    <span><i class="fas fa-credit-card"></i> Card</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <p>&copy; 2026 SPECTRE INTELLIGENCE SYSTEMS. PRIVATE OSINT NETWORK. ALL RIGHTS RESERVED.</p>
+        </footer>
+
+    </main>
+
+    <!-- =========================================================================
+         MULTI-RAIL CHECKOUT MODAL (LTC, PAYPAL, BTC, ETH, CARD, CASHAPP)
+         ========================================================================= -->
+    <div class="spectre-modal-backdrop" id="checkout-modal-backdrop">
+        <div class="spectre-modal">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-crown text-amber"></i>
+                    <span>Unlock SPECTRE Access</span>
+                </h3>
+                <button class="btn-modal-close" onclick="closeCheckoutModal()">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Selected Plan Summary -->
+                <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:8px;padding:12px 16px;margin-bottom:18px;">
+                    <div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono);">SELECTED PLAN</div>
+                        <strong id="modal-plan-name" style="font-size:1.1rem;color:#ffffff;">Lifetime Pass</strong>
+                    </div>
+                    <div style="text-align:right;">
+                        <strong id="modal-plan-price" style="font-size:1.25rem;color:var(--accent-amber);font-family:var(--font-heading);">$99.00 USD</strong>
+                    </div>
+                </div>
+
+                <!-- Operator Email -->
+                <div class="form-group">
+                    <label class="form-label">Operator Email Address (Access Credential)</label>
+                    <input type="email" id="checkout-email-input" class="form-input" placeholder="operator@spectre.io" required>
+                </div>
+
+                <!-- Payment Rail Selector Tabs -->
+                <label class="form-label">Choose Payment Rail</label>
+                <div class="pmethods-tabs">
+                    <button class="pmethod-tab active" data-method="ltc" onclick="selectPaymentMethod('ltc')">
+                        <i class="fa-solid fa-coins" style="color:#06b6d4;"></i>
+                        <span>Litecoin (LTC)</span>
+                    </button>
+                    <button class="pmethod-tab" data-method="paypal" onclick="selectPaymentMethod('paypal')">
+                        <i class="fa-brands fa-paypal" style="color:#6366f1;"></i>
+                        <span>PayPal</span>
+                    </button>
+                    <button class="pmethod-tab" data-method="btc" onclick="selectPaymentMethod('btc')">
+                        <i class="fa-brands fa-bitcoin" style="color:#f59e0b;"></i>
+                        <span>Bitcoin (BTC)</span>
+                    </button>
+                    <button class="pmethod-tab" data-method="eth" onclick="selectPaymentMethod('eth')">
+                        <i class="fa-brands fa-ethereum" style="color:#a855f7;"></i>
+                        <span>ETH / USDT</span>
+                    </button>
+                    <button class="pmethod-tab" data-method="cashapp" onclick="selectPaymentMethod('cashapp')">
+                        <i class="fas fa-dollar-sign" style="color:#10b981;"></i>
+                        <span>CashApp</span>
+                    </button>
+                    <button class="pmethod-tab" data-method="card" onclick="selectPaymentMethod('card')">
+                        <i class="fas fa-credit-card" style="color:#38bdf8;"></i>
+                        <span>Card</span>
+                    </button>
+                </div>
+
+                <!-- Panel 1: Litecoin (LTC) -->
+                <div class="pmethod-content-panel" id="panel-ltc">
+                    <div class="payment-details-box">
+                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND EXACT AMOUNT TO LITECOIN ADDRESS:</div>
+                        <div class="wallet-copy-row">
+                            <code id="cfg-ltc-addr">ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code>
+                            <button class="btn-copy-address" onclick="copyText('cfg-ltc-addr', 'Litecoin address')">Copy</button>
+                        </div>
+                        <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">
+                            <i class="fas fa-bolt text-cyan"></i> Fast confirmations with lowest transaction fees.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 2: PayPal -->
+                <div class="pmethod-content-panel" id="panel-paypal" style="display:none;">
+                    <div class="payment-details-box">
+                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND VIA PAYPAL TO:</div>
+                        <div class="wallet-copy-row">
+                            <code id="cfg-paypal-email">payments@spectre.io</code>
+                            <button class="btn-copy-address" onclick="copyText('cfg-paypal-email', 'PayPal email')">Copy</button>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <a id="cfg-paypal-link" href="https://paypal.me/SpectreIntel" target="_blank" rel="noopener" style="font-size:0.8rem;color:var(--accent-cyan);text-decoration:none;font-weight:600;">
+                                <i class="fas fa-arrow-up-right-from-square"></i> Open PayPal.me Link
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Bitcoin (BTC) -->
+                <div class="pmethod-content-panel" id="panel-btc" style="display:none;">
+                    <div class="payment-details-box">
+                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND TO NATIVE SEGWIT BITCOIN ADDRESS:</div>
+                        <div class="wallet-copy-row">
+                            <code id="cfg-btc-addr">bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code>
+                            <button class="btn-copy-address" onclick="copyText('cfg-btc-addr', 'Bitcoin address')">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 4: ETH / USDT -->
+                <div class="pmethod-content-panel" id="panel-eth" style="display:none;">
+                    <div class="payment-details-box">
+                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND TO ETH / USDT (ERC-20, ARB, BASE):</div>
+                        <div class="wallet-copy-row">
+                            <code id="cfg-eth-addr">0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code>
+                            <button class="btn-copy-address" onclick="copyText('cfg-eth-addr', 'Ethereum address')">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 5: CashApp -->
+                <div class="pmethod-content-panel" id="panel-cashapp" style="display:none;">
+                    <div class="payment-details-box">
+                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">SEND VIA CASHAPP CASHTAG:</div>
+                        <div class="wallet-copy-row">
+                            <code id="cfg-cashapp-tag">$SpectreIntel</code>
+                            <button class="btn-copy-address" onclick="copyText('cfg-cashapp-tag', 'CashApp tag')">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 6: Card -->
+                <div class="pmethod-content-panel" id="panel-card" style="display:none;">
+                    <div class="payment-details-box">
+                        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;">
+                            <input type="text" class="form-input" placeholder="Card Number (4242 ••••)" value="4242 •••• •••• 4242">
+                            <input type="text" class="form-input" placeholder="MM/YY" value="12/28">
+                            <input type="text" class="form-input" placeholder="CVC" value="999">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button class="btn-submit-action btn-action-primary" id="btn-confirm-checkout" onclick="executeCheckout()">
+                    <i class="fas fa-lock"></i>
+                    <span>Confirm Payment & Activate Access</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         AUTHENTICATION MODAL (OPERATOR SIGN IN / CREATE ACCOUNT)
+         ========================================================================= -->
+    <div class="spectre-modal-backdrop" id="auth-modal-backdrop">
+        <div class="spectre-modal">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-user-shield text-cyan"></i>
+                    <span>Operator Authentication</span>
+                </h3>
+                <button class="btn-modal-close" onclick="closeAuthModal()">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+                    <button class="pmethod-tab active" id="tab-login" onclick="openAuthModal('login')">
+                        <i class="fas fa-right-to-bracket"></i>
+                        <span>Sign In</span>
+                    </button>
+                    <button class="pmethod-tab" id="tab-register" onclick="openAuthModal('register')">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Create Account</span>
+                    </button>
+                </div>
+
+                <form id="landing-auth-form">
+                    <div class="form-group">
+                        <label class="form-label">Operator Email</label>
+                        <input type="email" id="auth-email" class="form-input" placeholder="operator@spectre.io" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Master Passphrase</label>
+                        <input type="password" id="auth-password" class="form-input" placeholder="••••••••••••" required>
+                    </div>
+
+                    <div id="auth-error-msg" style="display:none;color:var(--accent-rose);font-size:0.8rem;margin-bottom:12px;"></div>
+
+                    <button type="submit" class="btn-submit-action btn-action-primary" id="btn-auth-submit">
+                        <i class="fas fa-check"></i>
+                        <span>Authenticate & Sign In</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/landing.js?v=20260912_paywall_v1"></script>
+</body>
+</html>

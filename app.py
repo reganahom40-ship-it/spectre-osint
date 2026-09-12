@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, redirect
 import datetime
 import os
 import re
+import time
 
 from modules.username import check_username
 from modules.ip_lookup import lookup_ip
@@ -16,6 +17,7 @@ from modules.bgp_lookup import lookup_bgp
 from modules.number_forensics import analyze_number
 from modules.engine import InvestigationEngine
 from modules.logging_config import setup_logging, log_investigation_summary
+from modules.payment_config import get_payment_config
 from modules.db import (
     init_db, create_user, authenticate_user, update_user_tier,
     list_all_users, record_payment, increment_user_searches, get_user_by_email
@@ -83,16 +85,42 @@ def make_response_json(success, module, query, data=None, error=None):
         'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
     })
 
+PUBLIC_API_PREFIXES = ('/api/auth/', '/api/payment/', '/health', '/api/health')
+
 @app.before_request
-def before_request_rate_limit():
+def before_request_access_guard():
     if request.path.startswith('/api/'):
         ip = request.remote_addr
         if not check_rate_limit(ip):
             return jsonify({'success': False, 'error': 'Rate limit exceeded'}), 429
 
+        # Strictly paywall all OSINT intelligence APIs
+        if not any(request.path.startswith(prefix) for prefix in PUBLIC_API_PREFIXES):
+            user = get_current_user()
+            if not user or user.get('tier') not in ('premium', 'lifetime', 'admin'):
+                return jsonify({
+                    'success': False,
+                    'error': 'Active Membership Required. Please upgrade to Pro or Lifetime to access SPECTRE OSINT tools.',
+                    'upgrade_required': True
+                }), 403
+
 @app.route('/', methods=['GET'])
 def index():
+    user = get_current_user()
+    if user and user.get('tier') in ('premium', 'lifetime', 'admin'):
+        return render_template('index.html')
+    return render_template('landing.html')
+
+@app.route('/app', methods=['GET'])
+def member_dashboard():
+    user = get_current_user()
+    if not user or user.get('tier') not in ('premium', 'lifetime', 'admin'):
+        return redirect('/?access=required')
     return render_template('index.html')
+
+@app.route('/landing', methods=['GET'])
+def landing_page():
+    return render_template('landing.html')
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -175,6 +203,12 @@ def api_auth_me():
 # =========================================================================
 # PAYMENT & SUBSCRIPTION CHECKOUT
 # =========================================================================
+@app.route('/api/payment/config', methods=['GET', 'OPTIONS'])
+def api_payment_config():
+    if request.method == 'OPTIONS':
+        return '', 204
+    return jsonify(get_payment_config()), 200
+
 @app.route('/api/payment/checkout', methods=['POST', 'OPTIONS'])
 def api_payment_checkout():
     if request.method == 'OPTIONS':
@@ -266,38 +300,19 @@ def api_omni():
     user_tier = user['tier'] if user else 'free'
     is_privileged = user_tier in ('premium', 'lifetime', 'admin')
 
-    # Quota check for free/guest users
+    # Strictly require paid membership (No free tier)
     if not is_privileged:
-        if user:
-            searches_used = user.get('searches_count', 0)
-            if searches_used >= 5:
-                return jsonify({
-                    'success': False,
-                    'error': 'Free investigation quota reached (5/5). Upgrade to Premium or Lifetime for unlimited access.',
-                    'upgrade_required': True
-                }), 403
-            increment_user_searches(user['id'])
-        else:
-            guest_searches = session.get('guest_searches', 0)
-            if guest_searches >= 3:
-                return jsonify({
-                    'success': False,
-                    'error': 'Guest preview quota reached (3/3). Create a free account or upgrade for full access.',
-                    'upgrade_required': True
-                }), 403
-            session['guest_searches'] = guest_searches + 1
-    else:
-        if user:
-            increment_user_searches(user['id'])
+        return jsonify({
+            'success': False,
+            'error': 'Active Membership Required. Please upgrade to Pro or Lifetime to access SPECTRE OSINT tools.',
+            'upgrade_required': True
+        }), 403
+
+    if user:
+        increment_user_searches(user['id'])
 
     try:
         resp_data = engine.investigate(target)
-
-        # Flag preview status for free users
-        if not is_privileged:
-            resp_data['is_preview'] = True
-            resp_data['upgrade_prompt'] = True
-            resp_data['user_tier'] = user_tier
 
         log_investigation_summary(
             resp_data.get('investigation_id', ''),
