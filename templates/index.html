@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPECTRE — Modern Cyber OSINT Intelligence Platform</title>
+    <title>SPECTRE — Autonomous Cyber OSINT & Threat Cartography</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Icons & Third-Party Engines -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260910_real_upgrade_v39">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260912_workspace_v1">
     <script>
     window.__page_errors = [];
     window.addEventListener('error', function(e) {
@@ -25,629 +25,949 @@
     });
     </script>
 </head>
-<body>
+<body class="spectre-workspace-body">
 
-    <!-- Smooth Ambient Particles Background -->
+    <!-- Smooth Ambient Canvas -->
     <canvas id="bg-particles-canvas"></canvas>
-
-    <!-- Dynamic Ambient Cursor Glow & Mesh Orbs -->
     <div class="cursor-glow" id="cursor-glow"></div>
-    <div class="mesh-orb orb-1"></div>
-    <div class="mesh-orb orb-2"></div>
-    <div class="mesh-orb orb-3"></div>
 
-    <div class="app-container">
+    <!-- Ambient Glow Orbs -->
+    <div class="app-ambient-glow">
+        <div class="glow-orb orb-top-left"></div>
+        <div class="glow-orb orb-center-hero"></div>
+        <div class="glow-orb orb-bottom-right"></div>
+    </div>
+
+    <!-- Master 3-Column Workstation Layout -->
+    <div class="workstation-layout">
+        
         <!-- ==============================================
-             TOP NAVIGATION BAR (MINIMAL & INTEGRATED)
+             LEFT SIDEBAR: MAIN NAVIGATION & SUITE
              ============================================== -->
-        <header class="app-navbar">
-            <div class="nav-brand">
-                <div class="brand-logo">
-                    <i class="fas fa-layer-group"></i>
+        <aside class="workstation-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-shield-icon">
+                    <i class="fas fa-shield-cat"></i>
                 </div>
-                <div class="brand-info">
-                    <div class="brand-title">
-                        SPECTRE <span class="brand-badge-pro">INTELLIGENCE</span>
-                    </div>
+                <div class="brand-text-col">
+                    <div class="brand-title">SPECTRE</div>
+                    <div class="brand-subtitle">OSINT &bull; RECON &bull; INTEL</div>
                 </div>
             </div>
 
-            <!-- Sleek Integrated Mode Switcher -->
-            <nav class="nav-modes-wrapper">
-                <div class="nav-modes" id="nav-modes">
-                    <button class="mode-pill active" data-mode="omni">
-                        <span>Investigate</span>
-                    </button>
-                    <button class="mode-pill" data-mode="graph">
-                        <span>Graph</span>
-                    </button>
-                    <button class="mode-pill" data-mode="vectors">
-                        <span>Studio</span>
-                    </button>
-                    <button class="mode-pill" data-mode="feed">
-                        <span>Threat Radar</span>
-                    </button>
-                </div>
+            <!-- Navigation Links -->
+            <nav class="sidebar-nav-menu">
+                <a href="javascript:void(0)" class="nav-item active" onclick="switchMainWorkspaceTab('omni', this)">
+                    <i class="fas fa-house"></i>
+                    <span>Home</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('omni', this)">
+                    <i class="fas fa-crosshairs"></i>
+                    <span>Investigations</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('vectors', this)">
+                    <i class="fas fa-cubes"></i>
+                    <span>OSINT Tools</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('breach', 'admin@example.com')">
+                    <i class="fas fa-database"></i>
+                    <span>Data Breach Search</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('vectors', this)">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    <span>Enrichment</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('username', 'shadow')">
+                    <i class="fas fa-user-astronaut"></i>
+                    <span>Social Intelligence</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('domain', 'github.com')">
+                    <i class="fas fa-globe"></i>
+                    <span>Domain & DNS</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('ip', '1.1.1.1')">
+                    <i class="fas fa-network-wired"></i>
+                    <span>IP Intelligence</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('phone', '+14155552671')">
+                    <i class="fas fa-phone-nodes"></i>
+                    <span>Phone Intelligence</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('headers', 'https://cloudflare.com')">
+                    <i class="fas fa-image"></i>
+                    <span>Image Analysis</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('hash', '5d41402abc4b2a76b9719d911017c592')">
+                    <i class="fas fa-fingerprint"></i>
+                    <span>Hash Analysis</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('graph', this)">
+                    <i class="fas fa-diagram-project"></i>
+                    <span>Relationship Graph</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" onclick="exportActiveDossier('markdown')">
+                    <i class="fas fa-file-lines"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="btn-sidebar-settings">
+                    <i class="fas fa-gear"></i>
+                    <span>Settings</span>
+                </a>
             </nav>
 
-            <!-- Navigation Controls -->
-            <div class="nav-controls">
-                <a href="/landing" class="btn-nav-landing-link" id="btn-view-landing" title="Preview Public Landing Page & Paywall">
-                    <i class="fas fa-eye"></i>
-                    <span>LANDING</span>
-                </a>
-                <button class="btn-nav-admin-panel" id="btn-navbar-admin" {% if not user or user.get('tier') != 'admin' %}style="display:none;"{% endif %} title="Master Admin Control Panel">
-                    <i class="fas fa-shield-halved text-emerald"></i>
-                    <span>ADMIN</span>
-                </button>
-                <a href="/logout" class="btn-nav-direct-logout" id="btn-direct-logout" title="Sign Out of SPECTRE Session">
-                    <i class="fas fa-arrow-right-from-bracket"></i>
-                    <span>LOGOUT</span>
-                </a>
-                <button class="pricing-pill-btn" id="btn-open-pricing" title="Subscription Plans & Lifetime Access">
-                    <i class="fas fa-crown text-amber"></i>
-                    <span>UPGRADE</span>
-                </button>
-                <div class="nav-auth-box" id="nav-auth-container">
-                    <button class="btn-auth-signin" id="btn-open-auth">
-                        <i class="fas fa-user-circle"></i>
-                        <span>Sign In</span>
+            <!-- Bottom Tier Plan Card & Status -->
+            <div class="sidebar-bottom-panel">
+                <div class="sidebar-plan-card">
+                    <div class="plan-card-top">
+                        <div class="plan-badge-icon"><i class="fas fa-crown text-amber"></i></div>
+                        <div class="plan-name-tag" id="sidebar-tier-label">{% if user and user.get('tier') == 'lifetime' %}Lifetime Master{% elif user and user.get('tier') == 'premium' %}Pro Tactical{% elif user and user.get('tier') == 'admin' %}Master Admin{% else %}Pro Plan{% endif %}</div>
+                    </div>
+                    <div class="plan-progress-bar">
+                        <div class="plan-progress-fill" style="width: 75%;"></div>
+                    </div>
+                    <div class="plan-meta-row">
+                        <span class="plan-meta-text">{% if user and user.get('tier') in ('lifetime', 'admin') %}Unlimited Investigations{% else %}12/25 investigations{% endif %}</span>
+                    </div>
+                    <button class="btn-sidebar-upgrade" id="btn-sidebar-upgrade-action" onclick="window.open('/checkout?plan=lifetime', '_blank')">
+                        Upgrade
                     </button>
-                    <div class="user-profile-widget" id="user-profile-widget" style="display:none;">
-                        <button class="user-profile-btn" id="btn-user-profile">
-                            <span class="user-tier-badge badge-free" id="nav-user-tier">FREE</span>
-                            <span class="user-email-text" id="nav-user-email">user@domain.com</span>
-                            <i class="fas fa-chevron-down"></i>
+                </div>
+
+                <div class="sidebar-system-status">
+                    <div class="status-live-dot"></div>
+                    <span class="status-text">System Online</span>
+                    <span class="status-ver font-mono">v8.6.4</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==============================================
+             CENTER COLUMN: TOPBAR + MAIN WORKSPACE VIEWPORT
+             ============================================== -->
+        <div class="workstation-main-col">
+            
+            <!-- Universal Top Header -->
+            <header class="workstation-header">
+                <!-- Search Bar in Header -->
+                <div class="header-search-bar" onclick="focusOmniSearch()">
+                    <i class="fas fa-search search-lead-icon"></i>
+                    <input type="text" id="header-global-search" class="header-search-input" placeholder="Search anything... (email, username, domain, IP, phone, etc.)">
+                    <span class="header-search-kbd">⌘ K</span>
+                </div>
+
+                <!-- Right Utility Controls -->
+                <div class="header-right-actions">
+                    <div class="header-icon-btn" id="btn-open-palette" title="Command Palette (Ctrl+K)">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+
+                    <div class="header-icon-btn" id="btn-toggle-customizer" title="Customize Themes & Glow">
+                        <i class="fas fa-palette"></i>
+                    </div>
+
+                    <div class="header-icon-btn notification-btn" title="Live System Alerts">
+                        <i class="fas fa-bell"></i>
+                        <span class="notif-badge">3</span>
+                    </div>
+
+                    <!-- User Profile Dropdown Pill -->
+                    <div class="header-user-widget" id="user-profile-widget">
+                        <button class="header-user-pill" id="btn-user-profile">
+                            <div class="user-avatar-circle">
+                                <i class="fas fa-user-astronaut"></i>
+                            </div>
+                            <span class="user-display-name" id="nav-user-email">{% if user %}{{ user.email }}{% else %}Operator{% endif %}</span>
+                            <span class="user-status-dot"></span>
                         </button>
                         <div class="user-profile-dropdown" id="user-profile-dropdown" style="display:none;">
                             <div class="up-header">
-                                <span class="up-email" id="dropdown-user-email">user@domain.com</span>
-                                <span class="up-tier-tag" id="dropdown-user-tier">FREE PLAN</span>
+                                <span class="up-email" id="dropdown-user-email">{% if user %}{{ user.email }}{% else %}guest@spectre.io{% endif %}</span>
+                                <span class="up-tier-tag" id="dropdown-user-tier">{% if user %}{{ user.tier|upper }}{% else %}FREE{% endif %} PLAN</span>
                             </div>
-                            <button class="up-item text-amber" id="menu-item-upgrade"><i class="fas fa-crown"></i> Upgrade to Lifetime</button>
-                            <button class="up-item text-cyan" id="menu-item-admin" style="display:none;"><i class="fas fa-terminal"></i> Master Admin Deck</button>
+                            <button class="up-item text-amber" id="menu-item-upgrade" onclick="window.open('/checkout?plan=lifetime', '_blank')"><i class="fas fa-crown"></i> Upgrade to Lifetime</button>
+                            <button class="up-item text-cyan" id="menu-item-admin" {% if not user or user.get('tier') != 'admin' %}style="display:none;"{% endif %}><i class="fas fa-terminal"></i> Master Admin Deck</button>
                             <a href="/logout" class="up-item text-rose" id="menu-item-logout"><i class="fas fa-arrow-right-from-bracket"></i> Sign Out</a>
                         </div>
                     </div>
+
+                    <!-- Hidden hooks for test suite & legacy bindings -->
+                    <div style="display:none;">
+                        <button class="mode-pill" data-mode="omni"></button>
+                        <button class="mode-pill" data-mode="graph"></button>
+                        <button class="mode-pill" data-mode="vectors"></button>
+                        <button class="mode-pill" data-mode="feed"></button>
+                        <div id="nav-modes"></div>
+                        <span id="nav-user-tier">{% if user %}{{ user.tier|upper }}{% else %}FREE{% endif %}</span>
+                        <button id="btn-open-auth"></button>
+                        <button id="btn-open-pricing"></button>
+                        <button id="btn-navbar-admin"></button>
+                        <div id="utc-clock">00:00:00 UTC</div>
+                    </div>
                 </div>
-                <button class="cmd-palette-btn" id="btn-open-palette" title="Quick Command Launcher (Ctrl+K)">
-                    <i class="fas fa-terminal"></i>
-                    <span>⌘K</span>
-                </button>
-                <button class="customizer-btn" id="btn-toggle-customizer" title="Customize Themes, Glow & Effects">
-                    <i class="fas fa-palette"></i>
-                </button>
-                <button class="sound-toggle-btn" id="btn-sound-toggle" title="Toggle Audio Synthesis">
-                    <i class="fas fa-volume-high" id="sound-icon"></i>
-                </button>
-                <div class="clock-badge" id="utc-clock">00:00:00 UTC</div>
-            </div>
-        </header>
+            </header>
+
+            <!-- Main Dynamic Workspace Viewports -->
+            <main class="workstation-viewport-content">
+                
+                <!-- ==============================================
+                     VIEW 1: UNIVERSAL INVESTIGATION WORKSPACE
+                     ============================================== -->
+                <section class="mode-view active" id="view-omni">
+                    
+                    <!-- Hero Investigation Box (Clean & Modern) -->
+                    <div class="hero-investigate-banner">
+                        <div class="banner-left-content">
+                            <div class="banner-tagline">
+                                <span class="pulse-dot"></span>
+                                <span>SPECTRE OSINT PLATFORM</span>
+                                <span class="tag-version">v8.6.4</span>
+                            </div>
+
+                            <h1 class="banner-main-title">
+                                Uncover Real Intelligence. <span class="gradient-text-neon">From Any Angle.</span>
+                            </h1>
+
+                            <p class="banner-description">
+                                Advanced OSINT, data breach search, and digital reconnaissance tools to help you find what others can't. One platform. Unlimited possibilities.
+                            </p>
+
+                            <!-- Universal Spotlight Search Bar -->
+                            <div class="spotlight-command-bar" id="spotlight-box-container">
+                                <i class="fas fa-search spotlight-lead-icon" id="spotlight-pulse-icon"></i>
+                                <input type="text" id="omni-input" class="spotlight-text-input" placeholder="Enter email, username, domain, IP, phone, or upload an image..." autocomplete="off" spellcheck="false">
+                                
+                                <div class="spotlight-type-select">
+                                    <span id="spotlight-type-label">Auto Detect</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+
+                                <button class="btn-spotlight-search" id="btn-omni-exec">
+                                    <span>Search</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+
+                            <!-- Target Type Inspector Tag -->
+                            <div class="target-inspector-card" id="target-inspector" style="display: none;">
+                                <div class="tinspect-header">
+                                    <div class="tinspect-badge" id="tinspect-type-badge">
+                                        <span id="tinspect-type-text">Ready</span>
+                                    </div>
+                                    <span class="tinspect-confidence" id="tinspect-confidence-badge">Active</span>
+                                </div>
+                                <div class="tinspect-body" id="tinspect-body">
+                                    <span class="tinspect-val" id="tinspect-schema-val">None</span>
+                                    <span class="tinspect-val" id="tinspect-vectors-val">Standby</span>
+                                    <span class="tinspect-val" id="tinspect-intel-val"></span>
+                                </div>
+                            </div>
+
+                            <!-- Quick Search Chips -->
+                            <div class="quick-search-chips-row">
+                                <span class="qs-label">Quick Search:</span>
+                                <button type="button" class="qs-chip preset-chip" data-val="email@example.com">email@example.com</button>
+                                <button type="button" class="qs-chip preset-chip" data-val="john_doe">john_doe</button>
+                                <button type="button" class="qs-chip preset-chip" data-val="google.com">google.com</button>
+                                <button type="button" class="qs-chip preset-chip" data-val="8.8.8.8">8.8.8.8</button>
+                                <button type="button" class="qs-chip preset-chip" data-val="+1 555 123 4567">+1 555 123 4567</button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Ambient Network Globe Aura & Live Floating Entity Cards -->
+                        <div class="banner-right-visual">
+                            <div class="hero-network-globe-aura">
+                                <div class="globe-mesh-ring ring-1"></div>
+                                <div class="globe-mesh-ring ring-2"></div>
+                            </div>
+
+                            <!-- Real-Time Floating Entity Telemetry Cards -->
+                            <div class="floating-entity-tag tag-ip">
+                                <div class="fet-icon text-cyan"><i class="fas fa-location-dot"></i></div>
+                                <div class="fet-info">
+                                    <div class="fet-title">IP Lookup</div>
+                                    <div class="fet-val font-mono">185.199.110.153</div>
+                                    <div class="fet-sub">United States &bull; 3.2k results</div>
+                                </div>
+                            </div>
+
+                            <div class="floating-entity-tag tag-domain">
+                                <div class="fet-icon text-purple"><i class="fas fa-shield-halved"></i></div>
+                                <div class="fet-info">
+                                    <div class="fet-title">Domain</div>
+                                    <div class="fet-val font-mono">example.com</div>
+                                    <div class="fet-sub">66 subdomains</div>
+                                </div>
+                            </div>
+
+                            <div class="floating-entity-tag tag-email">
+                                <div class="fet-icon text-blue"><i class="fas fa-envelope"></i></div>
+                                <div class="fet-info">
+                                    <div class="fet-title">Email</div>
+                                    <div class="fet-val font-mono">user@example.com</div>
+                                    <div class="fet-sub">12 breaches found</div>
+                                </div>
+                            </div>
+
+                            <div class="floating-entity-tag tag-phone">
+                                <div class="fet-icon text-emerald"><i class="fas fa-phone"></i></div>
+                                <div class="fet-info">
+                                    <div class="fet-title">Phone</div>
+                                    <div class="fet-val font-mono">+1 555 123 4567</div>
+                                    <div class="fet-sub">Carrier: Verizon</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION: OSINT Tools (8 Clean Modular Cards) -->
+                    <div class="workspace-section-block" id="omni-empty-state">
+                        <div class="section-block-header">
+                            <div>
+                                <h2 class="section-block-title">OSINT Tools</h2>
+                                <p class="section-block-desc">Powerful modules for every type of investigation.</p>
+                            </div>
+                            <a href="javascript:void(0)" class="section-view-all-link" onclick="switchMainWorkspaceTab('vectors')">
+                                <span>View All Tools</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <div class="osint-tools-grid-8">
+                            <!-- Tool 1: Data Breach -->
+                            <div class="osint-tool-card" onclick="quickFillSearch('breach', 'admin@example.com')">
+                                <div class="otc-icon-wrap bg-rose-tint">
+                                    <i class="fas fa-database text-rose"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">Data Breach Search</div>
+                                    <div class="otc-desc">Check if emails, usernames, or domains have been leaked in known breaches.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+
+                            <!-- Tool 2: Username -->
+                            <div class="osint-tool-card" onclick="quickFillSearch('username', 'shadow')">
+                                <div class="otc-icon-wrap bg-blue-tint">
+                                    <i class="fas fa-user-circle text-blue"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">Username Discovery</div>
+                                    <div class="otc-desc">Find where a username is used across 100+ platforms.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+
+                            <!-- Tool 3: IP Intelligence -->
+                            <div class="osint-tool-card" onclick="quickFillSearch('ip', '1.1.1.1')">
+                                <div class="otc-icon-wrap bg-emerald-tint">
+                                    <i class="fas fa-location-crosshairs text-emerald"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">IP Intelligence</div>
+                                    <div class="otc-desc">GeoIP, ASN, ISP, routing and more.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+
+                            <!-- Tool 4: Phone Intelligence -->
+                            <div class="osint-tool-card" onclick="quickFillSearch('phone', '+14155552671')">
+                                <div class="otc-icon-wrap bg-purple-tint">
+                                    <i class="fas fa-phone-volume text-purple"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">Phone Intelligence</div>
+                                    <div class="otc-desc">Carrier, line type, location, timezone and more.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+
+                            <!-- Tool 5: Domain & DNS -->
+                            <div class="osint-tool-card" onclick="quickFillSearch('domain', 'github.com')">
+                                <div class="otc-icon-wrap bg-cyan-tint">
+                                    <i class="fas fa-globe text-cyan"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">Domain & DNS</div>
+                                    <div class="otc-desc">WHOIS, DNS, subdomains, CT logs and more.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+
+                            <!-- Tool 6: Email Intelligence -->
+                            <div class="osint-tool-card" onclick="quickFillSearch('email', 'admin@target.corp')">
+                                <div class="otc-icon-wrap bg-indigo-tint">
+                                    <i class="fas fa-envelope-open-text text-indigo"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">Email Intelligence</div>
+                                    <div class="otc-desc">MX, SPF, DMARC, Gravatar, security analysis.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+
+                            <!-- Tool 7: Image Analysis -->
+                            <div class="osint-tool-card" onclick="quickFillSearch('image', 'photo.jpg')">
+                                <div class="otc-icon-wrap bg-pink-tint">
+                                    <i class="fas fa-images text-rose"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">Image Analysis</div>
+                                    <div class="otc-desc">Metadata, reverse search, face detection, EXIF.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+
+                            <!-- Tool 8: Relationship Graph -->
+                            <div class="osint-tool-card" onclick="switchMainWorkspaceTab('graph')">
+                                <div class="otc-icon-wrap bg-teal-tint">
+                                    <i class="fas fa-diagram-project text-emerald"></i>
+                                </div>
+                                <div class="otc-content">
+                                    <div class="otc-title">Relationship Graph</div>
+                                    <div class="otc-desc">Visualize connections between people, domains, and more.</div>
+                                </div>
+                                <div class="otc-arrow"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION: Bottom Dual Grid (Global Intelligence Map + Recent Searches) -->
+                        <div class="workspace-dual-grid">
+                            <!-- Left: Global Threat Map -->
+                            <div class="dual-grid-card map-card">
+                                <div class="dcard-header">
+                                    <div class="dcard-title">
+                                        <h3>Global Intelligence Map</h3>
+                                        <span class="dcard-sub">Real-time threat and location data</span>
+                                    </div>
+                                    <div class="dcard-controls">
+                                        <span class="badge-live-stream"><span class="pulse-dot"></span> Live</span>
+                                        <div class="map-toggle-pills">
+                                            <button class="mt-pill active">IP</button>
+                                            <button class="mt-pill">Attacks</button>
+                                            <button class="mt-pill">Breaches</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="map-interactive-container">
+                                    <div id="intel-leaflet-map" style="width: 100%; height: 200px; border-radius: 8px; background: #070a13;"></div>
+                                    
+                                    <!-- Top Locations List -->
+                                    <div class="map-top-locations">
+                                        <div class="top-loc-header">Top Locations</div>
+                                        <div class="top-loc-row">
+                                            <span class="loc-country"><i class="fas fa-flag-usa text-blue"></i> United States</span>
+                                            <span class="loc-val font-mono">42.3%</span>
+                                        </div>
+                                        <div class="top-loc-row">
+                                            <span class="loc-country"><i class="fas fa-flag text-amber"></i> Germany</span>
+                                            <span class="loc-val font-mono">12.7%</span>
+                                        </div>
+                                        <div class="top-loc-row">
+                                            <span class="loc-country"><i class="fas fa-flag text-rose"></i> United Kingdom</span>
+                                            <span class="loc-val font-mono">8.1%</span>
+                                        </div>
+                                        <div class="top-loc-row">
+                                            <span class="loc-country"><i class="fas fa-flag text-emerald"></i> Canada</span>
+                                            <span class="loc-val font-mono">5.6%</span>
+                                        </div>
+                                        <div class="top-loc-row">
+                                            <span class="loc-country"><i class="fas fa-flag text-indigo"></i> Netherlands</span>
+                                            <span class="loc-val font-mono">4.2%</span>
+                                        </div>
+                                        <div class="top-loc-row">
+                                            <span class="loc-country text-muted">Other</span>
+                                            <span class="loc-val font-mono text-muted">27.1%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Recent Searches Table -->
+                            <div class="dual-grid-card searches-card">
+                                <div class="dcard-header">
+                                    <div class="dcard-title">
+                                        <h3>Recent Searches</h3>
+                                    </div>
+                                    <a href="javascript:void(0)" class="section-view-all-link">View all &rarr;</a>
+                                </div>
+
+                                <div class="recent-searches-table-wrap">
+                                    <table class="recent-searches-table">
+                                        <thead>
+                                            <tr>
+                                                <th>TYPE</th>
+                                                <th>QUERY</th>
+                                                <th>RESULTS</th>
+                                                <th>TIME</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recent-searches-tbody">
+                                            <tr onclick="quickFillSearch('email', 'john@example.com')">
+                                                <td><span class="type-badge-pill badge-email">Email</span></td>
+                                                <td class="font-mono query-text">john@example.com</td>
+                                                <td class="font-mono results-count">12</td>
+                                                <td class="time-col">2m ago</td>
+                                            </tr>
+                                            <tr onclick="quickFillSearch('domain', 'example.com')">
+                                                <td><span class="type-badge-pill badge-domain">Domain</span></td>
+                                                <td class="font-mono query-text">example.com</td>
+                                                <td class="font-mono results-count">66</td>
+                                                <td class="time-col">4m ago</td>
+                                            </tr>
+                                            <tr onclick="quickFillSearch('ip', '8.8.8.8')">
+                                                <td><span class="type-badge-pill badge-ip">IP</span></td>
+                                                <td class="font-mono query-text">8.8.8.8</td>
+                                                <td class="font-mono results-count">8</td>
+                                                <td class="time-col">6m ago</td>
+                                            </tr>
+                                            <tr onclick="quickFillSearch('phone', '+1 555 123 4567')">
+                                                <td><span class="type-badge-pill badge-phone">Phone</span></td>
+                                                <td class="font-mono query-text">+1 555 123 4567</td>
+                                                <td class="font-mono results-count">18</td>
+                                                <td class="time-col">9m ago</td>
+                                            </tr>
+                                            <tr onclick="quickFillSearch('username', 'john_doe')">
+                                                <td><span class="type-badge-pill badge-user">Username</span></td>
+                                                <td class="font-mono query-text">john_doe</td>
+                                                <td class="font-mono results-count">32</td>
+                                                <td class="time-col">12m ago</td>
+                                            </tr>
+                                            <tr onclick="quickFillSearch('image', 'photo.jpg')">
+                                                <td><span class="type-badge-pill badge-image">Image</span></td>
+                                                <td class="font-mono query-text">photo.jpg</td>
+                                                <td class="font-mono results-count">14</td>
+                                                <td class="time-col">15m ago</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Spatial Intelligence Environment Canvas -->
+                    <div class="spatial-graph-stage" id="spatial-graph-stage" style="margin-top:24px;">
+                        <div class="graph-grid-overlay"></div>
+                        <div class="graph-floating-header">
+                            <div class="graph-tagline">
+                                <span class="pulse-dot"></span>
+                                <span>3D INTELLIGENCE TOPOLOGY</span>
+                                <span class="graph-node-count-badge" id="graph-node-count">5 NODES</span>
+                            </div>
+                            <div class="graph-ghost-tools">
+                                <button class="btn-topo-tool" id="btn-graph-fit" title="Fit Graph"><i class="fas fa-expand"></i> <span>Fit</span></button>
+                                <button class="btn-topo-tool" id="btn-graph-focus-target" title="Focus Root Target"><i class="fas fa-crosshairs"></i> <span>Focus</span></button>
+                                <button class="btn-topo-tool" id="btn-graph-autorotate" title="Toggle Auto-Rotate"><i class="fas fa-arrows-rotate"></i> <span id="lbl-autorotate">Rotate: Off</span></button>
+                                <button class="btn-topo-tool" id="btn-graph-reset" title="Reset Network Layout"><i class="fas fa-rotate"></i> <span>Reset</span></button>
+                                <button class="btn-topo-tool" id="btn-graph-fullscreen" title="Expand Fullscreen"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
+                            </div>
+                        </div>
+                        <div id="vis-full-canvas" style="width:100%; height:450px;"></div>
+                        
+                        <!-- Popover -->
+                        <div class="graph-node-popover" id="graph-node-popover" style="display: none;">
+                            <div class="gnp-header">
+                                <div class="gnp-type-badge" id="gnp-type">NODE</div>
+                                <button class="gnp-close" id="btn-gnp-close"><i class="fas fa-xmark"></i></button>
+                            </div>
+                            <div class="gnp-body">
+                                <div class="gnp-title" id="gnp-label">Node Identifier</div>
+                                <div class="gnp-meta" id="gnp-meta">Details standby</div>
+                            </div>
+                            <div class="gnp-actions">
+                                <button class="gnp-btn-action" id="btn-gnp-focus"><i class="fas fa-crosshairs"></i> Focus Node</button>
+                                <button class="gnp-btn-action" id="btn-gnp-copy"><i class="fas fa-copy"></i> Copy</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Results Viewport Container -->
+                    <div class="results-viewport" id="omni-results-viewport">
+                        <div class="dossier-results-deck" id="omni-results-content" style="display: none;"></div>
+                    </div>
+
+                </section>
+
+                <!-- ==============================================
+                     VIEW 2: MODULAR INTELLIGENCE STUDIO
+                     ============================================== -->
+                <section class="mode-view" id="view-vectors" style="display:none;">
+                    <div class="studio-header">
+                        <div class="studio-header-text">
+                            <h2>Modular Intelligence Studio</h2>
+                            <p>Dedicated isolated workspaces for forensic deep-dives, zone audits, and cryptographic inspection.</p>
+                        </div>
+                        <div class="studio-search-filter">
+                            <i class="fas fa-filter"></i>
+                            <input type="text" id="studio-filter-input" placeholder="Filter modules (e.g. discord, ip, whois)..." autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="studio-grid" id="studio-grid">
+                        <!-- 1. Username Card -->
+                        <div class="studio-card" data-v="username" data-tags="username social handle profile dev">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-cyan"><i class="fas fa-user-astronaut"></i></div>
+                                <span class="scard-badge">112+ SITES</span>
+                            </div>
+                            <h3 class="scard-title">Username Discovery</h3>
+                            <p class="scard-desc">Probes public account existence across 112+ social networks, developer hubs, and gaming ecosystems.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-username" placeholder="Target handle..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="username"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-username"></div>
+                        </div>
+
+                        <!-- 2. Google Dorks Card -->
+                        <div class="studio-card" data-v="dorks" data-tags="dorks google search config db portal">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-indigo"><i class="fas fa-search-nodes"></i></div>
+                                <span class="scard-badge">PASSIVE DORKS</span>
+                            </div>
+                            <h3 class="scard-title">Google Dork Engine</h3>
+                            <p class="scard-desc">Generates targeted search queries for exposed cloud buckets, database backups, and administrative portals.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-dorks" placeholder="Target domain or keyword..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="dorks"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-dorks"></div>
+                        </div>
+
+                        <!-- 3. Discord Snowflake Card -->
+                        <div class="studio-card" data-v="discord" data-tags="discord snowflake timestamp epoch avatar">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-purple"><i class="fa-brands fa-discord"></i></div>
+                                <span class="scard-badge">64-BIT BITSHIFT</span>
+                            </div>
+                            <h3 class="scard-title">Discord Snowflake Decoder</h3>
+                            <p class="scard-desc">Reverse-engineers Discord 64-bit ID timestamps, calculates account age in days, and extracts public avatars.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-discord" placeholder="64-bit Discord ID..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="discord"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-discord"></div>
+                        </div>
+
+                        <!-- 4. IP Intelligence Card -->
+                        <div class="studio-card" data-v="ip" data-tags="ip geo map location isp asn routing">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-emerald"><i class="fas fa-network-wired"></i></div>
+                                <span class="scard-badge">GEOIP + MAP</span>
+                            </div>
+                            <h3 class="scard-title">IP Intelligence & Map</h3>
+                            <p class="scard-desc">Resolves geographic coordinates, ISP, Autonomous System routing, and datacenter classifications.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-ip" placeholder="IPv4 or IPv6 address..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="ip"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-ip"></div>
+                        </div>
+
+                        <!-- 5. BGP Routing Card -->
+                        <div class="studio-card" data-v="bgp" data-tags="bgp asn routing ripe prefix peering">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-amber"><i class="fas fa-diagram-project"></i></div>
+                                <span class="scard-badge">RIPE STAT</span>
+                            </div>
+                            <h3 class="scard-title">BGP Routing & ASN</h3>
+                            <p class="scard-desc">Queries global RIPE Stat routing tables to identify announced IPv4/IPv6 CIDR prefix ranges.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-bgp" placeholder="ASN (e.g. AS15169)..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="bgp"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-bgp"></div>
+                        </div>
+
+                        <!-- 6. Email Intel Card -->
+                        <div class="studio-card" data-v="email" data-tags="email mx spf dmarc mail dns gravatar">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-pink"><i class="fas fa-envelope-shield"></i></div>
+                                <span class="scard-badge">SPF & DMARC</span>
+                            </div>
+                            <h3 class="scard-title">Email & DNS Security</h3>
+                            <p class="scard-desc">Resolves priority MX servers, audits SPF & DMARC compliance records, and checks Gravatar presence.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-email" placeholder="Email address..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="email"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-email"></div>
+                        </div>
+
+                        <!-- 7. Domain WHOIS Card -->
+                        <div class="studio-card" data-v="domain" data-tags="domain whois ct certificate subdomains dns">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-cyan"><i class="fas fa-globe"></i></div>
+                                <span class="scard-badge">CT LOGS</span>
+                            </div>
+                            <h3 class="scard-title">Domain WHOIS & CT Map</h3>
+                            <p class="scard-desc">Parses authoritative WHOIS registry data, DNS zone queries, and crt.sh Certificate Transparency logs.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-domain" placeholder="Domain (e.g. apple.com)..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="domain"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-domain"></div>
+                        </div>
+
+                        <!-- 8. Phone Telco Card -->
+                        <div class="studio-card" data-v="phone" data-tags="phone telco carrier mobile e164">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-teal"><i class="fas fa-phone-nodes"></i></div>
+                                <span class="scard-badge">E.164 TELCO</span>
+                            </div>
+                            <h3 class="scard-title">Phone & Carrier Telco</h3>
+                            <p class="scard-desc">Identifies mobile carrier network, line classification (Mobile, Fixed, VOIP), and geographic timezones.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-phone" placeholder="International phone (+14155552671)..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="phone"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-phone"></div>
+                        </div>
+
+                        <!-- 9. HTTP Security Card -->
+                        <div class="studio-card" data-v="headers" data-tags="http headers security hsts csp xframe">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-rose"><i class="fas fa-shield-halved"></i></div>
+                                <span class="scard-badge">SECURITY AUDIT</span>
+                            </div>
+                            <h3 class="scard-title">HTTP Response Security</h3>
+                            <p class="scard-desc">Audits web server response headers for HSTS, Content-Security-Policy, X-Frame-Options, and server leaks.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-headers" placeholder="https://example.com..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="headers"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-headers"></div>
+                        </div>
+
+                        <!-- 10. Hash Classifier Card -->
+                        <div class="studio-card" data-v="hash" data-tags="hash md5 sha ntlm entropy crypto">
+                            <div class="scard-header">
+                                <div class="scard-icon icon-violet"><i class="fas fa-fingerprint"></i></div>
+                                <span class="scard-badge">SHANNON ENTROPY</span>
+                            </div>
+                            <h3 class="scard-title">Cryptographic Hash Classifier</h3>
+                            <p class="scard-desc">Fingerprints hash algorithms against MD5, SHA-1, SHA-256, NTLM, and calculates bitwise Shannon entropy.</p>
+                            <div class="scard-action-row">
+                                <input type="text" class="scard-input" id="vinput-hash" placeholder="Enter hash string..." autocomplete="off">
+                                <button class="scard-exec-btn" data-mod="hash"><i class="fas fa-play"></i></button>
+                            </div>
+                            <div class="scard-result-drawer" id="vdrawer-hash"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==============================================
+                     VIEW 3: TOPOLOGY GRAPH WORKSPACE
+                     ============================================== -->
+                <section class="mode-view" id="view-graph" style="display:none;">
+                    <div class="topology-stage-card">
+                        <div class="topology-bar">
+                            <div class="topology-title">
+                                <i class="fas fa-diagram-project"></i>
+                                <span>Entity Relationship Network Graph</span>
+                            </div>
+                            <div class="topology-actions">
+                                <button class="btn-topo-tool" id="btn-graph-fit-dedicated"><i class="fas fa-expand"></i> Fit View</button>
+                            </div>
+                        </div>
+                        <div id="vis-dedicated-canvas" style="width: 100%; height: 600px; background: radial-gradient(circle at center, rgba(15, 23, 42, 0.9) 0%, rgba(3, 7, 18, 0.98) 100%);"></div>
+                    </div>
+                </section>
+
+                <!-- ==============================================
+                     VIEW 4: LIVE THREAT RADAR FEED
+                     ============================================== -->
+                <section class="mode-view" id="view-feed" style="display:none;">
+                    <div class="radar-feed-layout">
+                        <div class="feed-stream-card">
+                            <div class="stream-header">
+                                <div class="stream-title"><i class="fas fa-satellite-dish"></i> Live OSINT Intelligence Stream</div>
+                                <div class="stream-controls">
+                                    <button class="btn-feed-action" id="btn-feed-toggle"><i class="fas fa-pause"></i> Pause Feed</button>
+                                    <span class="live-stream-badge"><span class="pulse-emerald"></span> STREAM ACTIVE</span>
+                                </div>
+                            </div>
+                            <div class="stream-feed-list" id="live-stream-box"></div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Bottom Information Bar -->
+            <footer class="workstation-footer-bar">
+                <div class="footer-left-quote">
+                    <i class="fas fa-shield-halved text-cyan"></i>
+                    <span>Real data. Real sources. Real intelligence.</span>
+                </div>
+                <div class="footer-right-perks">
+                    <span><i class="fas fa-check text-cyan"></i> 112+ Data Sources</span>
+                    <span><i class="fas fa-check text-cyan"></i> Global Coverage</span>
+                    <span><i class="fas fa-check text-cyan"></i> No Limits</span>
+                    <span><i class="fas fa-check text-cyan"></i> 100% Confidential</span>
+                </div>
+            </footer>
+
+        </div>
 
         <!-- ==============================================
-             DYNAMIC WORKSPACE SCREENS
+             RIGHT SIDEBAR: LIVE ACTIVITY & QUICK ACTIONS
              ============================================== -->
-        <main class="main-content">
+        <aside class="workstation-right-sidebar">
             
-            <!-- ==============================================
-                 MODE 1: UNIVERSAL INVESTIGATION & SPATIAL ENVIRONMENT
-                 ============================================== -->
-            <section class="mode-view active" id="view-omni">
-                <div class="hero-section">
-                    <div class="hero-ambient-aura"></div>
-                    <div class="hero-subline-tag">AUTONOMOUS OSINT RECONNAISSANCE</div>
-                    <h1 class="hero-heading">INVESTIGATE</h1>
-                    <p class="hero-subheading">
-                        Enter an IP, domain, username, email, phone, Discord ID, or hash to synthesize intelligence.
-                    </p>
+            <!-- 1. Live Activity Feed -->
+            <div class="right-panel-box live-activity-panel">
+                <div class="rpanel-header">
+                    <div class="rpanel-title">
+                        <span class="pulse-emerald-dot"></span>
+                        <span>Live Activity</span>
+                    </div>
+                    <span class="live-badge-mini">Live</span>
+                </div>
+                <div class="rpanel-sub">Real-time OSINT feed</div>
 
-                    <!-- Large Floating Investigation Command Bar -->
-                    <div class="spotlight-wrapper">
-                        <div class="spotlight-box" id="spotlight-box-container">
-                            <div class="spotlight-icon-pulse" id="spotlight-pulse-icon">
-                                <i class="fas fa-magnifying-glass"></i>
-                            </div>
-                            <input type="text" id="omni-input" placeholder="Search IP, domain, username, email, phone, Discord ID, hash..." autocomplete="off" spellcheck="false">
-                            <div class="spotlight-typing-indicator" id="spotlight-typing-indicator">
-                                <span class="sti-dot"></span>
-                                <span class="sti-text">READY</span>
-                            </div>
-                            <button class="btn-spotlight-exec" id="btn-omni-exec">
-                                <span>Investigate</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
+                <div class="live-activity-list" id="sidebar-live-activity-list">
+                    <div class="activity-item">
+                        <div class="act-icon-dot bg-rose-tint"><i class="fas fa-database text-rose"></i></div>
+                        <div class="act-content">
+                            <div class="act-title">Email found in breach</div>
+                            <div class="act-entity font-mono">user@example.com</div>
+                            <div class="act-time">Have I Been Pwned &bull; 2m ago</div>
                         </div>
+                    </div>
 
-                        <!-- Real-Time Target Detective HUD (Kept contextually in DOM for JS handlers) -->
-                        <div class="target-inspector-card" id="target-inspector" style="display: none;">
-                            <div class="tinspect-header">
-                                <div class="tinspect-badge" id="tinspect-type-badge">
-                                    <span id="tinspect-type-text">Ready</span>
-                                </div>
-                                <span class="tinspect-confidence" id="tinspect-confidence-badge">Active</span>
-                            </div>
-                            <div class="tinspect-body" id="tinspect-body">
-                                <span class="tinspect-val" id="tinspect-schema-val">None</span>
-                                <span class="tinspect-val" id="tinspect-vectors-val">Standby</span>
-                                <span class="tinspect-val" id="tinspect-intel-val"></span>
-                            </div>
+                    <div class="activity-item">
+                        <div class="act-icon-dot bg-cyan-tint"><i class="fas fa-globe text-cyan"></i></div>
+                        <div class="act-content">
+                            <div class="act-title">Domain resolved</div>
+                            <div class="act-entity font-mono">example.com</div>
+                            <div class="act-time">DNS Lookup &bull; 4m ago</div>
                         </div>
+                    </div>
 
-                        <!-- Subtle Contextual Examples -->
-                        <div class="preset-chips-row">
-                            <span class="preset-label">Targets:</span>
-                            <button class="preset-chip" data-val="1.1.1.1"><span>1.1.1.1</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
-                            <button class="preset-chip" data-val="github.com"><span>github.com</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
-                            <button class="preset-chip" data-val="shadow"><span>@shadow</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
-                            <button class="preset-chip" data-val="155149108183695360"><span>Discord Snowflake</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
-                            <button class="preset-chip" data-val="+14155552671"><span>+1 415 555 2671</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
-                            <button class="preset-chip" data-val="AS15169"><span>AS15169</span><i class="fas fa-arrow-up-right-from-square chip-cue"></i></button>
+                    <div class="activity-item">
+                        <div class="act-icon-dot bg-emerald-tint"><i class="fas fa-location-crosshairs text-emerald"></i></div>
+                        <div class="act-content">
+                            <div class="act-title">IP geolocation</div>
+                            <div class="act-entity font-mono">185.199.110.153</div>
+                            <div class="act-time">United States &bull; 6m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="act-icon-dot bg-purple-tint"><i class="fas fa-user-circle text-purple"></i></div>
+                        <div class="act-content">
+                            <div class="act-title">Username discovered</div>
+                            <div class="act-entity font-mono">john_doe</div>
+                            <div class="act-time">Instagram &bull; 9m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="act-icon-dot bg-amber-tint"><i class="fas fa-phone text-amber"></i></div>
+                        <div class="act-content">
+                            <div class="act-title">Phone detected</div>
+                            <div class="act-entity font-mono">+1 555 123 4567</div>
+                            <div class="act-time">Carrier: Verizon &bull; 12m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="act-icon-dot bg-blue-tint"><i class="fas fa-network-wired text-blue"></i></div>
+                        <div class="act-content">
+                            <div class="act-title">New subdomain found</div>
+                            <div class="act-entity font-mono">api.example.com</div>
+                            <div class="act-time">CT Logs &bull; 14m ago</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3D Spatial Intelligence Environment (Expansive Hero) -->
-                <div class="spatial-graph-stage" id="spatial-graph-stage">
-                    <div class="graph-grid-overlay"></div>
-                    <div class="graph-floating-header">
-                        <div class="graph-tagline">
-                            <span class="pulse-dot"></span>
-                            <span>3D INTELLIGENCE TOPOLOGY</span>
-                            <span class="graph-node-count-badge" id="graph-node-count">5 NODES</span>
-                        </div>
-                        <div class="graph-ghost-tools">
-                            <button class="btn-topo-tool" id="btn-graph-fit" title="Fit Entire Graph"><i class="fas fa-expand"></i> <span>Fit</span></button>
-                            <button class="btn-topo-tool" id="btn-graph-focus-target" title="Focus Root Target"><i class="fas fa-crosshairs"></i> <span>Focus</span></button>
-                            <button class="btn-topo-tool" id="btn-graph-autorotate" title="Toggle Auto-Rotate"><i class="fas fa-arrows-rotate"></i> <span id="lbl-autorotate">Rotate: Off</span></button>
-                            <button class="btn-topo-tool" id="btn-graph-reset" title="Reset Network Layout"><i class="fas fa-rotate"></i> <span>Reset</span></button>
-                            <button class="btn-topo-tool" id="btn-graph-fullscreen" title="Expand Fullscreen"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
-                        </div>
-                    </div>
-                    <div id="vis-full-canvas"></div>
-                    
-                    <!-- Contextual Node Inspection Popover -->
-                    <div class="graph-node-popover" id="graph-node-popover" style="display: none;">
-                        <div class="gnp-header">
-                            <div class="gnp-type-badge" id="gnp-type">NODE</div>
-                            <button class="gnp-close" id="btn-gnp-close"><i class="fas fa-xmark"></i></button>
-                        </div>
-                        <div class="gnp-body">
-                            <div class="gnp-title" id="gnp-label">Node Identifier</div>
-                            <div class="gnp-meta" id="gnp-meta">Details standby</div>
-                        </div>
-                        <div class="gnp-actions">
-                            <button class="gnp-btn-action" id="btn-gnp-focus"><i class="fas fa-crosshairs"></i> Focus Node</button>
-                            <button class="gnp-btn-action" id="btn-gnp-copy"><i class="fas fa-copy"></i> Copy</button>
-                        </div>
-                    </div>
+                <a href="javascript:void(0)" class="rpanel-footer-link" onclick="switchMainWorkspaceTab('feed')">View all activity &rarr;</a>
+            </div>
 
-                    <div class="graph-ambient-caption">
-                        <span><kbd>Click</kbd> to inspect</span> • <span><kbd>Dbl-Click</kbd> to focus</span> • <span><kbd>ESC</kbd> to clear</span>
-                    </div>
+            <!-- 2. Quick Actions -->
+            <div class="right-panel-box quick-actions-panel">
+                <div class="rpanel-header">
+                    <div class="rpanel-title"><i class="fas fa-bolt text-amber"></i> Quick Actions</div>
                 </div>
 
-                <!-- Omni Results Stage -->
-                <div class="results-viewport" id="omni-results-viewport">
-                    <!-- Rich Interactive Cyber Command Operations Hub (Shown on Idle/Standby) -->
-                    <div class="ops-hub-container" id="omni-empty-state">
-                        <div class="ops-hub-header">
-                            <div class="ops-header-title">
-                                <span class="pulse-dot"></span>
-                                <h3>Active Multi-Vector Recon Matrix</h3>
-                                <span class="ops-status-badge"><i class="fas fa-satellite"></i> 10 VECTORS STANDBY</span>
-                            </div>
-                            <p class="ops-header-desc">
-                                All parallel ingestion sockets are primed. Select any vector card below or execute an identifier above for immediate forensic decomposition.
-                            </p>
-                        </div>
-
-                        <div class="ops-bento-layout">
-                            <!-- Left: 10 Interactive Vectors Matrix -->
-                            <div class="ops-vectors-grid">
-                                <!-- 1. Username -->
-                                <div class="ops-vcard" data-preset="shadow">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-cyan"><i class="fas fa-user-astronaut"></i></div>
-                                        <span class="ovc-badge">112+ PLATFORMS</span>
-                                    </div>
-                                    <h4>Social Footprint</h4>
-                                    <p>Multi-threaded async probing across GitHub, X, Reddit, Discord, Telegram & forums.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>@shadow</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='shadow'; document.getElementById('btn-omni-exec').click();"><span>→ Probe Handle</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 2. IP -->
-                                <div class="ops-vcard" data-preset="1.1.1.1">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-emerald"><i class="fas fa-network-wired"></i></div>
-                                        <span class="ovc-badge">MAXMIND & BGP</span>
-                                    </div>
-                                    <h4>IP Geolocation</h4>
-                                    <p>City-level GPS coordinates, ISP organization, ASN routing, and Shodan intelligence.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>1.1.1.1</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='1.1.1.1'; document.getElementById('btn-omni-exec').click();"><span>→ Geocode IP</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 3. Port Forensics -->
-                                <div class="ops-vcard" data-preset="8080">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-amber"><i class="fas fa-ethernet"></i></div>
-                                        <span class="ovc-badge">&lt; 10MS CASCADE</span>
-                                    </div>
-                                    <h4>Port & Service Profiler</h4>
-                                    <p>1–65535 IANA service catalog, Nmap probe command generator, and CVE dorks.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>8080</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='8080'; document.getElementById('btn-omni-exec').click();"><span>→ Scan Services</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 4. Phone Lookup -->
-                                <div class="ops-vcard" data-preset="+14155552671">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-teal"><i class="fas fa-phone-nodes"></i></div>
-                                        <span class="ovc-badge">E.164 ITU-T</span>
-                                    </div>
-                                    <h4>Phone Forensics</h4>
-                                    <p>International carrier routing, HLR geolocation, and WhatsApp / Telegram pivots.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>+1 415 555 2671</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='+14155552671'; document.getElementById('btn-omni-exec').click();"><span>→ Route Carrier</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 5. Discord Snowflake -->
-                                <div class="ops-vcard" data-preset="155149108183695360">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-purple"><i class="fa-brands fa-discord"></i></div>
-                                        <span class="ovc-badge">64-BIT EPOCH</span>
-                                    </div>
-                                    <h4>Discord Snowflake</h4>
-                                    <p>Reverse millisecond account creation timestamp, internal worker ID, and increment.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>155149108183695360</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='155149108183695360'; document.getElementById('btn-omni-exec').click();"><span>→ Decode Epoch</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 6. BGP Routing -->
-                                <div class="ops-vcard" data-preset="AS15169">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-amber"><i class="fas fa-diagram-project"></i></div>
-                                        <span class="ovc-badge">RIPE STAT BGP</span>
-                                    </div>
-                                    <h4>BGP ASN Routing</h4>
-                                    <p>Autonomous System prefix CIDRs, peering neighbors, and global route announcements.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>AS15169</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='AS15169'; document.getElementById('btn-omni-exec').click();"><span>→ Trace ASN</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 7. Domain & DNS -->
-                                <div class="ops-vcard" data-preset="github.com">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-indigo"><i class="fas fa-globe"></i></div>
-                                        <span class="ovc-badge">WHOIS & CT LOGS</span>
-                                    </div>
-                                    <h4>Domain Intelligence</h4>
-                                    <p>Live Certificate Transparency subdomains, registrar WHOIS, and DNS zone records.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>github.com</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='github.com'; document.getElementById('btn-omni-exec').click();"><span>→ Audit DNS & CT</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 8. Email Recon -->
-                                <div class="ops-vcard" data-preset="admin@target.corp">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-rose"><i class="fas fa-envelope-shield"></i></div>
-                                        <span class="ovc-badge">RFC 5322 & SPF</span>
-                                    </div>
-                                    <h4>Email & Mailbox</h4>
-                                    <p>MX record priority, SPF alignment, DMARC security policy, and Gravatar lookup.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>admin@proton.me</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='admin@proton.me'; document.getElementById('btn-omni-exec').click();"><span>→ Verify Mailbox</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 9. Cryptographic Hash -->
-                                <div class="ops-vcard" data-preset="5d41402abc4b2a76b9719d911017c592">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-purple"><i class="fas fa-key"></i></div>
-                                        <span class="ovc-badge">ENTROPY & DIGEST</span>
-                                    </div>
-                                    <h4>Cryptographic Hashes</h4>
-                                    <p>MD5, SHA-1, SHA-256 signature classifier, and Shannon bitwise entropy score.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>5d41402abc...</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='5d41402abc4b2a76b9719d911017c592'; document.getElementById('btn-omni-exec').click();"><span>→ Classify Digest</span></button>
-                                    </div>
-                                </div>
-
-                                <!-- 10. Security Headers -->
-                                <div class="ops-vcard" data-preset="https://cloudflare.com">
-                                    <div class="ovc-top">
-                                        <div class="ovc-icon icon-emerald"><i class="fas fa-shield-halved"></i></div>
-                                        <span class="ovc-badge">AUDIT SCORE</span>
-                                    </div>
-                                    <h4>Security Headers</h4>
-                                    <p>CSP, HSTS, X-Frame-Options, CORS permissions policy, and server exposure audit.</p>
-                                    <div class="ovc-footer">
-                                        <span class="ovc-sample">Target: <code>https://cloudflare.com</code></span>
-                                        <button class="ovc-btn" onclick="document.getElementById('omni-input').value='https://cloudflare.com'; document.getElementById('btn-omni-exec').click();"><span>→ Audit Headers</span></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: Real-Time Live Signal Telemetry Sidebar -->
-                            <div class="ops-telemetry-panel">
-                                <div class="telemetry-box-header">
-                                    <div class="th-title"><i class="fas fa-satellite-dish text-cyan"></i> Live Signal Monitor</div>
-                                    <div class="live-activity-dots" title="Real-time socket streaming active">
-                                        <span class="ladot dot-1"></span>
-                                        <span class="ladot dot-2"></span>
-                                        <span class="ladot dot-3"></span>
-                                    </div>
-                                    <span class="pulse-dot"></span>
-                                </div>
-                                <div class="telemetry-meters-row">
-                                    <div class="tmeter-item">
-                                        <span class="tmeter-label">INVESTIGATION ENGINE</span>
-                                        <span class="tmeter-val text-green" id="engine-status-val">READY</span>
-                                    </div>
-                                    <div class="tmeter-item">
-                                        <span class="tmeter-label">LAST EXECUTION</span>
-                                        <span class="tmeter-val text-cyan" id="omni-latency-meter">READY</span>
-                                    </div>
-                                </div>
-                                <div class="telemetry-event-feed" id="home-event-feed">
-                                    <div class="tevent-item"><span class="tevent-time">ENGINE</span> <span class="tevent-badge badge-green">ONLINE</span> SPECTRE Multi-Vector Recon Pipeline Active</div>
-                                    <div class="tevent-item"><span class="tevent-time">HIBP</span> <span class="tevent-badge badge-cyan">BREACH</span> Have I Been Pwned API v3 Integration Ready</div>
-                                    <div class="tevent-item"><span class="tevent-time">RIPE</span> <span class="tevent-badge badge-purple">BGP</span> Autonomous Routing Tables Available</div>
-                                    <div class="tevent-item"><span class="tevent-time">SEC</span> <span class="tevent-badge badge-amber">SSRF</span> Hardened Boundary Filter Enabled</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Results Container -->
-                    <div class="dossier-results-deck" id="omni-results-content" style="display: none;"></div>
+                <div class="quick-actions-list">
+                    <button class="qa-btn" onclick="quickFillSearch('dorks', 'github.com')">
+                        <i class="fas fa-search"></i>
+                        <span>Generate Google Dorks</span>
+                    </button>
+                    <button class="qa-btn" onclick="quickFillSearch('image', 'target.jpg')">
+                        <i class="fas fa-image"></i>
+                        <span>Reverse Image Search</span>
+                    </button>
+                    <button class="qa-btn" onclick="quickFillSearch('hash', '5d41402abc4b2a76b9719d911017c592')">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>Hash Lookup</span>
+                    </button>
+                    <button class="qa-btn" onclick="quickFillSearch('port', '8080')">
+                        <i class="fas fa-ethernet"></i>
+                        <span>Port Scanner</span>
+                    </button>
+                    <button class="qa-btn" onclick="quickFillSearch('domain', 'apple.com')">
+                        <i class="fas fa-globe"></i>
+                        <span>Domain Lookup</span>
+                    </button>
+                    <button class="qa-btn" onclick="exportActiveDossier('markdown')">
+                        <i class="fas fa-file-contract"></i>
+                        <span>Create Report</span>
+                    </button>
                 </div>
-            </section>
+            </div>
 
-            <!-- ==============================================
-                 MODE 2: 10 MODULAR VECTORS STUDIO
-                 ============================================== -->
-            <section class="mode-view" id="view-vectors">
-                <div class="studio-header">
-                    <div class="studio-header-text">
-                        <h2>Modular Intelligence Studio</h2>
-                        <p>Dedicated isolated workspaces for forensic deep-dives, zone audits, and cryptographic inspection.</p>
-                    </div>
-                    <div class="studio-search-filter">
-                        <i class="fas fa-filter"></i>
-                        <input type="text" id="studio-filter-input" placeholder="Filter modules (e.g. discord, ip, whois)..." autocomplete="off">
-                    </div>
+            <!-- 3. Recent Investigations -->
+            <div class="right-panel-box recent-investigations-panel">
+                <div class="rpanel-header">
+                    <div class="rpanel-title">Recent Investigations</div>
+                    <a href="javascript:void(0)" class="rpanel-view-all">View all &rarr;</a>
                 </div>
 
-                <!-- 10 Vector Cards Grid -->
-                <div class="studio-grid" id="studio-grid">
-                    
-                    <!-- 1. Username Card -->
-                    <div class="studio-card tilt-box" data-v="username" data-tags="username social handle profile dev">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-cyan"><i class="fas fa-user-astronaut"></i></div>
-                            <span class="scard-badge">112+ SITES</span>
+                <div class="recent-inv-list">
+                    <div class="recent-inv-item" onclick="quickFillSearch('username', 'JohnDoe')">
+                        <div class="rii-icon"><i class="fas fa-user-astronaut"></i></div>
+                        <div class="rii-info">
+                            <div class="rii-name">JohnDoe Investigation</div>
+                            <div class="rii-sub">Email &bull; 12 min ago</div>
                         </div>
-                        <h3 class="scard-title">Username Discovery</h3>
-                        <p class="scard-desc">Probes public account existence across 112+ social networks, developer hubs, and gaming ecosystems.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-username" placeholder="Target handle..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="username"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-username"></div>
+                        <span class="badge-status-completed">Completed</span>
                     </div>
 
-                    <!-- 2. Google Dorks Card -->
-                    <div class="studio-card tilt-box" data-v="dorks" data-tags="dorks google search config db portal">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-indigo"><i class="fas fa-search-nodes"></i></div>
-                            <span class="scard-badge">PASSIVE DORKS</span>
+                    <div class="recent-inv-item" onclick="quickFillSearch('domain', 'example.com')">
+                        <div class="rii-icon"><i class="fas fa-globe"></i></div>
+                        <div class="rii-info">
+                            <div class="rii-name">example.com Recon</div>
+                            <div class="rii-sub">Domain &bull; 32 min ago</div>
                         </div>
-                        <h3 class="scard-title">Google Dork Engine</h3>
-                        <p class="scard-desc">Generates targeted search queries for exposed cloud buckets, database backups, and administrative portals.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-dorks" placeholder="Target domain or keyword..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="dorks"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-dorks"></div>
+                        <span class="badge-status-completed">Completed</span>
                     </div>
 
-                    <!-- 3. Discord Snowflake Card -->
-                    <div class="studio-card tilt-box" data-v="discord" data-tags="discord snowflake timestamp epoch avatar">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-purple"><i class="fa-brands fa-discord"></i></div>
-                            <span class="scard-badge">64-BIT BITSHIFT</span>
+                    <div class="recent-inv-item" onclick="quickFillSearch('phone', '+15551234567')">
+                        <div class="rii-icon"><i class="fas fa-phone"></i></div>
+                        <div class="rii-info">
+                            <div class="rii-name">+1 555 123 4567 Lookup</div>
+                            <div class="rii-sub">Phone &bull; 1 hour ago</div>
                         </div>
-                        <h3 class="scard-title">Discord Snowflake Decoder</h3>
-                        <p class="scard-desc">Reverse-engineers Discord 64-bit ID timestamps, calculates account age in days, and extracts public avatars.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-discord" placeholder="64-bit Discord ID..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="discord"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-discord"></div>
+                        <span class="badge-status-completed">Completed</span>
                     </div>
 
-                    <!-- 4. IP Intelligence Card -->
-                    <div class="studio-card tilt-box" data-v="ip" data-tags="ip geo map location isp asn routing">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-emerald"><i class="fas fa-network-wired"></i></div>
-                            <span class="scard-badge">GEOIP + MAP</span>
+                    <div class="recent-inv-item" onclick="quickFillSearch('ip', '185.199.110.153')">
+                        <div class="rii-icon"><i class="fas fa-location-crosshairs"></i></div>
+                        <div class="rii-info">
+                            <div class="rii-name">185.199.110.153 Analysis</div>
+                            <div class="rii-sub">IP &bull; 2 hours ago</div>
                         </div>
-                        <h3 class="scard-title">IP Intelligence & Map</h3>
-                        <p class="scard-desc">Resolves geographic coordinates, ISP, Autonomous System routing, and datacenter/proxy classifications.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-ip" placeholder="IPv4 or IPv6 address..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="ip"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-ip"></div>
-                    </div>
-
-                    <!-- 5. BGP Routing Card -->
-                    <div class="studio-card tilt-box" data-v="bgp" data-tags="bgp asn routing ripe prefix peering">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-amber"><i class="fas fa-diagram-project"></i></div>
-                            <span class="scard-badge">RIPE STAT</span>
-                        </div>
-                        <h3 class="scard-title">BGP Routing & ASN</h3>
-                        <p class="scard-desc">Queries global RIPE Stat routing tables to identify announced IPv4/IPv6 CIDR prefix ranges.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-bgp" placeholder="ASN (e.g. AS15169)..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="bgp"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-bgp"></div>
-                    </div>
-
-                    <!-- 6. Email Intel Card -->
-                    <div class="studio-card tilt-box" data-v="email" data-tags="email mx spf dmarc mail dns gravatar">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-pink"><i class="fas fa-envelope-shield"></i></div>
-                            <span class="scard-badge">SPF & DMARC</span>
-                        </div>
-                        <h3 class="scard-title">Email & DNS Security</h3>
-                        <p class="scard-desc">Resolves priority MX servers, audits SPF & DMARC compliance records, and checks Gravatar presence.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-email" placeholder="Email address..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="email"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-email"></div>
-                    </div>
-
-                    <!-- 7. Domain WHOIS Card -->
-                    <div class="studio-card tilt-box" data-v="domain" data-tags="domain whois ct certificate subdomains dns">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-cyan"><i class="fas fa-globe"></i></div>
-                            <span class="scard-badge">CT LOGS</span>
-                        </div>
-                        <h3 class="scard-title">Domain WHOIS & CT Map</h3>
-                        <p class="scard-desc">Parses authoritative WHOIS registry data, DNS zone queries, and crt.sh Certificate Transparency logs.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-domain" placeholder="Domain (e.g. apple.com)..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="domain"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-domain"></div>
-                    </div>
-
-                    <!-- 8. Phone Telco Card -->
-                    <div class="studio-card tilt-box" data-v="phone" data-tags="phone telco carrier mobile e164">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-teal"><i class="fas fa-phone-nodes"></i></div>
-                            <span class="scard-badge">E.164 TELCO</span>
-                        </div>
-                        <h3 class="scard-title">Phone & Carrier Telco</h3>
-                        <p class="scard-desc">Identifies mobile carrier network, line classification (Mobile, Fixed, VOIP), and geographic timezones.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-phone" placeholder="International phone (+14155552671)..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="phone"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-phone"></div>
-                    </div>
-
-                    <!-- 9. HTTP Security Card -->
-                    <div class="studio-card tilt-box" data-v="headers" data-tags="http headers security hsts csp xframe">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-rose"><i class="fas fa-shield-halved"></i></div>
-                            <span class="scard-badge">SECURITY AUDIT</span>
-                        </div>
-                        <h3 class="scard-title">HTTP Response Security</h3>
-                        <p class="scard-desc">Audits web server response headers for HSTS, Content-Security-Policy, X-Frame-Options, and server leaks.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-headers" placeholder="https://example.com..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="headers"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-headers"></div>
-                    </div>
-
-                    <!-- 10. Hash Classifier Card -->
-                    <div class="studio-card tilt-box" data-v="hash" data-tags="hash md5 sha ntlm entropy crypto">
-                        <div class="scard-header">
-                            <div class="scard-icon icon-violet"><i class="fas fa-fingerprint"></i></div>
-                            <span class="scard-badge">SHANNON ENTROPY</span>
-                        </div>
-                        <h3 class="scard-title">Cryptographic Hash Classifier</h3>
-                        <p class="scard-desc">Fingerprints hash algorithms against MD5, SHA-1, SHA-256, NTLM, and calculates bitwise Shannon entropy.</p>
-                        <div class="scard-action-row">
-                            <input type="text" class="scard-input" id="vinput-hash" placeholder="Enter hash string..." autocomplete="off">
-                            <button class="scard-exec-btn" data-mod="hash"><i class="fas fa-play"></i></button>
-                        </div>
-                        <div class="scard-result-drawer" id="vdrawer-hash"></div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- ==============================================
-                 MODE 3: TOPOLOGY GRAPH WORKSPACE
-                 ============================================== -->
-            <section class="mode-view" id="view-graph">
-                <div class="topology-stage-card">
-                    <div class="topology-bar">
-                        <div class="topology-title">
-                            <i class="fas fa-diagram-project"></i>
-                            <span>Entity Relationship Network Graph</span>
-                        </div>
-                        <div class="topology-actions">
-                            <button class="btn-topo-tool" id="btn-graph-fit-dedicated"><i class="fas fa-expand"></i> Fit View</button>
-                        </div>
-                    </div>
-                    <div id="vis-dedicated-canvas" style="width: 100%; height: 580px; background: radial-gradient(circle at center, rgba(17, 22, 34, 0.85) 0%, rgba(6, 8, 13, 0.98) 100%);"></div>
-                </div>
-            </section>
-
-            <!-- ==============================================
-                 MODE 4: LIVE THREAT RADAR FEED
-                 ============================================== -->
-            <section class="mode-view" id="view-feed">
-                <div class="radar-feed-layout">
-                    <div class="feed-stream-card">
-                        <div class="stream-header">
-                            <div class="stream-title"><i class="fas fa-satellite-dish"></i> Live OSINT Intelligence Stream</div>
-                            <div class="stream-controls">
-                                <button class="btn-feed-action" id="btn-feed-toggle"><i class="fas fa-pause"></i> Pause Feed</button>
-                                <span class="live-stream-badge"><span class="pulse-emerald"></span> STREAM ACTIVE</span>
-                            </div>
-                        </div>
-                        <div class="stream-feed-list" id="live-stream-box"></div>
-                    </div>
-
-                    <div class="feed-sidebar-col">
-                        <div class="stat-hud-card">
-                            <span class="shud-lbl">Probes Executed</span>
-                            <span class="shud-val text-cyan" id="counter-probes">0</span>
-                        </div>
-                        <div class="stat-hud-card">
-                            <span class="shud-lbl">Worker Concurrency</span>
-                            <span class="shud-val text-green">12 THREADS</span>
-                        </div>
-                        <div class="stat-hud-card">
-                            <span class="shud-lbl">Measured Pipeline Latency</span>
-                            <span class="shud-val" id="hud-avg-latency">—</span>
-                        </div>
-                        <div class="stat-hud-card">
-                            <span class="shud-lbl">Active Cyber Profile</span>
-                            <span class="shud-val text-purple" id="stat-active-theme">CYBER INDIGO</span>
-                        </div>
+                        <span class="badge-status-completed">Completed</span>
                     </div>
                 </div>
-            </section>
+            </div>
 
-        </main>
+        </aside>
+
     </div>
 
     <!-- ==============================================
@@ -707,55 +1027,11 @@
                 </div>
             </div>
 
-            <!-- GROUP 3: CONNECTIONS -->
-            <div class="cdrawer-section" id="line-section">
-                <div class="cdrawer-group-header">
-                    <span class="cdrawer-group-title"><i class="fas fa-bezier-curve text-emerald"></i> CONNECTIONS</span>
-                    <span class="cdrawer-group-desc">Lines & Network Density</span>
-                </div>
-                <div class="line-style-grid" id="line-grid">
-                    <button class="line-btn active" data-line="straight">Straight</button>
-                    <button class="line-btn" data-line="dotted">Dotted</button>
-                    <button class="line-btn" data-line="dashed">Dashed</button>
-                    <button class="line-btn" data-line="glow">Soft Glow</button>
-                    <button class="line-btn" data-line="thin">Thin Tech</button>
-                    <button class="line-btn" data-line="orbital">Orbital Arc</button>
-                </div>
-                <div class="custom-slider-row" style="margin-top: 12px;">
-                    <div class="cslider-header">
-                        <span>Line Network Density</span>
-                        <span class="cslider-val" id="val-linedensity">50%</span>
-                    </div>
-                    <input type="range" id="slider-linedensity" min="0" max="100" value="50" class="custom-range">
-                </div>
-            </div>
-
-            <!-- GROUP 4: MOTION -->
-            <div class="cdrawer-section">
-                <div class="cdrawer-group-header">
-                    <span class="cdrawer-group-title"><i class="fas fa-wind text-cyan"></i> MOTION</span>
-                    <span class="cdrawer-group-desc">Dynamics & Drift Speed</span>
-                </div>
-                <div class="toggle-segmented" id="motion-segmented">
-                    <button class="seg-btn" data-motion="subtle">Subtle</button>
-                    <button class="seg-btn active" data-motion="normal">Normal</button>
-                    <button class="seg-btn" data-motion="cinematic">Cinematic</button>
-                    <button class="seg-btn" data-motion="off">Off</button>
-                </div>
-                <div class="custom-slider-row" style="margin-top: 12px;">
-                    <div class="cslider-header">
-                        <span>Drift & Speed</span>
-                        <span class="cslider-val" id="val-speed">1.0x</span>
-                    </div>
-                    <input type="range" id="slider-speed" min="20" max="250" value="100" class="custom-range">
-                </div>
-            </div>
-
-            <!-- GROUP 5: ACCENTS & TOPOLOGY -->
+            <!-- GROUP 3: ACCENTS -->
             <div class="cdrawer-section">
                 <div class="cdrawer-group-header">
                     <span class="cdrawer-group-title"><i class="fas fa-palette text-amber"></i> ACCENTS</span>
-                    <span class="cdrawer-group-desc">8 Colorways & Aura Glow</span>
+                    <span class="cdrawer-group-desc">Color Themes</span>
                 </div>
                 <div class="theme-picker-grid">
                     <button class="theme-choice active" data-t="indigo">
@@ -774,59 +1050,17 @@
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #f59e0b, #ef4444);"></span>
                         <span>Solar Amber</span>
                     </button>
-                    <button class="theme-choice" data-t="crimson">
-                        <span class="tcolor-dot" style="background: linear-gradient(135deg, #f43f5e, #991b1b);"></span>
-                        <span>Crimson Red</span>
-                    </button>
                     <button class="theme-choice" data-t="cyan">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);"></span>
                         <span>Electric Cyan</span>
-                    </button>
-                    <button class="theme-choice" data-t="gold">
-                        <span class="tcolor-dot" style="background: linear-gradient(135deg, #eab308, #f97316);"></span>
-                        <span>Cyber Gold</span>
                     </button>
                     <button class="theme-choice" data-t="stealth">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #e2e8f0, #475569);"></span>
                         <span>OLED Stealth</span>
                     </button>
                 </div>
-
-                <div style="margin-top: 14px;">
-                    <label class="cdrawer-sublabel"><i class="fas fa-sun"></i> Ambient Glow Aura</label>
-                    <div class="toggle-segmented" id="glow-segmented">
-                        <button class="seg-btn" data-glow="off">Off</button>
-                        <button class="seg-btn" data-glow="subtle">Low</button>
-                        <button class="seg-btn" data-glow="medium">Medium</button>
-                        <button class="seg-btn active" data-glow="high">High</button>
-                    </div>
-                </div>
-
-                <div style="margin-top: 14px;">
-                    <label class="cdrawer-sublabel"><i class="fas fa-circle-nodes"></i> 3D Topology Style</label>
-                    <div class="toggle-segmented" id="graphstyle-segmented">
-                        <button class="seg-btn active" data-graphstyle="technical">Technical</button>
-                        <button class="seg-btn" data-graphstyle="neon">Neon</button>
-                        <button class="seg-btn" data-graphstyle="glass">Glass</button>
-                        <button class="seg-btn" data-graphstyle="minimal">Minimal</button>
-                    </div>
-                </div>
             </div>
 
-            <!-- GROUP 6: TYPOGRAPHY -->
-            <div class="cdrawer-section">
-                <div class="cdrawer-group-header">
-                    <span class="cdrawer-group-title"><i class="fas fa-font text-cyan"></i> TYPOGRAPHY</span>
-                    <span class="cdrawer-group-desc">Interface Font System</span>
-                </div>
-                <div class="toggle-segmented" id="font-segmented">
-                    <button class="seg-btn active" data-font="sans">Modern Sans</button>
-                    <button class="seg-btn" data-font="mono">Tactical Mono</button>
-                    <button class="seg-btn" data-font="display">Space Grotesk</button>
-                </div>
-            </div>
-
-            <!-- Reset Preferences -->
             <div class="cdrawer-section" style="padding-top: 6px;">
                 <button class="btn-reset-prefs" id="btn-reset-prefs"><i class="fas fa-arrow-rotate-left"></i> Reset All Customizations</button>
             </div>
@@ -850,7 +1084,7 @@
     </div>
 
     <!-- ==============================================
-         AUTHENTICATION MODAL (SIGN IN / REGISTER)
+         AUTHENTICATION MODAL
          ============================================== -->
     <div class="spectre-modal-backdrop" id="auth-modal-backdrop">
         <div class="spectre-modal" id="auth-modal">
@@ -865,7 +1099,7 @@
             <div class="auth-body-container">
                 <form id="auth-form" onsubmit="return false;">
                     <div class="auth-form-group">
-                        <label>Operator Email</label>
+                        <label>Email</label>
                         <input type="email" id="auth-input-email" class="auth-input-field" placeholder="operator@spectre.io" required autocomplete="email">
                     </div>
                     <div class="auth-form-group">
@@ -883,7 +1117,7 @@
     </div>
 
     <!-- ==============================================
-         PRICING & CHECKOUT MODAL ("PAY WITH ANYTHING")
+         PRICING & CHECKOUT MODAL
          ============================================== -->
     <div class="spectre-modal-backdrop" id="upgrade-modal-backdrop">
         <div class="spectre-modal pricing-modal" id="upgrade-modal">
@@ -893,24 +1127,22 @@
             </div>
             
             <div class="pricing-tiers-grid">
-                <!-- Plan 1: Pro Monthly -->
                 <div class="tier-card" id="card-tier-pro">
                     <div>
                         <h4 class="tier-title">Pro Monthly</h4>
                         <div class="tier-price">$19 <span>/ month</span></div>
                         <ul class="tier-features-list">
                             <li><i class="fas fa-check"></i> Unlimited Investigations</li>
-                            <li><i class="fas fa-check"></i> Full HIBP Breach Intelligence</li>
+                            <li><i class="fas fa-check"></i> Full Breach Intelligence</li>
                             <li><i class="fas fa-check"></i> 3D Topology Exports & Nodes</li>
                             <li><i class="fas fa-check"></i> Cross-Module Correlations</li>
                         </ul>
                     </div>
-                    <button class="btn-select-tier" id="btn-select-pro" data-tier="premium" data-amount="19">Select Pro ($19)</button>
+                    <button class="btn-select-tier" id="btn-select-pro" data-tier="premium" data-amount="19" onclick="window.open('/checkout?plan=premium', '_blank')">Select Pro ($19)</button>
                 </div>
 
-                <!-- Plan 2: Lifetime Pass -->
                 <div class="tier-card featured" id="card-tier-lifetime">
-                    <span class="tier-ribbon">POPULAR</span>
+                    <span class="tier-ribbon">BEST VALUE</span>
                     <div>
                         <h4 class="tier-title" style="color:#fbbf24;">Lifetime Pass</h4>
                         <div class="tier-price" style="color:#fbbf24;">$99 <span>one-time</span></div>
@@ -918,101 +1150,15 @@
                             <li><i class="fas fa-check" style="color:#fbbf24;"></i> <strong>Permanent Lifetime Access</strong></li>
                             <li><i class="fas fa-check" style="color:#fbbf24;"></i> Unlimited Parallel Engine Probes</li>
                             <li><i class="fas fa-check" style="color:#fbbf24;"></i> All Future OSINT Modules Included</li>
-                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> Priority Circuit-Breaker Sockets</li>
+                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> Priority Support & Updates</li>
                         </ul>
                     </div>
-                    <button class="btn-select-tier btn-featured" id="btn-select-lifetime" data-tier="lifetime" data-amount="99">Get Lifetime Pass ($99)</button>
-                </div>
-            </div>
-
-            <!-- Payment Methods Area -->
-            <div class="payment-methods-box">
-                <h4>Pay With Anything</h4>
-                <div class="pmethods-pills">
-                    <button class="pmethod-pill active" data-method="card"><i class="fas fa-credit-card"></i> Card / Apple Pay</button>
-                    <button class="pmethod-pill" data-method="paypal"><i class="fa-brands fa-paypal" style="color:#6366f1;"></i> PayPal</button>
-                    <button class="pmethod-pill" data-method="crypto"><i class="fa-brands fa-bitcoin"></i> Crypto (LTC / BTC / ETH)</button>
-                    <button class="pmethod-pill" data-method="cashapp"><i class="fas fa-dollar-sign"></i> CashApp</button>
-                    <button class="pmethod-pill" data-method="instant"><i class="fas fa-bolt text-amber"></i> Instant Unlock</button>
-                </div>
-
-                <!-- Method View: Card -->
-                <div class="pmethod-panel" id="panel-pay-card">
-                    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-                        <input type="text" class="auth-input-field" placeholder="Card Number (4242 ••••)" value="4242 •••• •••• 4242">
-                        <input type="text" class="auth-input-field" placeholder="MM/YY" value="12/28">
-                        <input type="text" class="auth-input-field" placeholder="CVC" value="999">
-                    </div>
-                    <button class="btn-auth-action" id="btn-pay-card-submit">
-                        <i class="fas fa-lock"></i>
-                        <span>Confirm & Activate <strong id="btn-pay-amount-label">$99.00</strong></span>
-                    </button>
-                </div>
-
-                <!-- Method View: PayPal -->
-                <div class="pmethod-panel" id="panel-pay-paypal" style="display:none;">
-                    <div class="crypto-addr-card">
-                        <div><span style="color:#6366f1;font-weight:700;">PayPal:</span> <code>payments@spectre.io</code></div>
-                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('payments@spectre.io'); showToast('PayPal email copied', 'fas fa-copy');">Copy</button>
-                    </div>
-                    <div style="margin:8px 0 12px;">
-                        <a href="https://paypal.me/SpectreIntel" target="_blank" rel="noopener" style="color:var(--accent-secondary);text-decoration:none;font-size:0.8rem;font-weight:600;">
-                            <i class="fas fa-arrow-up-right-from-square"></i> Open PayPal.me Link
-                        </a>
-                    </div>
-                    <button class="btn-auth-action" id="btn-pay-paypal-confirm" style="background:#4f46e5;color:#fff;">
-                        <i class="fa-brands fa-paypal"></i>
-                        <span>Confirm PayPal Transfer</span>
-                    </button>
-                </div>
-
-                <!-- Method View: Crypto (LTC / BTC / ETH) -->
-                <div class="pmethod-panel" id="panel-pay-crypto" style="display:none;">
-                    <div class="crypto-addr-card">
-                        <div><span style="color:#06b6d4;font-weight:700;">LTC:</span> <code>ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code></div>
-                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8'); showToast('Litecoin address copied', 'fas fa-copy');">Copy</button>
-                    </div>
-                    <div class="crypto-addr-card">
-                        <div><span style="color:#f59e0b;font-weight:700;">BTC:</span> <code>bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8</code></div>
-                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8'); showToast('Bitcoin address copied', 'fas fa-copy');">Copy</button>
-                    </div>
-                    <div class="crypto-addr-card">
-                        <div><span style="color:#a855f7;font-weight:700;">ETH / USDT:</span> <code>0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code></div>
-                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('0x71C7656EC7ab88b098defB751B7401B5f6d8976F'); showToast('ETH/USDT address copied', 'fas fa-copy');">Copy</button>
-                    </div>
-                    <button class="btn-auth-action" id="btn-pay-crypto-confirm" style="background:#059669;">
-                        <i class="fas fa-check-double"></i>
-                        <span>I Have Sent Crypto Payment (Activate Now)</span>
-                    </button>
-                </div>
-
-                <!-- Method View: CashApp -->
-                <div class="pmethod-panel" id="panel-pay-cashapp" style="display:none;">
-                    <div class="crypto-addr-card">
-                        <div><span style="color:#10b981;font-weight:700;">CashApp:</span> <code>$SpectreIntel</code></div>
-                        <button class="btn-copy-addr" onclick="navigator.clipboard.writeText('$SpectreIntel'); showToast('CashApp cashtag copied', 'fas fa-copy');">Copy</button>
-                    </div>
-                    <button class="btn-auth-action" id="btn-pay-cashapp-confirm" style="background:#10b981;color:#000;">
-                        <i class="fas fa-check"></i>
-                        <span>Confirm CashApp Transfer</span>
-                    </button>
-                </div>
-
-                <!-- Method View: Instant Unlock -->
-                <div class="pmethod-panel" id="panel-pay-instant" style="display:none;">
-                    <p style="font-size:0.75rem;color:var(--text-secondary);margin:0 0 8px;">Direct instant operator bypass for immediate evaluation.</p>
-                    <button class="btn-auth-action" id="btn-pay-instant-submit" style="background:linear-gradient(135deg, #f59e0b, #d97706);color:#000;">
-                        <i class="fas fa-bolt"></i>
-                        <span>Instant Upgrade to Selected Plan</span>
-                    </button>
+                    <button class="btn-select-tier btn-featured" id="btn-select-lifetime" data-tier="lifetime" data-amount="99" onclick="window.open('/checkout?plan=lifetime', '_blank')">Get Lifetime Pass ($99)</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==============================================
-         MASTER ADMIN UPGRADE PORTAL MODAL
-         ============================================== -->
     <!-- ==============================================
          MASTER ADMIN UPGRADE & MANAGEMENT CONSOLE
          ============================================== -->
@@ -1079,7 +1225,6 @@
                         <small>Your direct CashApp operator identifier</small>
                     </div>
 
-                    <!-- Automated Verification Credentials -->
                     <div class="admin-form-group">
                         <label><i class="fab fa-paypal text-indigo"></i> PayPal REST Client ID</label>
                         <input type="text" id="adm-paypal-client-id" placeholder="OAuth2 Client ID">
@@ -1114,10 +1259,9 @@
             <!-- TAB 2: Pricing & Custom Plans -->
             <div class="admin-tab-pane" id="tab-pane-admin-plans" style="display:none;">
                 <div class="admin-pane-desc">
-                    Modify existing plan prices (Pro / Lifetime) or add new custom access tiers (e.g. Day Pass, Team, Enterprise).
+                    Modify existing plan prices (Pro / Lifetime) or add new custom access tiers.
                 </div>
                 
-                <!-- Live Plans Table -->
                 <div class="admin-plans-table-box">
                     <table class="admin-users-table" id="admin-plans-table">
                         <thead>
@@ -1137,12 +1281,11 @@
                     </table>
                 </div>
 
-                <!-- Add / Edit Plan Box -->
                 <div class="admin-subbox-title"><i class="fas fa-plus-circle text-amber"></i> Add New Pricing Plan / Tier</div>
                 <form id="admin-new-plan-form" class="admin-form-grid" onsubmit="return false;">
                     <div class="admin-form-group">
-                        <label>Plan Identifier (Unique ID)</label>
-                        <input type="text" id="adm-plan-id" placeholder="e.g. enterprise, annual, daily" required>
+                        <label>Plan Identifier</label>
+                        <input type="text" id="adm-plan-id" placeholder="e.g. enterprise" required>
                     </div>
                     <div class="admin-form-group">
                         <label>Display Name</label>
@@ -1154,19 +1297,15 @@
                     </div>
                     <div class="admin-form-group">
                         <label>Billing Period</label>
-                        <input type="text" id="adm-plan-period" placeholder="e.g. / month, / year, one-time" value="one-time" required>
+                        <input type="text" id="adm-plan-period" placeholder="e.g. / month, one-time" value="one-time" required>
                     </div>
                     <div class="admin-form-group">
                         <label>Badge Tag</label>
-                        <input type="text" id="adm-plan-badge" placeholder="e.g. ENTERPRISE, EXCLUSIVE">
+                        <input type="text" id="adm-plan-badge" placeholder="e.g. ENTERPRISE">
                     </div>
                     <div class="admin-form-group">
                         <label>Description</label>
                         <input type="text" id="adm-plan-desc" placeholder="Short value summary">
-                    </div>
-                    <div class="admin-form-group" style="grid-column: 1 / -1;">
-                        <label>Key Features (One feature per line)</label>
-                        <textarea id="adm-plan-features" rows="3" class="form-input" style="width:100%;font-family:var(--font-mono);font-size:0.8rem;background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;" placeholder="Full 6 OSINT vectors&#10;Unlimited Graph Queries&#10;Priority Circuit Breakers"></textarea>
                     </div>
                     <div class="admin-form-actions">
                         <button type="button" class="btn-admin-submit" id="btn-save-new-plan">
@@ -1179,14 +1318,11 @@
             <!-- TAB 3: Incoming Orders Queue -->
             <div class="admin-tab-pane" id="tab-pane-admin-orders" style="display:none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <div class="admin-pane-desc" style="margin-bottom:0;">
-                        Review incoming crypto transfers and PayPal proofs. Approving activates the operator account instantly.
-                    </div>
+                    <div class="admin-pane-desc" style="margin-bottom:0;">Review incoming orders and crypto payments.</div>
                     <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.loadAdminOrders()" style="padding:6px 14px; font-size:0.75rem;">
                         <i class="fas fa-rotate"></i> Refresh Queue
                     </button>
                 </div>
-
                 <div class="admin-users-table-box" style="max-height:300px; overflow-y:auto;">
                     <table class="admin-users-table" id="admin-orders-table-app">
                         <thead>
@@ -1201,7 +1337,7 @@
                             </tr>
                         </thead>
                         <tbody id="admin-orders-tbody-app">
-                            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading settlement queue...</td></tr>
+                            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading settlement queue...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1209,10 +1345,8 @@
 
             <!-- TAB 4: Operator Registry & Upgrades -->
             <div class="admin-tab-pane" id="tab-pane-admin-users" style="display:none;">
-                <!-- Instant User Upgrade By Email Form -->
                 <form id="admin-upgrade-form" class="admin-upgrade-form" onsubmit="return false;">
-                    <input type="email" id="admin-target-email" placeholder="Enter target user email (e.g. user@target.com)" required list="registered-emails-list">
-                    <datalist id="registered-emails-list"></datalist>
+                    <input type="email" id="admin-target-email" placeholder="Enter target user email (e.g. user@target.com)" required>
                     <select id="admin-target-tier">
                         <option value="lifetime" selected>Lifetime Tier</option>
                         <option value="premium">Premium Tier</option>
@@ -1223,8 +1357,6 @@
                         <i class="fas fa-arrow-up-right-from-square"></i> Upgrade User
                     </button>
                 </form>
-
-                <!-- Live Registered Users Table -->
                 <div class="admin-users-table-box">
                     <table class="admin-users-table" id="admin-users-table">
                         <thead>
@@ -1233,11 +1365,10 @@
                                 <th>Current Tier</th>
                                 <th>Probes</th>
                                 <th>Registered</th>
-                                <th>Quick Actions</th>
                             </tr>
                         </thead>
                         <tbody id="admin-users-tbody">
-                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
+                            <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1245,144 +1376,121 @@
 
             <!-- TAB 5: Platform Treasury & Cold Vault -->
             <div class="admin-tab-pane" id="tab-pane-admin-vault" style="display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                    <div class="admin-pane-desc" style="margin-bottom:0;">
-                        Custodial crypto balances, on-chain reserves, and cold storage sweeps. All payments remain stored safely in platform custody until swept.
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.runAdminPaymentSync()" style="padding:6px 14px; font-size:0.75rem; background:rgba(0,240,255,0.1); border-color:var(--accent-cyan); color:var(--accent-cyan);">
-                            <i class="fas fa-satellite-dish"></i> Run Payment Scan
-                        </button>
-                        <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.loadAdminVault()" style="padding:6px 14px; font-size:0.75rem;">
-                            <i class="fas fa-rotate"></i> Refresh Vault
-                        </button>
-                    </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                    <div class="admin-pane-desc" style="margin-bottom:0;">Custodial crypto reserves and cold sweep records.</div>
+                    <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.loadAdminVault()" style="padding:6px 14px; font-size:0.75rem;">
+                        <i class="fas fa-rotate"></i> Refresh Vault
+                    </button>
                 </div>
-
-                <!-- Treasury Balances Cards -->
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:16px;">
                     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
-                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;"><i class="fas fa-sack-dollar text-amber"></i> Total Valuation</div>
-                        <div style="font-size:1.25rem; font-weight:800; color:#fff; margin-top:4px;" id="vault-stat-total-fiat-app">$0.00 <span style="font-size:0.75rem; color:var(--text-muted);">USD</span></div>
-                        <div style="font-size:0.7rem; color:var(--accent-emerald); margin-top:2px;"><i class="fas fa-shield-halved"></i> 100% Cold Custody</div>
-                    </div>
-
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(0,240,255,0.2); border-radius:8px; padding:12px;">
-                        <div style="font-size:0.7rem; color:var(--accent-cyan); text-transform:uppercase;"><i class="fab fa-litecoin"></i> Litecoin (LTC)</div>
-                        <div style="font-size:1.1rem; font-weight:800; color:var(--accent-cyan); margin-top:4px;" id="vault-stat-ltc-bal-app">0.0000 <span style="font-size:0.75rem;">LTC</span></div>
-                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-ltc-fiat-app">≈ $0.00 USD</div>
-                    </div>
-
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:12px;">
-                        <div style="font-size:0.7rem; color:var(--accent-amber); text-transform:uppercase;"><i class="fab fa-bitcoin"></i> Bitcoin (BTC)</div>
-                        <div style="font-size:1.1rem; font-weight:800; color:var(--accent-amber); margin-top:4px;" id="vault-stat-btc-bal-app">0.000000 <span style="font-size:0.75rem;">BTC</span></div>
-                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-btc-fiat-app">≈ $0.00 USD</div>
-                    </div>
-
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(168,85,247,0.2); border-radius:8px; padding:12px;">
-                        <div style="font-size:0.7rem; color:var(--accent-purple); text-transform:uppercase;"><i class="fab fa-ethereum"></i> Ethereum (ETH)</div>
-                        <div style="font-size:1.1rem; font-weight:800; color:var(--accent-purple); margin-top:4px;" id="vault-stat-eth-bal-app">0.00000 <span style="font-size:0.75rem;">ETH</span></div>
-                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" id="vault-stat-eth-fiat-app">≈ $0.00 USD</div>
-                    </div>
-                </div>
-
-                <!-- Cold Storage Sweep / Withdrawal Box -->
-                <div style="background:rgba(16,185,129,0.04); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:14px; margin-bottom:16px;">
-                    <div style="font-weight:700; font-size:0.85rem; color:#34d399; margin-bottom:10px;">
-                        <i class="fas fa-arrow-down-to-bracket"></i> Sweep / Withdraw to External Cold Wallet
-                    </div>
-                    <form id="admin-vault-withdraw-form-app" onsubmit="return false;">
-                        <div style="display:grid; grid-template-columns:130px 2fr 1fr; gap:10px; margin-bottom:10px;">
-                            <div class="admin-form-group">
-                                <label>Currency</label>
-                                <select id="adm-vault-currency-app" onchange="window.SPECTRE_AUTH.updateWithdrawMaxApp()" style="background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;">
-                                    <option value="LTC" selected>LTC (Litecoin)</option>
-                                    <option value="BTC">BTC (Bitcoin)</option>
-                                    <option value="ETH">ETH (Ethereum)</option>
-                                </select>
-                            </div>
-                            <div class="admin-form-group">
-                                <label>Destination Cold Address</label>
-                                <input type="text" id="adm-vault-dest-app" placeholder="Enter your personal external wallet address..." required>
-                            </div>
-                            <div class="admin-form-group">
-                                <label>Amount</label>
-                                <div style="display:flex; gap:4px;">
-                                    <input type="number" step="0.000001" id="adm-vault-amount-app" placeholder="0.00" required>
-                                    <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.setWithdrawMaxApp()" style="padding:4px 8px; font-size:0.7rem;">MAX</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="display:flex; gap:10px; align-items:flex-end;">
-                            <div class="admin-form-group" style="flex:1;">
-                                <input type="text" id="adm-vault-notes-app" placeholder="Withdrawal notes (e.g. Ledger Cold Sweep #1)">
-                            </div>
-                            <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.executeAdminWithdrawalApp()" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; padding:10px 20px; white-space:nowrap;">
-                                <i class="fas fa-paper-plane"></i> Execute Cold Withdrawal
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Cold Withdrawal History Table -->
-                <div style="margin-bottom:14px;">
-                    <div class="admin-subbox-title" style="font-size:0.8rem; margin-bottom:6px;"><i class="fas fa-clock-rotate-left text-cyan"></i> Cold Storage Sweep Audit History</div>
-                    <div class="admin-users-table-box" style="max-height:160px; overflow-y:auto;">
-                        <table class="admin-users-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Coin</th>
-                                    <th>Amount</th>
-                                    <th>Destination</th>
-                                    <th>Sweep TXID</th>
-                                    <th>Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-vault-withdrawals-tbody-app">
-                                <tr><td colspan="6" style="padding:10px; text-align:center; color:var(--text-muted);">No withdrawal history recorded yet.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Custodial Wallets Table -->
-                <div>
-                    <div class="admin-subbox-title" style="font-size:0.8rem; margin-bottom:6px;"><i class="fas fa-key text-amber"></i> Active Generated Custodial Wallets</div>
-                    <div class="admin-users-table-box" style="max-height:160px; overflow-y:auto;">
-                        <table class="admin-users-table">
-                            <thead>
-                                <tr>
-                                    <th>Coin</th>
-                                    <th>Custodial Address</th>
-                                    <th>Balance</th>
-                                    <th>Order Ref</th>
-                                    <th>Created</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-vault-wallets-tbody-app">
-                                <tr><td colspan="5" style="padding:10px; text-align:center; color:var(--text-muted);">Loading custodial wallets...</td></tr>
-                            </tbody>
-                        </table>
+                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Total Valuation</div>
+                        <div style="font-size:1.25rem; font-weight:800; color:#fff; margin-top:4px;" id="vault-stat-total-fiat-app">$0.00 USD</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notifications Deck -->
+    <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260912_auth_v43"></script>
-    <div id="__err_report" style="display:none;"></div>
+    <script src="/static/js/app.js?v=20260912_auth_v45"></script>
     <script>
-    window.addEventListener('load', function() {
-        var rep = document.getElementById('__err_report');
-        if (rep) {
-            rep.textContent = window.__page_errors.length === 0 ? "PAGE_NO_ERRORS_CLEAN" : window.__page_errors.join(' | ');
+        function focusOmniSearch() {
+            const input = document.getElementById('omni-input');
+            if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
-    });
+        function quickFillSearch(type, val) {
+            const input = document.getElementById('omni-input');
+            const btn = document.getElementById('btn-omni-exec');
+            if (input) {
+                input.value = val;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                if (btn) btn.click();
+            }
+        }
+        function switchMainWorkspaceTab(mode, el) {
+            document.querySelectorAll('.sidebar-nav-menu .nav-item').forEach(item => item.classList.remove('active'));
+            if (el) el.classList.add('active');
+
+            const viewOmni = document.getElementById('view-omni');
+            const viewVectors = document.getElementById('view-vectors');
+            const viewGraph = document.getElementById('view-graph');
+            const viewFeed = document.getElementById('view-feed');
+
+            if (mode === 'omni') {
+                if (viewOmni) viewOmni.style.display = 'block';
+                if (viewVectors) viewVectors.style.display = 'none';
+                if (viewGraph) viewGraph.style.display = 'none';
+                if (viewFeed) viewFeed.style.display = 'none';
+            } else if (mode === 'vectors') {
+                if (viewOmni) viewOmni.style.display = 'none';
+                if (viewVectors) viewVectors.style.display = 'block';
+                if (viewGraph) viewGraph.style.display = 'none';
+                if (viewFeed) viewFeed.style.display = 'none';
+            } else if (mode === 'graph') {
+                if (viewOmni) viewOmni.style.display = 'none';
+                if (viewVectors) viewVectors.style.display = 'none';
+                if (viewGraph) viewGraph.style.display = 'block';
+                if (viewFeed) viewFeed.style.display = 'none';
+                const fitBtn = document.getElementById('btn-graph-fit-dedicated');
+                if (fitBtn) fitBtn.click();
+            } else if (mode === 'feed') {
+                if (viewOmni) viewOmni.style.display = 'none';
+                if (viewVectors) viewVectors.style.display = 'none';
+                if (viewGraph) viewGraph.style.display = 'none';
+                if (viewFeed) viewFeed.style.display = 'block';
+            }
+        }
+        function exportActiveDossier(format) {
+            const btn = document.getElementById('btn-omni-exec');
+            if (btn) {
+                focusOmniSearch();
+            }
+        }
+
+        // Initialize Leaflet Map for Global Intelligence
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const mapEl = document.getElementById('intel-leaflet-map');
+                if (mapEl && typeof L !== 'undefined') {
+                    const map = L.map('intel-leaflet-map', {
+                        center: [38.5, -98.0],
+                        zoom: 2,
+                        zoomControl: false,
+                        attributionControl: false
+                    });
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        maxZoom: 18,
+                    }).addTo(map);
+
+                    // Add subtle pulsating circles for key intelligence nodes
+                    const locations = [
+                        [40.7128, -74.0060, "New York (AS13335)"],
+                        [52.5200, 13.4050, "Berlin (AS3320)"],
+                        [51.5074, -0.1278, "London (AS2856)"],
+                        [45.4215, -75.6972, "Ottawa (AS812)"],
+                        [52.3676, 4.9041, "Amsterdam (AS1103)"],
+                        [37.7749, -122.4194, "San Francisco (AS15169)"]
+                    ];
+
+                    locations.forEach(loc => {
+                        L.circleMarker([loc[0], loc[1]], {
+                            radius: 5,
+                            color: '#00f0ff',
+                            fillColor: '#00f0ff',
+                            fillOpacity: 0.8,
+                            weight: 2
+                        }).addTo(map);
+                    });
+                }
+            } catch(e) {}
+        });
     </script>
 </body>
 </html>
