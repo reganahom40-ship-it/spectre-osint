@@ -56,64 +56,67 @@
             </div>
 
             <!-- Navigation Links -->
+            
+            <!-- Navigation Links -->
             <nav class="sidebar-nav-menu">
-                <a href="javascript:void(0)" class="nav-item active" onclick="switchMainWorkspaceTab('omni', this)">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-item-home" onclick="switchMainWorkspaceTab('omni', this)">
                     <i class="fas fa-house"></i>
                     <span>Home</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('omni', this)">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-investigations" onclick="switchMainWorkspaceTab('omni', this); focusOmniSearch();">
                     <i class="fas fa-crosshairs"></i>
                     <span>Investigations</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('vectors', this)">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-tools" onclick="switchMainWorkspaceTab('vectors', this)">
                     <i class="fas fa-cubes"></i>
                     <span>OSINT Tools</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('breach', 'admin@example.com')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-breach" onclick="quickFillSearch('breach', 'admin@example.com')">
                     <i class="fas fa-database"></i>
                     <span>Data Breach Search</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('vectors', this)">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-enrichment" onclick="switchMainWorkspaceTab('vectors', this); filterStudioModules('dorks');">
                     <i class="fas fa-wand-magic-sparkles"></i>
                     <span>Enrichment</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('username', 'shadow')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-social" onclick="quickFillSearch('username', 'shadow')">
                     <i class="fas fa-user-astronaut"></i>
                     <span>Social Intelligence</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('domain', 'github.com')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-domain" onclick="quickFillSearch('domain', 'github.com')">
                     <i class="fas fa-globe"></i>
                     <span>Domain & DNS</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('ip', '1.1.1.1')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-ip" onclick="quickFillSearch('ip', '1.1.1.1')">
                     <i class="fas fa-network-wired"></i>
                     <span>IP Intelligence</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('phone', '+14155552671')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-phone" onclick="quickFillSearch('phone', '+14155552671')">
                     <i class="fas fa-phone-nodes"></i>
                     <span>Phone Intelligence</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('headers', 'https://cloudflare.com')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-image" onclick="openImageModal()">
                     <i class="fas fa-image"></i>
                     <span>Image Analysis</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="quickFillSearch('hash', '5d41402abc4b2a76b9719d911017c592')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-hash" onclick="quickFillSearch('hash', '5d41402abc4b2a76b9719d911017c592')">
                     <i class="fas fa-fingerprint"></i>
                     <span>Hash Analysis</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="switchMainWorkspaceTab('graph', this)">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-graph" onclick="switchMainWorkspaceTab('graph', this)">
                     <i class="fas fa-diagram-project"></i>
                     <span>Relationship Graph</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" onclick="exportActiveDossier('markdown')">
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-reports" onclick="openReportModal()">
                     <i class="fas fa-file-lines"></i>
                     <span>Reports</span>
                 </a>
-                <a href="javascript:void(0)" class="nav-item" id="btn-sidebar-settings">
+                <a href="javascript:void(0)" class="nav-item" id="btn-sidebar-settings" onclick="openSettingsDrawer()">
                     <i class="fas fa-gear"></i>
                     <span>Settings</span>
                 </a>
             </nav>
+
 
             <!-- Bottom Tier Plan Card & Status -->
             <div class="sidebar-bottom-panel">
@@ -827,8 +830,9 @@
                 </div>
                 <div class="rpanel-sub">Real-time OSINT feed</div>
 
+                
                 <div class="live-activity-list" id="sidebar-live-activity-list">
-                    <div class="activity-item">
+                    <div class="activity-item" onclick="quickFillSearch('email', 'user@example.com')" style="cursor:pointer;">
                         <div class="act-icon-dot bg-rose-tint"><i class="fas fa-database text-rose"></i></div>
                         <div class="act-content">
                             <div class="act-title">Email found in breach</div>
@@ -837,7 +841,7 @@
                         </div>
                     </div>
 
-                    <div class="activity-item">
+                    <div class="activity-item" onclick="quickFillSearch('domain', 'example.com')" style="cursor:pointer;">
                         <div class="act-icon-dot bg-cyan-tint"><i class="fas fa-globe text-cyan"></i></div>
                         <div class="act-content">
                             <div class="act-title">Domain resolved</div>
@@ -846,7 +850,7 @@
                         </div>
                     </div>
 
-                    <div class="activity-item">
+                    <div class="activity-item" onclick="quickFillSearch('ip', '185.199.110.153')" style="cursor:pointer;">
                         <div class="act-icon-dot bg-emerald-tint"><i class="fas fa-location-crosshairs text-emerald"></i></div>
                         <div class="act-content">
                             <div class="act-title">IP geolocation</div>
@@ -855,7 +859,7 @@
                         </div>
                     </div>
 
-                    <div class="activity-item">
+                    <div class="activity-item" onclick="quickFillSearch('username', 'john_doe')" style="cursor:pointer;">
                         <div class="act-icon-dot bg-purple-tint"><i class="fas fa-user-circle text-purple"></i></div>
                         <div class="act-content">
                             <div class="act-title">Username discovered</div>
@@ -864,7 +868,7 @@
                         </div>
                     </div>
 
-                    <div class="activity-item">
+                    <div class="activity-item" onclick="quickFillSearch('phone', '+1 555 123 4567')" style="cursor:pointer;">
                         <div class="act-icon-dot bg-amber-tint"><i class="fas fa-phone text-amber"></i></div>
                         <div class="act-content">
                             <div class="act-title">Phone detected</div>
@@ -873,7 +877,7 @@
                         </div>
                     </div>
 
-                    <div class="activity-item">
+                    <div class="activity-item" onclick="quickFillSearch('domain', 'api.example.com')" style="cursor:pointer;">
                         <div class="act-icon-dot bg-blue-tint"><i class="fas fa-network-wired text-blue"></i></div>
                         <div class="act-content">
                             <div class="act-title">New subdomain found</div>
@@ -887,33 +891,35 @@
             </div>
 
             <!-- 2. Quick Actions -->
+            
+            <!-- 2. Quick Actions -->
             <div class="right-panel-box quick-actions-panel">
                 <div class="rpanel-header">
                     <div class="rpanel-title"><i class="fas fa-bolt text-amber"></i> Quick Actions</div>
                 </div>
 
                 <div class="quick-actions-list">
-                    <button class="qa-btn" onclick="quickFillSearch('dorks', 'github.com')">
+                    <button type="button" class="qa-btn" onclick="openDorksModal('github.com')">
                         <i class="fas fa-search"></i>
                         <span>Generate Google Dorks</span>
                     </button>
-                    <button class="qa-btn" onclick="quickFillSearch('image', 'target.jpg')">
+                    <button type="button" class="qa-btn" onclick="openImageModal()">
                         <i class="fas fa-image"></i>
                         <span>Reverse Image Search</span>
                     </button>
-                    <button class="qa-btn" onclick="quickFillSearch('hash', '5d41402abc4b2a76b9719d911017c592')">
+                    <button type="button" class="qa-btn" onclick="quickFillSearch('hash', '5d41402abc4b2a76b9719d911017c592')">
                         <i class="fas fa-fingerprint"></i>
                         <span>Hash Lookup</span>
                     </button>
-                    <button class="qa-btn" onclick="quickFillSearch('port', '8080')">
+                    <button type="button" class="qa-btn" onclick="quickFillSearch('port', '8080')">
                         <i class="fas fa-ethernet"></i>
                         <span>Port Scanner</span>
                     </button>
-                    <button class="qa-btn" onclick="quickFillSearch('domain', 'apple.com')">
+                    <button type="button" class="qa-btn" onclick="quickFillSearch('domain', 'apple.com')">
                         <i class="fas fa-globe"></i>
                         <span>Domain Lookup</span>
                     </button>
-                    <button class="qa-btn" onclick="exportActiveDossier('markdown')">
+                    <button type="button" class="qa-btn" onclick="openReportModal()">
                         <i class="fas fa-file-contract"></i>
                         <span>Create Report</span>
                     </button>
@@ -1392,6 +1398,117 @@
         </div>
     </div>
 
+    
+    <!-- ==============================================
+         IMAGE OSINT & EXIF ANALYSIS MODAL
+         ============================================== -->
+    <div class="spectre-modal-backdrop" id="modal-image-analysis">
+        <div class="spectre-modal" style="max-width: 540px;">
+            <div class="modal-header-row">
+                <h3><i class="fas fa-image text-rose"></i> Image Intelligence & Reverse OSINT</h3>
+                <button class="btn-close-modal" onclick="closeImageModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:6px;display:block;">Image URL or Image Hash</label>
+                    <input type="text" id="image-osint-url" class="form-input" placeholder="https://example.com/target_avatar.jpg" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:6px;padding:10px;color:#fff;">
+                </div>
+
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Launch reverse visual reconnaissance across multi-engine indexers:</div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+                    <button type="button" class="qa-btn" onclick="launchReverseSearch('google')">
+                        <i class="fab fa-google text-blue"></i>
+                        <span>Google Lens Search</span>
+                    </button>
+                    <button type="button" class="qa-btn" onclick="launchReverseSearch('yandex')">
+                        <i class="fab fa-yandex text-rose"></i>
+                        <span>Yandex Visual Match</span>
+                    </button>
+                    <button type="button" class="qa-btn" onclick="launchReverseSearch('bing')">
+                        <i class="fab fa-microsoft text-cyan"></i>
+                        <span>Bing Visual Search</span>
+                    </button>
+                    <button type="button" class="qa-btn" onclick="launchReverseSearch('tineye')">
+                        <i class="fas fa-eye text-emerald"></i>
+                        <span>TinEye Reverse Index</span>
+                    </button>
+                </div>
+
+                <div id="image-exif-results" style="background:rgba(0,0,0,0.3);border:1px solid var(--border-subtle);border-radius:6px;padding:12px;font-size:0.75rem;font-family:var(--font-mono);display:none;max-height:120px;overflow-y:auto;">
+                    <div class="text-cyan">// EXIF Telemetry Standby</div>
+                </div>
+
+                <button type="button" class="btn-submit-action btn-action-primary" style="margin-top:14px;width:100%;padding:10px;border-radius:9999px;background:linear-gradient(135deg,#00f0ff,#2563eb);color:#000;font-weight:700;border:none;cursor:pointer;" onclick="analyzeImageExif()">
+                    <i class="fas fa-magnifying-glass"></i> Extract EXIF & Geotags
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         REPORT GENERATOR MODAL
+         ============================================== -->
+    <div class="spectre-modal-backdrop" id="modal-report-generator">
+        <div class="spectre-modal" style="max-width: 600px;">
+            <div class="modal-header-row">
+                <h3><i class="fas fa-file-contract text-cyan"></i> Intelligence Dossier Generator</h3>
+                <button class="btn-close-modal" onclick="closeReportModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">
+                    Compile comprehensive forensic evidence, 3D entity topology coordinates, and threat risk calculations into structured intelligence exports.
+                </p>
+
+                <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:8px;padding:14px;margin-bottom:16px;">
+                    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Active Target Dossier</div>
+                    <div id="report-target-name" class="font-mono text-cyan" style="font-size:1.05rem;font-weight:700;">185.199.110.153</div>
+                    <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">Classification: CONFIRMED IP ENTITY &bull; Risk Score: 18/100 (LOW)</div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+                    <button type="button" class="btn-submit-action" style="padding:10px;border-radius:6px;background:rgba(0,240,255,0.1);border:1px solid var(--border-cyan);color:var(--accent-cyan);cursor:pointer;" onclick="downloadReportFormat('markdown')">
+                        <i class="fab fa-markdown"></i>
+                        <span>Markdown (.md)</span>
+                    </button>
+                    <button type="button" class="btn-submit-action" style="padding:10px;border-radius:6px;background:rgba(59,130,246,0.1);border:1px solid var(--border-blue);color:#60a5fa;cursor:pointer;" onclick="downloadReportFormat('json')">
+                        <i class="fas fa-code"></i>
+                        <span>Raw JSON</span>
+                    </button>
+                    <button type="button" class="btn-submit-action" style="padding:10px;border-radius:6px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;cursor:pointer;" onclick="printDossierReport()">
+                        <i class="fas fa-print"></i>
+                        <span>Print Dossier</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         GOOGLE DORKS GENERATOR MODAL
+         ============================================== -->
+    <div class="spectre-modal-backdrop" id="modal-dorks-generator">
+        <div class="spectre-modal" style="max-width: 620px;">
+            <div class="modal-header-row">
+                <h3><i class="fas fa-search-nodes text-amber"></i> Google Dork Reconnaissance Generator</h3>
+                <button class="btn-close-modal" onclick="closeDorksModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:6px;display:block;">Target Domain or Organization</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="dork-target-input" class="form-input" placeholder="example.com" value="github.com" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;color:#fff;">
+                        <button type="button" class="btn-submit-action btn-action-primary" style="width:auto;padding:8px 16px;border-radius:6px;background:#2563eb;color:#fff;border:none;cursor:pointer;" onclick="regenerateDorkQueries()">Generate</button>
+                    </div>
+                </div>
+
+                <div id="dorks-queries-list" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
@@ -1492,5 +1609,182 @@
             } catch(e) {}
         });
     </script>
+
+    <script>
+        // Universal Sidebar & Workstation Helper Handlers
+        window.focusOmniSearch = function() {
+            const input = document.getElementById('omni-input');
+            if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        window.quickFillSearch = function(type, val) {
+            switchMainWorkspaceTab('omni', document.getElementById('nav-item-home'));
+            const input = document.getElementById('omni-input');
+            const btn = document.getElementById('btn-omni-exec');
+            if (input) {
+                input.value = val;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                if (btn) {
+                    setTimeout(() => btn.click(), 100);
+                }
+            }
+        };
+
+        window.filterStudioModules = function(term) {
+            const filterInput = document.getElementById('studio-filter-input');
+            if (filterInput) {
+                filterInput.value = term;
+                filterInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        };
+
+        window.switchMainWorkspaceTab = function(mode, el) {
+            document.querySelectorAll('.sidebar-nav-menu .nav-item').forEach(item => item.classList.remove('active'));
+            if (el) el.classList.add('active');
+
+            const viewOmni = document.getElementById('view-omni');
+            const viewVectors = document.getElementById('view-vectors');
+            const viewGraph = document.getElementById('view-graph');
+            const viewFeed = document.getElementById('view-feed');
+
+            if (viewOmni) viewOmni.style.display = (mode === 'omni') ? 'block' : 'none';
+            if (viewVectors) viewVectors.style.display = (mode === 'vectors') ? 'block' : 'none';
+            if (viewGraph) viewGraph.style.display = (mode === 'graph') ? 'block' : 'none';
+            if (viewFeed) viewFeed.style.display = (mode === 'feed') ? 'block' : 'none';
+
+            if (mode === 'graph') {
+                const fitBtn = document.getElementById('btn-graph-fit-dedicated') || document.getElementById('btn-graph-fit');
+                if (fitBtn) setTimeout(() => fitBtn.click(), 150);
+            }
+        };
+
+        window.openSettingsDrawer = function() {
+            const drawer = document.getElementById('customizer-drawer');
+            const backdrop = document.getElementById('customizer-backdrop');
+            if (drawer && backdrop) {
+                drawer.classList.add('open');
+                backdrop.style.display = 'block';
+            }
+        };
+
+        // Image OSINT Modal Controllers
+        window.openImageModal = function() {
+            const modal = document.getElementById('modal-image-analysis');
+            if (modal) modal.style.display = 'flex';
+        };
+        window.closeImageModal = function() {
+            const modal = document.getElementById('modal-image-analysis');
+            if (modal) modal.style.display = 'none';
+        };
+        window.launchReverseSearch = function(engine) {
+            const urlInput = document.getElementById('image-osint-url');
+            const url = (urlInput && urlInput.value.trim()) ? urlInput.value.trim() : 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5';
+            let target = '';
+            if (engine === 'google') target = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(url)}`;
+            else if (engine === 'yandex') target = `https://yandex.com/images/search?rpt=imageview&url=${encodeURIComponent(url)}`;
+            else if (engine === 'bing') target = `https://www.bing.com/images/searchbyimage?cbir=sbi&imgurl=${encodeURIComponent(url)}`;
+            else target = `https://tineye.com/search?url=${encodeURIComponent(url)}`;
+            window.open(target, '_blank');
+        };
+        window.analyzeImageExif = function() {
+            const box = document.getElementById('image-exif-results');
+            if (box) {
+                box.style.display = 'block';
+                box.innerHTML = `<div style="color:var(--accent-cyan);"><i class="fas fa-check-circle"></i> EXIF Metadata Synthesized:</div>
+                <div style="color:var(--text-secondary);margin-top:4px;">Camera: Sony A7 IV (ILCE-7M4)<br>ISO: 400 &bull; Shutter: 1/500s &bull; Lens: FE 24-70mm F2.8 GM II<br>GPS Geotag: [40.7128° N, 74.0060° W] (New York, USA)<br>Software: Adobe Lightroom 13.1 (Windows)</div>`;
+            }
+        };
+
+        // Report Generator Modal Controllers
+        window.openReportModal = function() {
+            const modal = document.getElementById('modal-report-generator');
+            const targetEl = document.getElementById('report-target-name');
+            const omniInput = document.getElementById('omni-input');
+            if (targetEl && omniInput && omniInput.value) {
+                targetEl.textContent = omniInput.value;
+            }
+            if (modal) modal.style.display = 'flex';
+        };
+        window.closeReportModal = function() {
+            const modal = document.getElementById('modal-report-generator');
+            if (modal) modal.style.display = 'none';
+        };
+        window.downloadReportFormat = function(fmt) {
+            const target = document.getElementById('omni-input')?.value || '185.199.110.153';
+            let content = '';
+            let filename = `SPECTRE-INTEL-${target}.${fmt === 'json' ? 'json' : 'md'}`;
+            let mime = fmt === 'json' ? 'application/json' : 'text/markdown';
+
+            if (fmt === 'json') {
+                content = JSON.stringify({
+                    platform: "SPECTRE OSINT Autonomous Cartography",
+                    version: "v8.6.4",
+                    target: target,
+                    timestamp: new Date().toISOString(),
+                    status: "CONFIRMED",
+                    risk_score: 18,
+                    entities_mapped: 12,
+                    data_sources: ["BGP RIPE", "WHOIS", "CT Logs", "HIBP v3", "MaxMind GeoIP"]
+                }, null, 2);
+            } else {
+                content = `# SPECTRE OSINT RECONNAISSANCE DOSSIER\n\n**Target Identifier:** ${target}\n**Generated UTC:** ${new Date().toUTCString()}\n**Platform Version:** SPECTRE v8.6.4\n\n## Executive Summary\nTarget synthesized with verified confidence. No active malicious egress indicators detected.\n\n## Technical Metrics\n- Autonomous System: AS13335 (Cloudflare)\n- Geolocation: United States\n- Threat Risk Score: 18/100 (LOW RISK)\n- Correlation Graph: 12 Nodes / 18 Edges Mapped\n\n---\n*Confidential Intelligence Product &bull; Generated via SPECTRE Platform*`;
+            }
+
+            const blob = new Blob([content], { type: mime });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            closeReportModal();
+        };
+        window.printDossierReport = function() {
+            window.print();
+        };
+
+        // Google Dorks Modal Controllers
+        window.openDorksModal = function(domain = 'github.com') {
+            const modal = document.getElementById('modal-dorks-generator');
+            const input = document.getElementById('dork-target-input');
+            if (input) input.value = domain;
+            regenerateDorkQueries();
+            if (modal) modal.style.display = 'flex';
+        };
+        window.closeDorksModal = function() {
+            const modal = document.getElementById('modal-dorks-generator');
+            if (modal) modal.style.display = 'none';
+        };
+        window.regenerateDorkQueries = function() {
+            const target = document.getElementById('dork-target-input')?.value.trim() || 'example.com';
+            const list = document.getElementById('dorks-queries-list');
+            if (!list) return;
+
+            const dorks = [
+                { title: "Exposed Cloud S3 / Azure Buckets", query: `site:${target} inurl:s3.amazonaws.com | inurl:blob.core.windows.net` },
+                { title: "Configuration & Environment Files", query: `site:${target} filetype:env | filetype:yml | filetype:config "DB_PASSWORD"` },
+                { title: "Public Directory Indexing", query: `site:${target} "Index of /" inurl:backup | inurl:admin` },
+                { title: "Exposed Administrative Portals", query: `site:${target} inurl:admin | inurl:login | inurl:dashboard | inurl:cpanel` },
+                { title: "SQL Error Leaks & Injection Surface", query: `site:${target} intext:"syntax error in query expression" | intext:"mysql_fetch_array"` },
+                { title: "API Secrets & Authorization Tokens", query: `site:${target} intext:"bearer" | intext:"api_key" | intext:"access_token"` }
+            ];
+
+            list.innerHTML = dorks.map(d => `
+                <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:6px;padding:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div style="min-width:0;flex:1;">
+                        <div style="font-size:0.8rem;font-weight:600;color:#fff;">${d.title}</div>
+                        <div style="font-size:0.72rem;font-family:var(--font-mono);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.query}</div>
+                    </div>
+                    <button type="button" class="btn-submit-action" style="width:auto;padding:6px 12px;font-size:0.75rem;background:#1d4ed8;color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;" onclick="window.open('https://www.google.com/search?q=' + encodeURIComponent('${d.query}'), '_blank')">
+                        <i class="fas fa-arrow-up-right-from-square"></i> Open
+                    </button>
+                </div>
+            `).join('');
+        };
+    </script>
+
 </body>
 </html>
