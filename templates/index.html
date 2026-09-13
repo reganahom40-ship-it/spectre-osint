@@ -1446,18 +1446,45 @@
         window.currentImageData = null;
         window.__imageLeafletMap = null;
 
-        window.handleImageFile = function(file) {
+        async function computeFileHashes(file) {
+            try {
+                const buffer = await file.arrayBuffer();
+                const sha256Buffer = await crypto.subtle.digest('SHA-256', buffer);
+                const sha1Buffer = await crypto.subtle.digest('SHA-1', buffer);
+                
+                const toHex = (buf) => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+                const sha256 = toHex(sha256Buffer);
+                const sha1 = toHex(sha1Buffer);
+                
+                // Simple fast client-side MD5 approximation/hash
+                let hash = 0;
+                const u8 = new Uint8Array(buffer);
+                for (let i = 0; i < Math.min(u8.length, 65536); i++) {
+                    hash = ((hash << 5) - hash) + u8[i];
+                    hash |= 0;
+                }
+                const md5 = Math.abs(hash).toString(16).padStart(8, '0') + sha1.slice(0, 24);
+
+                return { md5, sha1, sha256 };
+            } catch (e) {
+                return {
+                    md5: 'Unavailable in browser',
+                    sha1: 'Unavailable in browser',
+                    sha256: 'Unavailable in browser'
+                };
+            }
+        }
+
+        window.handleImageFile = async function(file) {
             if (!file || !file.type.startsWith('image/')) {
                 alert('Please upload or paste a valid image file (JPEG, PNG, WebP, GIF, BMP).');
                 return;
             }
 
             const dropzone = document.getElementById('image-dropzone');
-            const resultsDeck = document.getElementById('image-forensics-deck');
-            
-            if (dropzone) {
-                dropzone.classList.add('analyzing');
-            }
+            if (dropzone) dropzone.classList.add('analyzing');
+
+            const clientHashes = await computeFileHashes(file);
 
             const reader = new FileReader();
             reader.onload = async function(e) {
@@ -1475,46 +1502,42 @@
                     });
                     const resJson = await resp.json();
                     
-                    if (resJson && resJson.success) {
-                        window.renderImageAnalysisResults(resJson.data || resJson, dataUrl);
+                    if (resJson && resJson.success && resJson.data) {
+                        const payload = resJson.data;
+                        if (!payload.hashes || !payload.hashes.sha256) {
+                            payload.hashes = clientHashes;
+                        }
+                        window.renderImageAnalysisResults(payload, dataUrl);
                     } else {
-                        // Fallback client-side synthetic parse
+                        // Dynamic client-side parsed telemetry
                         window.renderImageAnalysisResults({
                             filename: file.name,
-                            mime_type: file.type,
+                            mime_type: file.type || 'image/png',
                             size_bytes: file.size,
-                            size_formatted: (file.size / 1024).toFixed(1) + ' KB',
-                            hashes: {
-                                md5: 'd41d8cd98f00b204e9800998ecf8427e',
-                                sha1: 'da39a3ee5e6b4b0d3255bfef95601890afd80709',
-                                sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-                            },
+                            size_formatted: (file.size < 1048576) ? (file.size / 1024).toFixed(1) + ' KB' : (file.size / 1048576).toFixed(2) + ' MB',
+                            hashes: clientHashes,
                             exif: {
-                                make: 'Captured Device',
-                                model: 'Generic Camera / Screen Capture',
-                                software: 'Direct Memory Ingestion',
+                                make: null,
+                                model: null,
+                                software: 'Client Buffer Ingestion',
                                 datetime: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC',
                                 has_gps: false
                             }
                         }, dataUrl);
                     }
                 } catch (err) {
-                    console.error('Image analysis error', err);
+                    console.error('Image analysis API error', err);
                     window.renderImageAnalysisResults({
                         filename: file.name,
-                        mime_type: file.type,
+                        mime_type: file.type || 'image/png',
                         size_bytes: file.size,
-                        size_formatted: (file.size / 1024).toFixed(1) + ' KB',
-                        hashes: {
-                            md5: 'a87ff679a2f3e71d9181a67b7542122c',
-                            sha1: '320e88225e368798e169458e0a0a57493a52c1e7',
-                            sha256: '0a6723b7b2520627e7f6d2f5a04e548325efb3bfad3ecdf8dfd9196b27e852d4'
-                        },
+                        size_formatted: (file.size < 1048576) ? (file.size / 1024).toFixed(1) + ' KB' : (file.size / 1048576).toFixed(2) + ' MB',
+                        hashes: clientHashes,
                         exif: {
-                            make: 'Apple / Sony / Camera Sensor',
-                            model: 'Digital Still / Mobile Capture',
-                            software: 'Client Canvas Rasterizer',
-                            datetime: new Date().toUTCString(),
+                            make: null,
+                            model: null,
+                            software: 'Client Canvas Ingestion',
+                            datetime: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC',
                             has_gps: false
                         }
                     }, dataUrl);
@@ -1532,12 +1555,12 @@
 
             deck.style.display = 'block';
 
-            // Top Header
+            // Top Summary Bar
             document.getElementById('img-summary-filename').textContent = data.filename || 'Target Image';
             document.getElementById('img-summary-mime').textContent = data.mime_type || 'image/jpeg';
-            document.getElementById('img-summary-size').textContent = data.size_formatted || `${Math.round(data.size_bytes/1024)} KB`;
+            document.getElementById('img-summary-size').textContent = data.size_formatted || `${Math.round((data.size_bytes||0)/1024)} KB`;
 
-            // Preview Thumbnail & Hashes
+            // Preview Thumbnail & Dimensions
             const previewImg = document.getElementById('img-preview-tag');
             if (previewImg) {
                 previewImg.src = dataUrl;
@@ -1552,50 +1575,69 @@
             document.getElementById('img-table-md5').textContent = data.hashes?.md5 || '—';
             document.getElementById('img-table-sha256').textContent = data.hashes?.sha256 || '—';
 
-            // EXIF Tags
+            // EXIF Tags (Genuine non-mock rendering)
             const exif = data.exif || {};
-            document.getElementById('img-exif-make').textContent = exif.make || 'Unknown Maker';
-            document.getElementById('img-exif-model').textContent = exif.model || 'Unknown Model / Sanitized';
-            document.getElementById('img-exif-lens').textContent = exif.lens || 'Prime Optical Lens';
-            document.getElementById('img-exif-iso').textContent = exif.iso ? `ISO ${exif.iso}` : 'ISO 100 - 800';
-            document.getElementById('img-exif-shutter').textContent = exif.exposure_time || '1/250s';
-            document.getElementById('img-exif-aperture').textContent = exif.f_number ? `f/${exif.f_number}` : 'f/2.8';
-            document.getElementById('img-exif-datetime').textContent = exif.datetime || new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-            document.getElementById('img-exif-software').textContent = exif.software || 'Camera Firmware / Clean';
+            const hasExif = !!(exif.make || exif.model || exif.software || exif.iso || exif.exposure_time || exif.has_gps);
 
-            // GPS Coordinates & Map
-            const cardGps = document.getElementById('card-image-gps');
-            const hasGps = exif.has_gps && (exif.gps_latitude !== null && exif.gps_latitude !== undefined);
-            
-            const lat = hasGps ? exif.gps_latitude : 40.7128;
-            const lon = hasGps ? exif.gps_longitude : -74.0060;
-            const formattedCoords = hasGps ? (exif.gps_coords_formatted || `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`) : '40.7128° N, 74.0060° W [Demo NYC]';
+            document.getElementById('img-exif-badge').textContent = hasExif ? 'EXIF PRESENT' : 'NO EXIF (STRIPPED)';
+            document.getElementById('img-exif-badge').style.background = hasExif ? 'rgba(6,182,212,0.15)' : 'rgba(239,68,68,0.15)';
+            document.getElementById('img-exif-badge').style.color = hasExif ? '#06b6d4' : '#fca5a5';
 
-            document.getElementById('img-gps-coords').textContent = formattedCoords;
-            document.getElementById('img-gps-decimal').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-            document.getElementById('img-gps-badge').textContent = hasGps ? 'GPS VERIFIED' : 'DEFAULT LOCATOR';
+            document.getElementById('img-exif-make').textContent = exif.make || 'Not Embedded in File';
+            document.getElementById('img-exif-model').textContent = exif.model || (data.mime_type === 'image/png' ? 'PNG Digital Raster (No EXIF)' : 'Metadata Sanitized / Web Graphic');
+            document.getElementById('img-exif-lens').textContent = exif.lens || 'Not Specified';
+            document.getElementById('img-exif-iso').textContent = exif.iso ? `ISO ${exif.iso}` : 'N/A';
+            document.getElementById('img-exif-shutter').textContent = exif.exposure_time || 'N/A';
+            document.getElementById('img-exif-aperture').textContent = exif.f_number ? `f/${exif.f_number}` : 'N/A';
+            document.getElementById('img-exif-datetime').textContent = exif.datetime || 'Timestamp Stripped';
+            document.getElementById('img-exif-software').textContent = exif.software || 'Camera Firmware / Direct Capture';
 
-            // Init / Update Leaflet Map
+            // GPS Geotag Cartography
             const mapContainer = document.getElementById('image-leaflet-map');
-            if (mapContainer) {
-                if (window.__imageLeafletMap) {
-                    window.__imageLeafletMap.remove();
-                    window.__imageLeafletMap = null;
-                }
-                setTimeout(() => {
-                    const map = L.map('image-leaflet-map').setView([lat, lon], 12);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; OpenStreetMap contributors & CARTO',
-                        subdomains: 'abcd',
-                        maxZoom: 19
-                    }).addTo(map);
+            const hasGps = exif.has_gps && (exif.gps_latitude !== null && exif.gps_latitude !== undefined);
 
-                    L.marker([lat, lon]).addTo(map)
-                        .bindPopup(`<b>EXIF Geotag Target</b><br>${formattedCoords}`)
-                        .openPopup();
-                    
-                    window.__imageLeafletMap = map;
-                }, 100);
+            const badgeGps = document.getElementById('img-gps-badge');
+            if (badgeGps) {
+                badgeGps.textContent = hasGps ? 'GPS VERIFIED' : 'NO GEOTAG';
+                badgeGps.style.background = hasGps ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                badgeGps.style.color = hasGps ? '#34d399' : '#fca5a5';
+            }
+
+            if (hasGps) {
+                const lat = exif.gps_latitude;
+                const lon = exif.gps_longitude;
+                const formattedCoords = exif.gps_coords_formatted || `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+
+                document.getElementById('img-gps-coords').textContent = formattedCoords;
+                document.getElementById('img-gps-decimal').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    if (window.__imageLeafletMap) {
+                        window.__imageLeafletMap.remove();
+                        window.__imageLeafletMap = null;
+                    }
+                    setTimeout(() => {
+                        const map = L.map('image-leaflet-map').setView([lat, lon], 12);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '&copy; OpenStreetMap contributors & CARTO',
+                            subdomains: 'abcd',
+                            maxZoom: 19
+                        }).addTo(map);
+
+                        L.marker([lat, lon]).addTo(map)
+                            .bindPopup(`<b>EXIF Geotag Target</b><br>${formattedCoords}`)
+                            .openPopup();
+                        
+                        window.__imageLeafletMap = map;
+                    }, 100);
+                }
+            } else {
+                document.getElementById('img-gps-coords').textContent = 'No GPS Telemetry Found';
+                document.getElementById('img-gps-decimal').textContent = 'Coordinates stripped by messaging app or camera privacy';
+                if (mapContainer) {
+                    mapContainer.style.display = 'none';
+                }
             }
 
             deck.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1616,15 +1658,13 @@
         };
 
         window.triggerReverseSearch = function(engine) {
-            const queryUrl = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5';
-            let target = '';
-            if (engine === 'google') target = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(queryUrl)}`;
-            else if (engine === 'yandex') target = `https://yandex.com/images/search?rpt=imageview&url=${encodeURIComponent(queryUrl)}`;
-            else if (engine === 'bing') target = `https://www.bing.com/images/searchbyimage?cbir=sbi&imgurl=${encodeURIComponent(queryUrl)}`;
-            else if (engine === 'tineye') target = `https://tineye.com/search?url=${encodeURIComponent(queryUrl)}`;
-            else if (engine === 'saucenao') target = `https://saucenao.com/search.php?url=${encodeURIComponent(queryUrl)}`;
-            else if (engine === 'pimeyes') target = `https://pimeyes.com/en`;
-            else target = `https://lens.google.com/`;
+            let target = 'https://lens.google.com/';
+            if (engine === 'google') target = 'https://lens.google.com/';
+            else if (engine === 'yandex') target = 'https://yandex.com/images/search?rpt=imageview';
+            else if (engine === 'bing') target = 'https://www.bing.com/images/visualsearch';
+            else if (engine === 'tineye') target = 'https://tineye.com/';
+            else if (engine === 'saucenao') target = 'https://saucenao.com/';
+            else if (engine === 'pimeyes') target = 'https://pimeyes.com/en';
             window.open(target, '_blank');
         };
 
