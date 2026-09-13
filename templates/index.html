@@ -58,62 +58,31 @@
             <!-- Navigation Links -->
             
             <!-- Navigation Links -->
+                        <!-- Navigation Links -->
             <nav class="sidebar-nav-menu">
                 <a href="javascript:void(0)" class="nav-item active" id="nav-item-home" onclick="switchMainWorkspaceTab('omni', this)">
-                    <i class="fas fa-house"></i>
-                    <span>Home</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-investigations" onclick="switchMainWorkspaceTab('omni', this); focusOmniSearch();">
                     <i class="fas fa-crosshairs"></i>
-                    <span>Investigations</span>
+                    <span>Intelligence Console</span>
                 </a>
                 <a href="javascript:void(0)" class="nav-item" id="nav-item-tools" onclick="switchMainWorkspaceTab('vectors', this)">
                     <i class="fas fa-cubes"></i>
-                    <span>OSINT Tools</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-breach" onclick="quickFillSearch('breach', 'admin@example.com')">
-                    <i class="fas fa-database"></i>
-                    <span>Data Breach Search</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-enrichment" onclick="switchMainWorkspaceTab('vectors', this); filterStudioModules('dorks');">
-                    <i class="fas fa-wand-magic-sparkles"></i>
-                    <span>Enrichment</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-social" onclick="quickFillSearch('username', 'shadow')">
-                    <i class="fas fa-user-astronaut"></i>
-                    <span>Social Intelligence</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-domain" onclick="quickFillSearch('domain', 'github.com')">
-                    <i class="fas fa-globe"></i>
-                    <span>Domain & DNS</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-ip" onclick="quickFillSearch('ip', '1.1.1.1')">
-                    <i class="fas fa-network-wired"></i>
-                    <span>IP Intelligence</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-phone" onclick="quickFillSearch('phone', '+14155552671')">
-                    <i class="fas fa-phone-nodes"></i>
-                    <span>Phone Intelligence</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-image" onclick="openImageModal()">
-                    <i class="fas fa-image"></i>
-                    <span>Image Analysis</span>
-                </a>
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-hash" onclick="quickFillSearch('hash', '5d41402abc4b2a76b9719d911017c592')">
-                    <i class="fas fa-fingerprint"></i>
-                    <span>Hash Analysis</span>
+                    <span>Vector Studio</span>
                 </a>
                 <a href="javascript:void(0)" class="nav-item" id="nav-item-graph" onclick="switchMainWorkspaceTab('graph', this)">
                     <i class="fas fa-diagram-project"></i>
-                    <span>Relationship Graph</span>
+                    <span>Topology Graph</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-image" onclick="openImageModal()">
+                    <i class="fas fa-camera"></i>
+                    <span>Image OSINT</span>
                 </a>
                 <a href="javascript:void(0)" class="nav-item" id="nav-item-reports" onclick="openReportModal()">
-                    <i class="fas fa-file-lines"></i>
-                    <span>Reports</span>
+                    <i class="fas fa-file-contract"></i>
+                    <span>Dossier Reports</span>
                 </a>
                 <a href="javascript:void(0)" class="nav-item" id="btn-sidebar-settings" onclick="openSettingsDrawer()">
-                    <i class="fas fa-gear"></i>
-                    <span>Settings</span>
+                    <i class="fas fa-sliders"></i>
+                    <span>Settings & Themes</span>
                 </a>
             </nav>
 
@@ -979,96 +948,81 @@
     <!-- ==============================================
          CUSTOMIZER DRAWER (MODAL SIDEBAR)
          ============================================== -->
-    <div class="customizer-backdrop" id="customizer-backdrop"></div>
+    <!-- ==============================================
+         CUSTOMIZER DRAWER (SETTINGS MODAL SIDEBAR)
+         ============================================== -->
+    <div class="customizer-backdrop" id="customizer-backdrop" onclick="closeSettingsDrawer()"></div>
     <aside class="customizer-drawer" id="customizer-drawer">
         <div class="cdrawer-header">
-            <div class="cdrawer-title"><i class="fas fa-sliders"></i> Interface Customizer</div>
-            <button class="btn-cdrawer-close" id="btn-close-customizer"><i class="fas fa-xmark"></i></button>
+            <div class="cdrawer-title"><i class="fas fa-sliders"></i> System Customizer</div>
+            <button type="button" class="btn-cdrawer-close" id="btn-close-customizer" onclick="closeSettingsDrawer()" aria-label="Close Settings">
+                <i class="fas fa-xmark"></i>
+            </button>
         </div>
 
         <div class="cdrawer-body">
-            <!-- GROUP 1: ATMOSPHERE -->
+            <!-- Theme Presets -->
             <div class="cdrawer-section">
-                <div class="cdrawer-group-header">
-                    <span class="cdrawer-group-title"><i class="fas fa-meteor text-cyan"></i> ATMOSPHERE</span>
-                    <span class="cdrawer-group-desc">Ambient Scene Presets</span>
-                </div>
-                <div class="atmosphere-picker-grid" id="atmosphere-grid">
-                    <button class="atmo-btn active" data-atmo="neural"><i class="fas fa-network-wired"></i><span>Neural</span></button>
-                    <button class="atmo-btn" data-atmo="constellation"><i class="fas fa-project-diagram"></i><span>Constellation</span></button>
-                    <button class="atmo-btn" data-atmo="particles"><i class="fas fa-braille"></i><span>Particles</span></button>
-                    <button class="atmo-btn" data-atmo="orbital"><i class="fas fa-atom"></i><span>Orbitals</span></button>
-                    <button class="atmo-btn" data-atmo="geometric"><i class="fas fa-draw-polygon"></i><span>Geometric</span></button>
-                    <button class="atmo-btn" data-atmo="hearts"><i class="fas fa-heart"></i><span>Hearts</span></button>
-                    <button class="atmo-btn" data-atmo="flowers"><i class="fas fa-fan"></i><span>Flowers</span></button>
-                    <button class="atmo-btn" data-atmo="stars"><i class="fas fa-star"></i><span>Stars</span></button>
-                    <button class="atmo-btn" data-atmo="minimal"><i class="fas fa-circle-dot"></i><span>Minimal</span></button>
-                    <button class="atmo-btn" data-atmo="off"><i class="fas fa-power-off"></i><span>Off</span></button>
-                </div>
-            </div>
-
-            <!-- GROUP 2: PARTICLES -->
-            <div class="cdrawer-section" id="shape-section">
-                <div class="cdrawer-group-header">
-                    <span class="cdrawer-group-title"><i class="fas fa-shapes text-purple"></i> PARTICLES</span>
-                    <span class="cdrawer-group-desc">Geometry & Node Density</span>
-                </div>
-                <div class="shape-picker-grid" id="shape-grid">
-                    <button class="shape-btn active" data-shape="dots"><span>●</span> Dots</button>
-                    <button class="shape-btn" data-shape="circles"><span>○</span> Circles</button>
-                    <button class="shape-btn" data-shape="squares"><span>■</span> Squares</button>
-                    <button class="shape-btn" data-shape="diamonds"><span>◆</span> Diamonds</button>
-                    <button class="shape-btn" data-shape="stars"><span>★</span> Stars</button>
-                    <button class="shape-btn" data-shape="hexagons"><span>⬢</span> Hexagons</button>
-                    <button class="shape-btn" data-shape="crosses"><span>✚</span> Crosses</button>
-                    <button class="shape-btn" data-shape="hearts"><span>♥</span> Hearts</button>
-                    <button class="shape-btn" data-shape="flowers"><span>✿</span> Flowers</button>
-                </div>
-                <div class="custom-slider-row" style="margin-top: 12px;">
-                    <div class="cslider-header">
-                        <span>Particle Density</span>
-                        <span class="cslider-val" id="val-density">50%</span>
-                    </div>
-                    <input type="range" id="slider-density" min="10" max="100" value="50" class="custom-range">
-                </div>
-            </div>
-
-            <!-- GROUP 3: ACCENTS -->
-            <div class="cdrawer-section">
-                <div class="cdrawer-group-header">
-                    <span class="cdrawer-group-title"><i class="fas fa-palette text-amber"></i> ACCENTS</span>
-                    <span class="cdrawer-group-desc">Color Themes</span>
-                </div>
-                <div class="theme-picker-grid">
-                    <button class="theme-choice active" data-t="indigo">
+                <label class="cdrawer-label">Color Themes</label>
+                <div class="theme-picker-grid" id="theme-picker-grid">
+                    <button type="button" class="theme-choice active" data-t="indigo">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #6366f1, #06b6d4);"></span>
                         <span>Cyber Indigo</span>
                     </button>
-                    <button class="theme-choice" data-t="emerald">
+                    <button type="button" class="theme-choice" data-t="emerald">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #10b981, #06b6d4);"></span>
                         <span>Matrix Emerald</span>
                     </button>
-                    <button class="theme-choice" data-t="amethyst">
+                    <button type="button" class="theme-choice" data-t="amethyst">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #a855f7, #ec4899);"></span>
                         <span>Amethyst Neon</span>
                     </button>
-                    <button class="theme-choice" data-t="amber">
+                    <button type="button" class="theme-choice" data-t="amber">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #f59e0b, #ef4444);"></span>
                         <span>Solar Amber</span>
                     </button>
-                    <button class="theme-choice" data-t="cyan">
-                        <span class="tcolor-dot" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);"></span>
-                        <span>Electric Cyan</span>
+                    <button type="button" class="theme-choice" data-t="crimson">
+                        <span class="tcolor-dot" style="background: linear-gradient(135deg, #f43f5e, #991b1b);"></span>
+                        <span>Crimson Red</span>
                     </button>
-                    <button class="theme-choice" data-t="stealth">
+                    <button type="button" class="theme-choice" data-t="stealth">
                         <span class="tcolor-dot" style="background: linear-gradient(135deg, #e2e8f0, #475569);"></span>
                         <span>OLED Stealth</span>
                     </button>
                 </div>
             </div>
 
-            <div class="cdrawer-section" style="padding-top: 6px;">
-                <button class="btn-reset-prefs" id="btn-reset-prefs"><i class="fas fa-arrow-rotate-left"></i> Reset All Customizations</button>
+            <!-- Dynamic Glow Intensity -->
+            <div class="cdrawer-section">
+                <label class="cdrawer-label">Ambient Radial Glow</label>
+                <div class="toggle-segmented" id="glow-segmented">
+                    <button type="button" class="seg-btn" data-glow="off">Off</button>
+                    <button type="button" class="seg-btn" data-glow="subtle">Subtle</button>
+                    <button type="button" class="seg-btn active" data-glow="high">High</button>
+                </div>
+            </div>
+
+            <!-- Interactive Particle Background -->
+            <div class="cdrawer-section">
+                <label class="cdrawer-label">Interactive Particle Mesh</label>
+                <div class="toggle-segmented" id="particles-segmented">
+                    <button type="button" class="seg-btn active" data-particles="true">Active</button>
+                    <button type="button" class="seg-btn" data-particles="false">Disabled</button>
+                </div>
+            </div>
+
+            <!-- 3D Card Tilt Effects -->
+            <div class="cdrawer-section">
+                <label class="cdrawer-label">3D Card Tilt Physics</label>
+                <div class="toggle-segmented" id="tilt-segmented">
+                    <button type="button" class="seg-btn active" data-tilt="true">Enabled</button>
+                    <button type="button" class="seg-btn" data-tilt="false">Disabled</button>
+                </div>
+            </div>
+
+            <!-- Reset Preferences -->
+            <div class="cdrawer-section" style="margin-top: 20px;">
+                <button type="button" class="btn-reset-prefs" id="btn-reset-prefs"><i class="fas fa-arrow-rotate-left"></i> Reset to Defaults</button>
             </div>
         </div>
     </aside>
@@ -1609,8 +1563,7 @@
             } catch(e) {}
         });
     </script>
-
-    <script>
+<script>
         // Universal Sidebar & Workstation Helper Handlers
         window.focusOmniSearch = function() {
             const input = document.getElementById('omni-input');
@@ -1661,12 +1614,32 @@
             }
         };
 
+        // System Settings & Customizer Drawer
         window.openSettingsDrawer = function() {
             const drawer = document.getElementById('customizer-drawer');
             const backdrop = document.getElementById('customizer-backdrop');
-            if (drawer && backdrop) {
+            if (drawer) {
+                drawer.classList.add('active');
                 drawer.classList.add('open');
+            }
+            if (backdrop) {
+                backdrop.classList.add('active');
+                backdrop.classList.add('open');
                 backdrop.style.display = 'block';
+            }
+        };
+
+        window.closeSettingsDrawer = function() {
+            const drawer = document.getElementById('customizer-drawer');
+            const backdrop = document.getElementById('customizer-backdrop');
+            if (drawer) {
+                drawer.classList.remove('active');
+                drawer.classList.remove('open');
+            }
+            if (backdrop) {
+                backdrop.classList.remove('active');
+                backdrop.classList.remove('open');
+                backdrop.style.display = 'none';
             }
         };
 
@@ -1784,7 +1757,74 @@
                 </div>
             `).join('');
         };
-    </script>
 
+        // DOM Ready Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Theme Picker
+            document.querySelectorAll('#theme-picker-grid .theme-choice').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#theme-picker-grid .theme-choice').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const theme = btn.dataset.t;
+                    document.documentElement.setAttribute('data-theme', theme);
+                    localStorage.setItem('spectre_theme', theme);
+                });
+            });
+
+            // Glow Segmented
+            document.querySelectorAll('#glow-segmented .seg-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#glow-segmented .seg-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const glow = btn.dataset.glow;
+                    document.documentElement.setAttribute('data-glow', glow);
+                    localStorage.setItem('spectre_glow', glow);
+                });
+            });
+
+            // Particles Segmented
+            document.querySelectorAll('#particles-segmented .seg-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#particles-segmented .seg-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const parts = btn.dataset.particles;
+                    document.documentElement.setAttribute('data-particles', parts);
+                    localStorage.setItem('spectre_particles', parts);
+                    const canvas = document.getElementById('bg-particles-canvas');
+                    if (canvas) canvas.style.display = parts === 'true' ? 'block' : 'none';
+                });
+            });
+
+            // Reset Prefs
+            const btnReset = document.getElementById('btn-reset-prefs');
+            if (btnReset) {
+                btnReset.addEventListener('click', () => {
+                    localStorage.clear();
+                    document.documentElement.setAttribute('data-theme', 'indigo');
+                    document.documentElement.setAttribute('data-glow', 'high');
+                    document.documentElement.setAttribute('data-particles', 'true');
+                    document.querySelectorAll('#theme-picker-grid .theme-choice').forEach(b => b.classList.toggle('active', b.dataset.t === 'indigo'));
+                    document.querySelectorAll('#glow-segmented .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.glow === 'high'));
+                    document.querySelectorAll('#particles-segmented .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.particles === 'true'));
+                });
+            }
+
+            // User Profile Pill Dropdown
+            const userPill = document.getElementById('btn-user-profile');
+            const userDropdown = document.getElementById('user-profile-dropdown');
+            if (userPill && userDropdown) {
+                userPill.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = userDropdown.style.display === 'flex';
+                    userDropdown.style.display = isOpen ? 'none' : 'flex';
+                });
+                document.addEventListener('click', (e) => {
+                    if (!userPill.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
