@@ -2432,3 +2432,159 @@ body.spectre-workspace-body {
     box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
     transform: translateY(-1px);
 }
+
+/* ==========================================================================
+   MASTER ADMIN & OWNER CONTROL DECK CYBER STYLES (ZERO WHITE CONTROLS)
+   ========================================================================== */
+.admin-deck-container button,
+.admin-deck-container input,
+.admin-deck-container select,
+.admin-deck-container textarea {
+    font-family: var(--font-sans);
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* Cyber Inputs & Selects */
+.admin-input-field,
+.admin-deck-container input[type="text"],
+.admin-deck-container input[type="number"],
+.admin-deck-container input[type="email"],
+.admin-deck-container input[type="password"],
+.admin-deck-container select,
+.admin-deck-container textarea {
+    width: 100%;
+    background: #090d18 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 9px !important;
+    padding: 9px 12px !important;
+    color: #f8fafc !important;
+    font-size: 0.85rem !important;
+    transition: all 0.2s ease !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+}
+
+.admin-deck-container select option {
+    background: #0b1120 !important;
+    color: #f8fafc !important;
+    padding: 8px !important;
+}
+
+.admin-input-field:focus,
+.admin-deck-container input:focus,
+.admin-deck-container select:focus,
+.admin-deck-container textarea:focus {
+    border-color: #00f0ff !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.25), inset 0 2px 4px rgba(0,0,0,0.5) !important;
+    background: #0c1222 !important;
+}
+
+/* Primary Cyber Action Buttons */
+.btn-bubbly-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #0284c7, #06b6d4) !important;
+    border: 1px solid rgba(6, 182, 212, 0.6) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 0.84rem !important;
+    padding: 9px 18px !important;
+    border-radius: 9px !important;
+    cursor: pointer !important;
+    box-shadow: 0 0 18px rgba(6, 182, 212, 0.35) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    text-decoration: none !important;
+}
+
+.btn-bubbly-primary:hover {
+    background: linear-gradient(135deg, #0369a1, #0891b2) !important;
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.55) !important;
+    transform: translateY(-1px) !important;
+    color: #ffffff !important;
+}
+
+.btn-bubbly-primary:active {
+    transform: translateY(1px) !important;
+}
+
+/* Mini Dark Glass Utility Buttons */
+.btn-bubbly-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #e2e8f0 !important;
+    font-weight: 600 !important;
+    font-size: 0.78rem !important;
+    padding: 7px 14px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+}
+
+.btn-bubbly-mini:hover {
+    background: rgba(0, 240, 255, 0.12) !important;
+    border-color: rgba(0, 240, 255, 0.45) !important;
+    color: #00f0ff !important;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Admin Tabs */
+.admin-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    padding: 8px 14px !important;
+    border-radius: 9px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    transition: all 0.15s ease !important;
+}
+
+.admin-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #fff !important;
+}
+
+.admin-tab-btn.active {
+    background: rgba(0, 240, 255, 0.1) !important;
+    border-color: rgba(0, 240, 255, 0.35) !important;
+    color: #00f0ff !important;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.15) !important;
+}
+
+/* Admin Tables */
+.admin-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 0.82rem !important;
+}
+
+.admin-table th {
+    text-align: left !important;
+    padding: 10px 12px !important;
+    color: var(--text-muted) !important;
+    font-size: 0.7rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.admin-table td {
+    padding: 10px 12px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    color: #e2e8f0 !important;
+}
+
+.admin-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02) !important;
+}

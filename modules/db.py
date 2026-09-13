@@ -445,12 +445,26 @@ def seed_default_plans_and_settings():
             "VIP Direct Telegram & Operator Channel Access"
         ])
         conn.execute("""
-            INSERT OR IGNORE INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
-            VALUES ('premium', 'Pro Operator', 19.00, '/ month', 'Professional grade intelligence suite for active investigators.', 'POPULAR', ?, 1, 1)
+            INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
+            VALUES ('premium', 'Pro Operator', 19.00, '/ month', 'Flexible operational intelligence access with full recon vectors. Cancel anytime.', 'POPULAR', ?, 1, 1)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                price = excluded.price,
+                billing_period = excluded.billing_period,
+                description = excluded.description,
+                badge = excluded.badge,
+                features = excluded.features
         """, (default_pro_features,))
         conn.execute("""
-            INSERT OR IGNORE INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
+            INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
             VALUES ('lifetime', 'Lifetime Master Pass', 99.00, 'one-time', 'Permanent uncapped access to all OSINT intelligence engines with lifetime updates and zero recurring fees.', 'BEST VALUE', ?, 1, 2)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                price = excluded.price,
+                billing_period = excluded.billing_period,
+                description = excluded.description,
+                badge = excluded.badge,
+                features = excluded.features
         """, (default_lifetime_features,))
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) as cnt FROM custom_payment_methods")
