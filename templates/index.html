@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260912_workspace_v1">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260912_workspace_v4_deck">
     <script>
     window.__page_errors = [];
     window.addEventListener('error', function(e) {
@@ -26,15 +26,22 @@
     window.openAdminModal = function() {
         const modal = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
         if (modal) {
-            modal.style.display = 'flex';
-            if (typeof window.refreshAdminData === 'function') {
-                try { window.refreshAdminData(); } catch(err) { console.error('Admin data refresh error:', err); }
+            modal.style.cssText = "display: flex !important; position: fixed !important; inset: 0px !important; background: rgba(0,0,0,0.88) !important; backdrop-filter: blur(14px) !important; -webkit-backdrop-filter: blur(14px) !important; z-index: 999999 !important; align-items: center !important; justify-content: center !important; padding: 20px !important; opacity: 1 !important; visibility: visible !important;";
+            if (typeof window.switchAdminDeckTab === 'function') {
+                window.switchAdminDeckTab('overview');
+            }
+            try {
+                if (typeof window.refreshAdminData === 'function') window.refreshAdminData();
+            } catch(err) {
+                console.error('Admin data refresh error:', err);
             }
         }
     };
     window.closeAdminModal = function() {
         const modal = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
-        if (modal) modal.style.display = 'none';
+        if (modal) {
+            modal.style.cssText = "display: none !important;";
+        }
     };
     </script>
 </head>
@@ -2925,6 +2932,6 @@
     </script>
 
     <!-- Main Platform Script Apparatus -->
-    <script src="/static/js/app.js?v=20260912_v2"></script>
+    <script src="/static/js/app.js?v=20260912_v4_deck"></script>
 </body>
 </html>

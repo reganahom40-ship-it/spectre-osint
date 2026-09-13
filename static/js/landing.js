@@ -678,14 +678,16 @@
 
     // Admin Console Modal Controllers
     window.openAdminModal = function() {
-        const backdrop = document.getElementById('admin-modal-backdrop');
-        if (!backdrop) return;
-        backdrop.style.display = 'flex';
-        window.switchAdminTab('pay');
+        const backdrop = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
+        if (backdrop) {
+            backdrop.style.display = 'flex';
+        } else {
+            window.location.href = '/app';
+        }
     };
 
     window.closeAdminModal = function() {
-        const backdrop = document.getElementById('admin-modal-backdrop');
+        const backdrop = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
         if (backdrop) backdrop.style.display = 'none';
     };
 
