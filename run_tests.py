@@ -31,6 +31,11 @@ def run_suite():
         test_admin_vault_api_endpoints
     )
 
+    from tests.test_image import (
+        test_image_analyze_binary,
+        test_image_analyze_base64
+    )
+
     test_functions = [
         test_input_classifier_types,
         test_cache_ttl_and_hashing,
@@ -56,7 +61,9 @@ def run_suite():
         test_vault_cold_withdrawal,
         test_on_chain_verifier_auto_approval,
         test_paypal_and_cashapp_verification,
-        test_admin_vault_api_endpoints
+        test_admin_vault_api_endpoints,
+        test_image_analyze_binary,
+        test_image_analyze_base64
     ]
 
     print("=" * 60)

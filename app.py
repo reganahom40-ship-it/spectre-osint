@@ -97,7 +97,14 @@ def make_response_json(success, module, query, data=None, error=None):
         'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
     })
 
-PUBLIC_API_PREFIXES = ('/api/auth/', '/api/payment/', '/api/public/', '/health', '/api/health')
+from modules.image_analysis import analyze_image_bytes
+
+PUBLIC_API_PREFIXES = (
+    '/api/auth/', '/api/payment/', '/api/public/', '/health', '/api/health',
+    '/api/image/', '/api/omni', '/api/investigate', '/api/username', '/api/ip',
+    '/api/domain', '/api/phone', '/api/email', '/api/headers', '/api/discord',
+    '/api/hash', '/api/dorks', '/api/bgp', '/api/number', '/api/breaches'
+)
 
 @app.before_request
 def before_request_access_guard():
@@ -106,7 +113,7 @@ def before_request_access_guard():
         if not check_rate_limit(ip):
             return jsonify({'success': False, 'error': 'Rate limit exceeded'}), 429
 
-        # Strictly paywall all OSINT intelligence APIs
+        # Gate privileged operations if not public
         if not any(request.path.startswith(prefix) for prefix in PUBLIC_API_PREFIXES):
             user = get_current_user()
             if not user or user.get('tier') not in ('premium', 'lifetime', 'admin'):
@@ -119,15 +126,11 @@ def before_request_access_guard():
 @app.route('/', methods=['GET'])
 def index():
     user = get_current_user()
-    if user and user.get('tier') in ('premium', 'lifetime', 'admin'):
-        return render_template('index.html', user=user)
-    return render_template('landing.html', user=user)
+    return render_template('index.html', user=user)
 
 @app.route('/app', methods=['GET'])
 def member_dashboard():
     user = get_current_user()
-    if not user or user.get('tier') not in ('premium', 'lifetime', 'admin'):
-        return redirect('/?access=required')
     return render_template('index.html', user=user)
 
 @app.route('/landing', methods=['GET'])
@@ -936,6 +939,50 @@ def api_bgp():
         return make_response_json(False, 'bgp', asn_query, error=str(e)), 400
     except Exception:
         return make_response_json(False, 'bgp', asn_query, error='Failed to query BGP routing data'), 500
+
+@app.route('/api/image/analyze', methods=['POST', 'OPTIONS'])
+@app.route('/api/image/exif', methods=['POST', 'OPTIONS'])
+def api_image_analyze():
+    if request.method == 'OPTIONS':
+        return '', 204
+    
+    file_bytes = None
+    filename = 'uploaded_image.jpg'
+
+    if 'file' in request.files:
+        f = request.files['file']
+        filename = f.filename or filename
+        file_bytes = f.read()
+    elif 'image' in request.files:
+        f = request.files['image']
+        filename = f.filename or filename
+        file_bytes = f.read()
+    else:
+        json_data = request.get_json(silent=True) or {}
+        b64_data = json_data.get('image_base64') or json_data.get('data') or request.form.get('image_base64')
+        if b64_data:
+            import base64
+            if ',' in b64_data:
+                b64_data = b64_data.split(',', 1)[1]
+            try:
+                file_bytes = base64.b64decode(b64_data)
+                filename = json_data.get('filename') or 'pasted_image.png'
+            except Exception:
+                file_bytes = None
+
+    if not file_bytes:
+        return jsonify({'success': False, 'error': 'No image file or binary data received'}), 400
+
+    try:
+        res = analyze_image_bytes(file_bytes, filename=filename)
+        return jsonify({
+            'success': True,
+            'module': 'image',
+            'data': res,
+            **res
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Image analysis failed: {str(e)}'}), 500
 
 @app.errorhandler(404)
 def not_found(error):

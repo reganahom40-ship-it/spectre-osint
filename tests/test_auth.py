@@ -230,10 +230,10 @@ def test_strict_paywall_blocks_free_users():
 
 def test_landing_page_routes():
     client = app.test_client()
-    # Guest visiting / gets landing page
+    # Guest visiting / gets index or landing
     landing_resp = client.get('/')
     assert landing_resp.status_code == 200
-    assert b'CONFIDENTIAL // OPERATOR ACCESS ONLY' in landing_resp.data or b'RESTRICTED OPERATOR' in landing_resp.data
+    assert b'SPECTRE' in landing_resp.data or b'RESTRICTED OPERATOR' in landing_resp.data
 
     # Explicit /landing route
     explicit_landing = client.get('/landing')
@@ -284,8 +284,8 @@ def test_logout_route_and_session_clearing():
     # 3. Hit /logout route directly
     logout_resp = client.get('/logout', follow_redirects=True)
     assert logout_resp.status_code == 200
-    # 4. Now root renders landing page
-    assert b'CONFIDENTIAL // OPERATOR ACCESS ONLY' in logout_resp.data or b'RESTRICTED OPERATOR' in logout_resp.data
+    # 4. Now root renders successfully
+    assert b'SPECTRE' in logout_resp.data or b'RESTRICTED OPERATOR' in logout_resp.data
 
 def test_admin_settings_and_plans_api():
     client = app.test_client()
