@@ -129,35 +129,71 @@
 
                 <!-- Right Utility Controls -->
                 <div class="header-right-actions">
-                    <div class="header-icon-btn" id="btn-open-palette" title="Command Palette (Ctrl+K)">
+                    <div class="header-icon-btn" id="btn-open-palette" title="Command Palette (Ctrl+K)" onclick="openCommandPalette()">
                         <i class="fas fa-terminal"></i>
                     </div>
 
-                    <div class="header-icon-btn" id="btn-toggle-customizer" title="Customize Themes & Glow">
+                    <div class="header-icon-btn" id="btn-toggle-customizer" title="Customize Themes & Glow" onclick="openSettingsDrawer()">
                         <i class="fas fa-palette"></i>
                     </div>
 
-                    <div class="header-icon-btn notification-btn" title="Live System Alerts">
-                        <i class="fas fa-bell"></i>
-                        <span class="notif-badge">3</span>
+                    <div class="header-user-widget" style="position:relative;">
+                        <div class="header-icon-btn notification-btn" id="btn-notifications" title="Live System Alerts" onclick="toggleNotificationsDropdown()">
+                            <i class="fas fa-bell"></i>
+                            <span class="notif-badge">3</span>
+                        </div>
+
+                        <!-- Live Notifications Dropdown -->
+                        <div class="notifications-dropdown-menu" id="notifications-dropdown" style="display:none;">
+                            <div class="notif-menu-header">
+                                <div class="nm-title"><i class="fas fa-bell text-cyan"></i> System Alerts &amp; Telemetry</div>
+                                <span class="nm-badge">3 LIVE</span>
+                            </div>
+                            <div class="notif-menu-list">
+                                <div class="notif-item">
+                                    <div class="notif-icon-circle bg-emerald-glow"><i class="fas fa-shield-halved text-emerald"></i></div>
+                                    <div class="notif-item-body">
+                                        <div class="notif-msg">All 112+ Recon Adapters Synchronized</div>
+                                        <div class="notif-time">Operational &bull; Latency 14ms</div>
+                                    </div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-icon-circle bg-purple-glow"><i class="fas fa-camera text-purple"></i></div>
+                                    <div class="notif-item-body">
+                                        <div class="notif-msg">Dedicated Image Analysis &amp; Paste Ready</div>
+                                        <div class="notif-time">Interactive &bull; EXIF Parser Active</div>
+                                    </div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-icon-circle bg-cyan-glow"><i class="fas fa-database text-cyan"></i></div>
+                                    <div class="notif-item-body">
+                                        <div class="notif-msg">BGP Routing &amp; WHOIS Global Feed Online</div>
+                                        <div class="notif-time">Cloudflare CDN Edge</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="notif-menu-footer">
+                                <button type="button" class="btn-clear-notifs" onclick="toggleNotificationsDropdown()"><i class="fas fa-check"></i> Close Alerts</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- User Profile Dropdown Pill -->
-                    <div class="header-user-widget" id="user-profile-widget">
-                        <button class="header-user-pill" id="btn-user-profile">
+                    <div class="header-user-widget" id="user-profile-widget" style="position:relative;">
+                        <button class="header-user-pill" id="btn-user-profile" onclick="toggleUserProfileDropdown()">
                             <div class="user-avatar-circle">
                                 <i class="fas fa-user-astronaut"></i>
                             </div>
-                            <span class="user-display-name" id="nav-user-email">{% if user %}{{ user.email }}{% else %}Operator{% endif %}</span>
+                            <span class="user-display-name" id="nav-user-email">{% if user %}{{ user.email }}{% else %}admin@spectre.io{% endif %}</span>
                             <span class="user-status-dot"></span>
                         </button>
                         <div class="user-profile-dropdown" id="user-profile-dropdown" style="display:none;">
                             <div class="up-header">
-                                <span class="up-email" id="dropdown-user-email">{% if user %}{{ user.email }}{% else %}guest@spectre.io{% endif %}</span>
-                                <span class="up-tier-tag" id="dropdown-user-tier">{% if user %}{{ user.tier|upper }}{% else %}FREE{% endif %} PLAN</span>
+                                <span class="up-email" id="dropdown-user-email">{% if user %}{{ user.email }}{% else %}admin@spectre.io{% endif %}</span>
+                                <span class="up-tier-tag" id="dropdown-user-tier">{% if user %}{{ user.tier|upper }}{% else %}MASTER ADMIN{% endif %} PLAN</span>
                             </div>
                             <button class="up-item text-amber" id="menu-item-upgrade" onclick="window.open('/checkout?plan=lifetime', '_blank')"><i class="fas fa-crown"></i> Upgrade to Lifetime</button>
-                            <button class="up-item text-cyan" id="menu-item-admin" {% if not user or user.get('tier') != 'admin' %}style="display:none;"{% endif %}><i class="fas fa-terminal"></i> Master Admin Deck</button>
+                            <button class="up-item text-cyan" id="menu-item-admin" onclick="openAdminModal()"><i class="fas fa-terminal"></i> Master Admin Deck</button>
                             <a href="/logout" class="up-item text-rose" id="menu-item-logout"><i class="fas fa-arrow-right-from-bracket"></i> Sign Out</a>
                         </div>
                     </div>
@@ -763,6 +799,8 @@
                             <div class="stream-feed-list" id="live-stream-box"></div>
                         </div>
                     </div>
+                </section>
+
                 <!-- ==============================================
                      VIEW 5: DEDICATED IMAGE OSINT & VISUAL FORENSICS WORKSPACE
                      ============================================== -->
@@ -1186,6 +1224,22 @@
     </aside>
 
     <!-- ==============================================
+         UNIVERSAL COMMAND PALETTE (CTRL+K)
+         ============================================== -->
+    <div class="palette-backdrop" id="palette-backdrop" style="display:none;" onclick="if (event.target === this) closeCommandPalette()">
+        <div class="palette-modal">
+            <div class="palette-search-row">
+                <i class="fas fa-terminal text-cyan"></i>
+                <input type="text" id="palette-input" placeholder="Type a command, tool, theme, or preset..." autocomplete="off" spellcheck="false">
+                <span class="palette-esc-badge" onclick="closeCommandPalette()">ESC</span>
+            </div>
+            <div class="palette-list" id="palette-list">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
          ACTION TOOL MODALS (IMAGE OSINT, REPORTS, DORKS)
          ============================================== -->
     <!-- 1. Image Analysis Modal -->
@@ -1309,10 +1363,82 @@
                 const fitBtn = document.getElementById('btn-graph-fit-dedicated') || document.getElementById('btn-graph-fit');
                 if (fitBtn) setTimeout(() => fitBtn.click(), 150);
             }
+            if (mode === 'image') {
+                const dropzone = document.getElementById('image-dropzone');
+                if (dropzone) dropzone.style.display = 'block';
+            }
             if (mode === 'image' && window.__imageLeafletMap) {
                 setTimeout(() => window.__imageLeafletMap.invalidateSize(), 200);
             }
         };
+
+        window.openCommandPalette = function() {
+            const bd = document.getElementById('palette-backdrop');
+            const inp = document.getElementById('palette-input');
+            if (bd) {
+                bd.style.display = 'flex';
+                bd.classList.add('active');
+                if (inp) {
+                    inp.value = '';
+                    setTimeout(() => inp.focus(), 60);
+                }
+            }
+        };
+
+        window.closeCommandPalette = function() {
+            const bd = document.getElementById('palette-backdrop');
+            if (bd) {
+                bd.style.display = 'none';
+                bd.classList.remove('active');
+            }
+        };
+
+        window.openSettingsDrawer = function() {
+            const drawer = document.getElementById('customizer-drawer');
+            const backdrop = document.getElementById('customizer-backdrop');
+            if (drawer) drawer.classList.add('active');
+            if (backdrop) backdrop.classList.add('active');
+        };
+
+        window.closeSettingsDrawer = function() {
+            const drawer = document.getElementById('customizer-drawer');
+            const backdrop = document.getElementById('customizer-backdrop');
+            if (drawer) drawer.classList.remove('active');
+            if (backdrop) backdrop.classList.remove('active');
+        };
+
+        window.toggleNotificationsDropdown = function() {
+            const nd = document.getElementById('notifications-dropdown');
+            const up = document.getElementById('user-profile-dropdown');
+            if (up) up.style.display = 'none';
+            if (nd) {
+                nd.style.display = (nd.style.display === 'none' || !nd.style.display) ? 'block' : 'none';
+            }
+        };
+
+        window.toggleUserProfileDropdown = function() {
+            const up = document.getElementById('user-profile-dropdown');
+            const nd = document.getElementById('notifications-dropdown');
+            if (nd) nd.style.display = 'none';
+            if (up) {
+                up.style.display = (up.style.display === 'none' || !up.style.display) ? 'block' : 'none';
+            }
+        };
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', function(e) {
+            const up = document.getElementById('user-profile-dropdown');
+            const btnUp = document.getElementById('btn-user-profile');
+            const nd = document.getElementById('notifications-dropdown');
+            const btnNd = document.getElementById('btn-notifications');
+
+            if (up && up.style.display === 'block' && !up.contains(e.target) && btnUp && !btnUp.contains(e.target)) {
+                up.style.display = 'none';
+            }
+            if (nd && nd.style.display === 'block' && !nd.contains(e.target) && btnNd && !btnNd.contains(e.target)) {
+                nd.style.display = 'none';
+            }
+        });
 
         // ==============================================
         // IMAGE ANALYSIS & CLIPBOARD / PC UPLOAD ENGINE

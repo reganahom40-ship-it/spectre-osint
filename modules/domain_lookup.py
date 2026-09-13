@@ -60,7 +60,7 @@ def lookup_domain(domain: str) -> dict:
 
     subdomains = []
     try:
-        resp = requests.get(f"https://crt.sh/?q=%25.{domain}&output=json", timeout=10)
+        resp = requests.get(f"https://crt.sh/?q=%25.{domain}&output=json", timeout=3)
         if resp.status_code == 200:
             data = resp.json()
             names = set()
