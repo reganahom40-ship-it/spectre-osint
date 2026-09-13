@@ -23,6 +23,19 @@
     window.addEventListener('error', function(e) {
         window.__page_errors.push(e.message + ' at ' + e.filename + ':' + e.lineno);
     });
+    window.openAdminModal = function() {
+        const modal = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
+        if (modal) {
+            modal.style.display = 'flex';
+            if (typeof window.refreshAdminData === 'function') {
+                try { window.refreshAdminData(); } catch(err) { console.error('Admin data refresh error:', err); }
+            }
+        }
+    };
+    window.closeAdminModal = function() {
+        const modal = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
+        if (modal) modal.style.display = 'none';
+    };
     </script>
 </head>
 <body class="spectre-workspace-body">
@@ -1326,7 +1339,7 @@
     <!-- ==============================================
          4. MASTER ADMIN & OWNER CONTROL DECK MODAL
          ============================================== -->
-    <div class="modal-backdrop-wrap" id="modal-admin-control-deck" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div class="modal-backdrop-wrap" id="modal-admin-control-deck" onclick="if(event.target === this) closeAdminModal()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
         <div class="modal-card-box admin-deck-container" style="background: #090d16; border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 16px; width: 100%; max-width: 1050px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(6, 182, 212, 0.2); overflow: hidden;">
             
             <!-- Admin Top Navigation Bar -->

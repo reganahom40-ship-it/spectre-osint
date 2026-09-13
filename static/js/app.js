@@ -2816,14 +2816,18 @@
         },
 
         openAdminModal() {
-            const backdrop = document.getElementById('admin-modal-backdrop');
+            const backdrop = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
             if (!backdrop) return;
             backdrop.style.display = 'flex';
-            this.switchAdminTab('pay');
+            if (typeof window.refreshAdminData === 'function') {
+                window.refreshAdminData();
+            } else if (typeof this.switchAdminTab === 'function') {
+                this.switchAdminTab('pay');
+            }
         },
 
         closeAdminModal() {
-            const backdrop = document.getElementById('admin-modal-backdrop');
+            const backdrop = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
             if (backdrop) backdrop.style.display = 'none';
         },
 
@@ -3257,7 +3261,38 @@
 
         const btnNavbarAdmin = document.getElementById('btn-navbar-admin');
         if (btnNavbarAdmin) {
-            btnNavbarAdmin.addEventListener('click', () => auth.openAdminModal());
+            btnNavbarAdmin.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.openAdminModal) window.openAdminModal();
+                else auth.openAdminModal();
+            });
+        }
+
+        const navAdminDeck = document.getElementById('nav-item-admin-deck');
+        if (navAdminDeck) {
+            navAdminDeck.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.openAdminModal) window.openAdminModal();
+                else auth.openAdminModal();
+            });
+        }
+
+        const btnTopbarAdmin = document.getElementById('btn-topbar-admin-deck');
+        if (btnTopbarAdmin) {
+            btnTopbarAdmin.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.openAdminModal) window.openAdminModal();
+                else auth.openAdminModal();
+            });
+        }
+
+        const btnSidebarAdminAction = document.getElementById('btn-sidebar-admin-action');
+        if (btnSidebarAdminAction) {
+            btnSidebarAdminAction.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.openAdminModal) window.openAdminModal();
+                else auth.openAdminModal();
+            });
         }
 
         const btnSavePayments = document.getElementById('btn-save-admin-payments');
