@@ -1123,6 +1123,8 @@
             if (backdrop) backdrop.classList.remove('active');
         }
 
+        window.openCommandPalette = openPalette;
+        window.closeCommandPalette = closePalette;
         if (btnOpen) btnOpen.addEventListener('click', openPalette);
         if (backdrop) {
             backdrop.addEventListener('click', (e) => {

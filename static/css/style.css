@@ -3061,3 +3061,218 @@ body.spectre-workspace-body {
     background: rgba(0, 240, 255, 0.2) !important;
     box-shadow: 0 0 14px rgba(0, 240, 255, 0.3) !important;
 }
+
+
+/* ==========================================================================
+   UNIVERSAL COMMAND PALETTE (CTRL+K) & SPRING FIXES
+   ========================================================================== */
+button:active, .nav-item:active, .qs-chip:active, .scard-exec-btn:active, .header-icon-btn:active, .sample-pill-btn:active, .btn-bubbly-mini:active, .btn-spotlight-search:active, .admin-tab-btn:active {
+    transform: scale(0.97) !important;
+    transition: transform 0.08s ease !important;
+}
+
+.sidebar-nav-menu, .nav-item, .admin-tab-bar, .admin-tab-btn, .header-user-pill, .header-icon-btn, .palette-item {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+.sidebar-nav-menu {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    padding: 12px 8px !important;
+}
+
+.sidebar-nav-menu .nav-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    max-height: 44px !important;
+    width: 100% !important;
+}
+
+.sidebar-nav-menu .nav-item:hover {
+    color: #f1f5f9 !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.sidebar-nav-menu .nav-item.active {
+    color: #00f0ff !important;
+    background: rgba(0, 240, 255, 0.12) !important;
+    border-color: rgba(0, 240, 255, 0.35) !important;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.15) !important;
+}
+
+.sidebar-nav-menu .nav-item i {
+    font-size: 1rem !important;
+    width: 20px !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+}
+
+.palette-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(5, 8, 16, 0.88) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    z-index: 1000000 !important;
+    display: none;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding-top: 10vh !important;
+}
+
+.palette-backdrop.active, .palette-backdrop[style*="display: flex"] {
+    display: flex !important;
+}
+
+.palette-modal {
+    width: 620px !important;
+    max-width: 92vw !important;
+    background: #0d121f !important;
+    background: linear-gradient(180deg, #101726 0%, #080c16 100%) !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 240, 255, 0.2) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    animation: paletteSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes paletteSlideIn {
+    from { transform: translateY(-16px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.palette-search-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 16px 20px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.palette-search-row i {
+    font-size: 1.1rem !important;
+    color: #00f0ff !important;
+    flex-shrink: 0 !important;
+}
+
+#palette-input {
+    flex: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: #f8fafc !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.95rem !important;
+    padding: 0 !important;
+}
+
+#palette-input::placeholder {
+    color: #64748b !important;
+}
+
+.palette-esc-badge {
+    font-size: 0.68rem !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    padding: 3px 8px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 6px !important;
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.palette-esc-badge:hover {
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.palette-list {
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    padding: 10px 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+
+.palette-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid transparent !important;
+    color: #cbd5e1 !important;
+    font-size: 0.88rem !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    user-select: none !important;
+}
+
+.palette-item:hover, .palette-item.selected {
+    background: rgba(0, 240, 255, 0.12) !important;
+    border-color: rgba(0, 240, 255, 0.35) !important;
+    color: #ffffff !important;
+}
+
+.pitem-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex: 1 !important;
+}
+
+.pitem-left i {
+    font-size: 0.95rem !important;
+    color: #00f0ff !important;
+    width: 20px !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+}
+
+.pitem-left span {
+    font-weight: 500 !important;
+    color: inherit !important;
+}
+
+.pitem-badge {
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    padding: 2px 8px !important;
+    border-radius: 6px !important;
+    background: rgba(0, 240, 255, 0.1) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    color: #38bdf8 !important;
+    letter-spacing: 0.5px !important;
+    flex-shrink: 0 !important;
+}
+
+.palette-item:hover .pitem-badge, .palette-item.selected .pitem-badge {
+    background: rgba(0, 240, 255, 0.25) !important;
+    border-color: rgba(0, 240, 255, 0.6) !important;
+    color: #00f0ff !important;
+}
