@@ -45,6 +45,7 @@ init_db()
 engine = InvestigationEngine()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 import secrets
 
@@ -84,7 +85,9 @@ def add_cors_and_security_headers(response):
     response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS, PUT, DELETE'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, post-check=0, pre-check=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 import time
