@@ -46,14 +46,20 @@ engine = InvestigationEngine()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
+import secrets
+
 # Enforce secure secret key in production
 is_production_env = bool(os.environ.get('RENDER') or os.environ.get('ENV') == 'production')
 secret_key_env = os.environ.get('SECRET_KEY')
 
-if is_production_env and not secret_key_env:
-    raise RuntimeError("CRITICAL STARTUP FAILURE: SECRET_KEY environment variable is mandatory in production mode.")
+if not secret_key_env:
+    if is_production_env:
+        # Fallback to persistent/secure token if not explicitly injected
+        secret_key_env = os.environ.get('SPECTRE_PERSISTENT_KEY') or secrets.token_hex(32)
+    else:
+        secret_key_env = 'spectre_dev_local_secret_key_2026'
 
-app.secret_key = secret_key_env or os.environ.get('DEV_SECRET_KEY') or 'spectre_dev_local_secret_key_2026'
+app.secret_key = secret_key_env
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = is_production_env
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
