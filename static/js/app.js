@@ -3310,61 +3310,29 @@
             btnOpenAuth.addEventListener('click', () => auth.openAuthModal('login'));
         }
 
-        // Profile Dropdown Toggle
-        const btnUserProfile = document.getElementById('btn-user-profile');
-        const userProfileDropdown = document.getElementById('user-profile-dropdown');
-        if (btnUserProfile && userProfileDropdown) {
-            btnUserProfile.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isHidden = userProfileDropdown.style.display === 'none' || !userProfileDropdown.style.display;
-                userProfileDropdown.style.display = isHidden ? 'flex' : 'none';
-            });
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('#user-profile-widget')) {
-                    userProfileDropdown.style.display = 'none';
-                }
-            });
-        }
-
-        // Profile Dropdown Menu Items
+        // Profile Dropdown bindings handled by window.toggleUserProfileDropdown
         const menuItemUpgrade = document.getElementById('menu-item-upgrade');
         if (menuItemUpgrade) {
             menuItemUpgrade.addEventListener('click', () => {
-                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
-                auth.openUpgradeModal('lifetime');
+                if (typeof window.closeUserProfileDropdown === 'function') window.closeUserProfileDropdown();
+                if (typeof auth.openUpgradeModal === 'function') auth.openUpgradeModal('lifetime');
             });
         }
 
         const menuItemAdmin = document.getElementById('menu-item-admin');
         if (menuItemAdmin) {
             menuItemAdmin.addEventListener('click', () => {
-                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
-                auth.openAdminModal();
-            });
-        }
-
-        const directLogoutBtn = document.getElementById('btn-direct-logout');
-        if (directLogoutBtn) {
-            directLogoutBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                showToast('Logging out...', 'fas fa-power-off');
-                try {
-                    await fetch('/api/auth/logout', { method: 'POST' });
-                } catch (err) {}
-                window.location.href = '/logout';
+                if (typeof window.closeUserProfileDropdown === 'function') window.closeUserProfileDropdown();
+                if (typeof window.openAdminModal === 'function') window.openAdminModal();
             });
         }
 
         const menuItemLogout = document.getElementById('menu-item-logout');
         if (menuItemLogout) {
-            menuItemLogout.addEventListener('click', async (e) => {
-                e.preventDefault();
-                if (userProfileDropdown) userProfileDropdown.style.display = 'none';
-                showToast('Logging out...', 'fas fa-power-off');
-                try {
-                    await fetch('/api/auth/logout', { method: 'POST' });
-                } catch (err) {}
-                window.location.href = '/logout';
+            menuItemLogout.addEventListener('click', (e) => {
+                if (typeof window.handleLogout === 'function') {
+                    window.handleLogout(e);
+                }
             });
         }
 

@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260912_workspace_v4_deck">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260912_v5_user_logout">
     <script>
     window.__page_errors = [];
     window.addEventListener('error', function(e) {
@@ -215,22 +215,63 @@
                     </div>
 
                     <!-- User Profile Dropdown Pill -->
-                    <div class="header-user-widget" id="user-profile-widget" style="position:relative;">
-                        <button class="header-user-pill" id="btn-user-profile" onclick="toggleUserProfileDropdown()">
+                    <div class="header-user-widget" id="user-profile-widget">
+                        <button type="button" class="header-user-pill" id="btn-user-profile" onclick="window.toggleUserProfileDropdown(event)" aria-label="Account and Profile Menu">
                             <div class="user-avatar-circle">
                                 <i class="fas fa-user-astronaut"></i>
                             </div>
                             <span class="user-display-name" id="nav-user-email">{% if user %}{{ user.email }}{% else %}admin@spectre.io{% endif %}</span>
-                            <span class="user-status-dot"></span>
+                            <span class="user-status-dot" title="Operational"></span>
+                            <i class="fas fa-chevron-down pill-chevron"></i>
                         </button>
                         <div class="user-profile-dropdown" id="user-profile-dropdown" style="display:none;">
                             <div class="up-header">
-                                <span class="up-email" id="dropdown-user-email">{% if user %}{{ user.email }}{% else %}admin@spectre.io{% endif %}</span>
-                                <span class="up-tier-tag" id="dropdown-user-tier">{% if user %}{{ user.tier|upper }}{% else %}MASTER ADMIN{% endif %} PLAN</span>
+                                <div class="up-header-avatar">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+                                <div class="up-header-text">
+                                    <div class="up-email" id="dropdown-user-email">{% if user %}{{ user.email }}{% else %}admin@spectre.io{% endif %}</div>
+                                    <div class="up-tier-badge" id="dropdown-user-tier">
+                                        <i class="fas fa-crown"></i> {% if user %}{{ user.tier|upper }}{% else %}MASTER ADMIN{% endif %} PLAN
+                                    </div>
+                                </div>
                             </div>
-                            <button class="up-item text-amber" id="menu-item-upgrade" onclick="window.open('/checkout?plan=lifetime', '_blank')"><i class="fas fa-crown"></i> Upgrade to Lifetime</button>
-                            <button class="up-item text-cyan" id="menu-item-admin" onclick="openAdminModal()"><i class="fas fa-terminal"></i> Master Admin Deck</button>
-                            <a href="/logout" class="up-item text-rose" id="menu-item-logout"><i class="fas fa-arrow-right-from-bracket"></i> Sign Out</a>
+                            
+                            <div class="up-menu-list">
+                                {% if user and user.get('tier') == 'admin' %}
+                                <button type="button" class="up-item up-deck-btn" id="menu-item-admin" onclick="window.openAdminModal(); window.closeUserProfileDropdown();">
+                                    <i class="fas fa-sliders text-amber"></i>
+                                    <div class="up-item-body">
+                                        <div class="up-item-title">Owner Control Deck</div>
+                                        <div class="up-item-desc">Gateways, Tiers, Vault &amp; Branding</div>
+                                    </div>
+                                    <span class="up-badge-admin">ADMIN</span>
+                                </button>
+                                {% endif %}
+                                
+                                <button type="button" class="up-item" onclick="window.openSettingsDrawer(); window.closeUserProfileDropdown();">
+                                    <i class="fas fa-palette text-cyan"></i>
+                                    <div class="up-item-body">
+                                        <div class="up-item-title">Visual Themes &amp; Glow</div>
+                                        <div class="up-item-desc">Customize UI accent colors</div>
+                                    </div>
+                                </button>
+                                
+                                <button type="button" class="up-item" id="menu-item-upgrade" onclick="window.open('/checkout?plan=lifetime', '_blank'); window.closeUserProfileDropdown();">
+                                    <i class="fas fa-gem text-purple"></i>
+                                    <div class="up-item-body">
+                                        <div class="up-item-title">Upgrade Tier</div>
+                                        <div class="up-item-desc">Unlock unlimited intelligence scans</div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <div class="up-footer">
+                                <a href="/logout" class="up-logout-btn" id="menu-item-logout" onclick="window.handleLogout(event)">
+                                    <i class="fas fa-power-off"></i>
+                                    <span>Sign Out / Log Out</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
 
@@ -1888,27 +1929,64 @@
             }
         };
 
-        window.toggleUserProfileDropdown = function() {
+        window.toggleUserProfileDropdown = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             const up = document.getElementById('user-profile-dropdown');
+            const pill = document.getElementById('btn-user-profile');
             const nd = document.getElementById('notifications-dropdown');
             if (nd) nd.style.display = 'none';
             if (up) {
-                up.style.display = (up.style.display === 'none' || !up.style.display) ? 'block' : 'none';
+                const isOpen = (up.style.display === 'flex' || up.style.display === 'block');
+                if (isOpen) {
+                    up.style.display = 'none';
+                    if (pill) pill.classList.remove('active');
+                } else {
+                    up.style.display = 'flex';
+                    if (pill) pill.classList.add('active');
+                }
             }
+        };
+
+        window.closeUserProfileDropdown = function() {
+            const up = document.getElementById('user-profile-dropdown');
+            const pill = document.getElementById('btn-user-profile');
+            if (up) up.style.display = 'none';
+            if (pill) pill.classList.remove('active');
+        };
+
+        window.handleLogout = async function(e) {
+            if (e) e.preventDefault();
+            if (typeof window.showToast === 'function') {
+                window.showToast('Signing out... Terminating session', 'fas fa-power-off');
+            }
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch(err) {
+                console.error('Logout error:', err);
+            }
+            window.location.href = '/logout';
         };
 
         // Close dropdowns on outside click
         document.addEventListener('click', function(e) {
             const up = document.getElementById('user-profile-dropdown');
-            const btnUp = document.getElementById('btn-user-profile');
+            const pill = document.getElementById('btn-user-profile');
             const nd = document.getElementById('notifications-dropdown');
             const btnNd = document.getElementById('btn-notifications');
 
-            if (up && up.style.display === 'block' && !up.contains(e.target) && btnUp && !btnUp.contains(e.target)) {
-                up.style.display = 'none';
+            if (up && (up.style.display === 'block' || up.style.display === 'flex')) {
+                if (!up.contains(e.target) && (!pill || !pill.contains(e.target))) {
+                    up.style.display = 'none';
+                    if (pill) pill.classList.remove('active');
+                }
             }
-            if (nd && nd.style.display === 'block' && !nd.contains(e.target) && btnNd && !btnNd.contains(e.target)) {
-                nd.style.display = 'none';
+            if (nd && (nd.style.display === 'block' || nd.style.display === 'flex')) {
+                if (!nd.contains(e.target) && (!btnNd || !btnNd.contains(e.target))) {
+                    nd.style.display = 'none';
+                }
             }
         });
 
@@ -3075,21 +3153,7 @@
                 });
             }
 
-            // User Profile Pill Dropdown
-            const userPill = document.getElementById('btn-user-profile');
-            const userDropdown = document.getElementById('user-profile-dropdown');
-            if (userPill && userDropdown) {
-                userPill.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const isOpen = userDropdown.style.display === 'flex';
-                    userDropdown.style.display = isOpen ? 'none' : 'flex';
-                });
-                document.addEventListener('click', (e) => {
-                    if (!userPill.contains(e.target) && !userDropdown.contains(e.target)) {
-                        userDropdown.style.display = 'none';
-                    }
-                });
-            }
+
 
             // Interactive Bubbly Ripples & Spring Tactility
             document.addEventListener('click', (e) => {
@@ -3120,6 +3184,6 @@
     </script>
 
     <!-- Main Platform Script Apparatus -->
-    <script src="/static/js/app.js?v=20260912_v4_deck"></script>
+    <script src="/static/js/app.js?v=20260912_v5_user_logout"></script>
 </body>
 </html>
