@@ -944,17 +944,13 @@
         </aside>
 
     </div>
-
-    <!-- ==============================================
-         CUSTOMIZER DRAWER (MODAL SIDEBAR)
-         ============================================== -->
-    <!-- ==============================================
+<!-- ==============================================
          CUSTOMIZER DRAWER (SETTINGS MODAL SIDEBAR)
          ============================================== -->
     <div class="customizer-backdrop" id="customizer-backdrop" onclick="closeSettingsDrawer()"></div>
     <aside class="customizer-drawer" id="customizer-drawer">
         <div class="cdrawer-header">
-            <div class="cdrawer-title"><i class="fas fa-sliders"></i> System Customizer</div>
+            <div class="cdrawer-title"><i class="fas fa-sliders text-cyan"></i> System Customizer</div>
             <button type="button" class="btn-cdrawer-close" id="btn-close-customizer" onclick="closeSettingsDrawer()" aria-label="Close Settings">
                 <i class="fas fa-xmark"></i>
             </button>
@@ -1028,542 +1024,79 @@
     </aside>
 
     <!-- ==============================================
-         COMMAND PALETTE (CTRL+K / CMD+K)
+         ACTION TOOL MODALS (IMAGE OSINT, REPORTS, DORKS)
          ============================================== -->
-    <div class="palette-backdrop" id="palette-backdrop">
-        <div class="palette-modal" id="palette-modal">
-            <div class="palette-search-row">
-                <i class="fas fa-magnifying-glass"></i>
-                <input type="text" id="palette-input" placeholder="Type a command or jump to module..." autocomplete="off">
-                <kbd>ESC</kbd>
+    <!-- 1. Image Analysis Modal -->
+    <div class="modal-backdrop-wrap" id="modal-image-analysis" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+        <div class="modal-card-box" style="background: #0d1117; border: 1px solid var(--border-medium); border-radius: 12px; width: 90%; max-width: 520px; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #fff; display: flex; align-items: center; gap: 8px;"><i class="fas fa-camera text-cyan"></i> Image Reverse & EXIF Analysis</h3>
+                <button type="button" onclick="closeImageModal()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;"><i class="fas fa-xmark"></i></button>
             </div>
-            <div class="palette-list" id="palette-list">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- ==============================================
-         AUTHENTICATION MODAL
-         ============================================== -->
-    <div class="spectre-modal-backdrop" id="auth-modal-backdrop">
-        <div class="spectre-modal" id="auth-modal">
-            <div class="modal-header-row">
-                <h3 id="auth-modal-title"><i class="fas fa-user-shield text-cyan"></i> SPECTRE Intelligence Access</h3>
-                <button class="btn-close-modal" id="btn-close-auth"><i class="fas fa-xmark"></i></button>
-            </div>
-            <div class="auth-tabs-row">
-                <button class="auth-tab-btn active" id="tab-auth-signin">Sign In</button>
-                <button class="auth-tab-btn" id="tab-auth-register">Create Account</button>
-            </div>
-            <div class="auth-body-container">
-                <form id="auth-form" onsubmit="return false;">
-                    <div class="auth-form-group">
-                        <label>Email</label>
-                        <input type="email" id="auth-input-email" class="auth-input-field" placeholder="operator@spectre.io" required autocomplete="email">
-                    </div>
-                    <div class="auth-form-group">
-                        <label>Master Passphrase</label>
-                        <input type="password" id="auth-input-password" class="auth-input-field" placeholder="••••••••••••" required autocomplete="current-password">
-                    </div>
-                    <div id="auth-error-msg" style="display:none;color:#f87171;font-size:0.75rem;margin-bottom:10px;"></div>
-                    <button type="submit" class="btn-auth-action" id="btn-submit-auth">
-                        <i class="fas fa-right-to-bracket"></i>
-                        <span id="btn-auth-label">Authenticate Session</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==============================================
-         PRICING & CHECKOUT MODAL
-         ============================================== -->
-    <div class="spectre-modal-backdrop" id="upgrade-modal-backdrop">
-        <div class="spectre-modal pricing-modal" id="upgrade-modal">
-            <div class="modal-header-row">
-                <h3><i class="fas fa-crown text-amber"></i> Unlock SPECTRE Access</h3>
-                <button class="btn-close-modal" id="btn-close-upgrade"><i class="fas fa-xmark"></i></button>
-            </div>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">Perform multi-engine reverse visual discovery across Google Lens, Yandex, Bing, and TinEye or extract EXIF camera metadata.</p>
             
-            <div class="pricing-tiers-grid">
-                <div class="tier-card" id="card-tier-pro">
-                    <div>
-                        <h4 class="tier-title">Pro Monthly</h4>
-                        <div class="tier-price">$19 <span>/ month</span></div>
-                        <ul class="tier-features-list">
-                            <li><i class="fas fa-check"></i> Unlimited Investigations</li>
-                            <li><i class="fas fa-check"></i> Full Breach Intelligence</li>
-                            <li><i class="fas fa-check"></i> 3D Topology Exports & Nodes</li>
-                            <li><i class="fas fa-check"></i> Cross-Module Correlations</li>
-                        </ul>
-                    </div>
-                    <button class="btn-select-tier" id="btn-select-pro" data-tier="premium" data-amount="19" onclick="window.open('/checkout?plan=premium', '_blank')">Select Pro ($19)</button>
-                </div>
+            <div style="margin-bottom: 14px;">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Image URL / File Path</label>
+                <input type="text" id="image-osint-url" placeholder="https://example.com/target-photo.jpg" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px; color: #fff; font-family: var(--font-mono); font-size: 0.85rem; margin-top: 6px;">
+            </div>
 
-                <div class="tier-card featured" id="card-tier-lifetime">
-                    <span class="tier-ribbon">BEST VALUE</span>
-                    <div>
-                        <h4 class="tier-title" style="color:#fbbf24;">Lifetime Pass</h4>
-                        <div class="tier-price" style="color:#fbbf24;">$99 <span>one-time</span></div>
-                        <ul class="tier-features-list">
-                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> <strong>Permanent Lifetime Access</strong></li>
-                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> Unlimited Parallel Engine Probes</li>
-                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> All Future OSINT Modules Included</li>
-                            <li><i class="fas fa-check" style="color:#fbbf24;"></i> Priority Support & Updates</li>
-                        </ul>
-                    </div>
-                    <button class="btn-select-tier btn-featured" id="btn-select-lifetime" data-tier="lifetime" data-amount="99" onclick="window.open('/checkout?plan=lifetime', '_blank')">Get Lifetime Pass ($99)</button>
-                </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <button type="button" class="btn-submit-action" style="padding: 10px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #fff; border-radius: 6px; cursor: pointer;" onclick="launchReverseSearch('google')"><i class="fa-brands fa-google text-blue"></i> Google Lens</button>
+                <button type="button" class="btn-submit-action" style="padding: 10px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #fff; border-radius: 6px; cursor: pointer;" onclick="launchReverseSearch('yandex')"><i class="fa-brands fa-yandex text-rose"></i> Yandex Visual</button>
+                <button type="button" class="btn-submit-action" style="padding: 10px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #fff; border-radius: 6px; cursor: pointer;" onclick="launchReverseSearch('bing')"><i class="fa-brands fa-microsoft text-cyan"></i> Bing Visual</button>
+                <button type="button" class="btn-submit-action" style="padding: 10px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #fff; border-radius: 6px; cursor: pointer;" onclick="launchReverseSearch('tineye')"><i class="fas fa-robot text-amber"></i> TinEye Engine</button>
+            </div>
+
+            <button type="button" class="btn-submit-action" style="width: 100%; padding: 10px; font-size: 0.85rem; background: #1d4ed8; border: none; color: #fff; border-radius: 6px; font-weight: 700; cursor: pointer;" onclick="analyzeImageExif()"><i class="fas fa-microchip"></i> Extract EXIF Geotag & Metadata</button>
+            <div id="image-exif-results" style="margin-top: 12px; font-size: 0.78rem; font-family: var(--font-mono); color: var(--text-muted); background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- 2. Report Generator Modal -->
+    <div class="modal-backdrop-wrap" id="modal-report-generator" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+        <div class="modal-card-box" style="background: #0d1117; border: 1px solid var(--border-medium); border-radius: 12px; width: 90%; max-width: 500px; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #fff; display: flex; align-items: center; gap: 8px;"><i class="fas fa-file-contract text-emerald"></i> Export Investigation Dossier</h3>
+                <button type="button" onclick="closeReportModal()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;"><i class="fas fa-xmark"></i></button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">Synthesize and export current target reconnaissance data into structured formats.</p>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Target Context</div>
+                <div style="font-size: 0.95rem; font-family: var(--font-mono); color: #fff; margin-top: 4px;" id="report-target-name">185.199.110.153</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" class="btn-submit-action" style="padding: 12px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #34d399; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="downloadReportFormat('md')"><i class="fas fa-file-lines"></i> Export Markdown Report (.md)</button>
+                <button type="button" class="btn-submit-action" style="padding: 12px; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.4); color: #818cf8; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="downloadReportFormat('json')"><i class="fas fa-code"></i> Export Raw JSON Telemetry (.json)</button>
+                <button type="button" class="btn-submit-action" style="padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #fff; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="printDossierReport()"><i class="fas fa-print"></i> Print Clean Intelligence Sheet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Google Dorks Generator Modal -->
+    <div class="modal-backdrop-wrap" id="modal-dorks-generator" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+        <div class="modal-card-box" style="background: #0d1117; border: 1px solid var(--border-medium); border-radius: 12px; width: 90%; max-width: 600px; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.8); max-height: 85vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #fff; display: flex; align-items: center; gap: 8px;"><i class="fas fa-search-nodes text-indigo"></i> Automated Google Dork Generator</h3>
+                <button type="button" onclick="closeDorksModal()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;"><i class="fas fa-xmark"></i></button>
+            </div>
+
+            <div style="margin-bottom: 14px; display: flex; gap: 8px;">
+                <input type="text" id="dork-target-input" placeholder="target.com or keyword..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px; color: #fff; font-family: var(--font-mono); font-size: 0.85rem;">
+                <button type="button" class="btn-submit-action" style="padding: 10px 16px; background: #4f46e5; border: none; color: #fff; border-radius: 6px; font-weight: 700; cursor: pointer;" onclick="regenerateDorkQueries()">Generate</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;" id="dorks-queries-list">
+                <!-- Injected queries -->
             </div>
         </div>
     </div>
 
     <!-- ==============================================
-         MASTER ADMIN UPGRADE & MANAGEMENT CONSOLE
+         GLOBAL JAVASCRIPT CONTROLLERS
          ============================================== -->
-    <div class="spectre-modal-backdrop" id="admin-modal-backdrop">
-        <div class="spectre-modal admin-modal" id="admin-modal">
-            <div class="modal-header-row">
-                <h3><i class="fas fa-shield-halved text-emerald"></i> Master Admin Control Console</h3>
-                <button class="btn-close-modal" id="btn-close-admin"><i class="fas fa-xmark"></i></button>
-            </div>
-
-            <!-- Admin Navigation Tabs -->
-            <div class="admin-tabs-bar" style="overflow-x:auto;">
-                <button class="admin-tab-btn active" id="tab-btn-admin-pay" onclick="window.SPECTRE_AUTH.switchAdminTab('pay')">
-                    <i class="fas fa-wallet text-cyan"></i> Payment Wallets & Accounts
-                </button>
-                <button class="admin-tab-btn" id="tab-btn-admin-vault" onclick="window.SPECTRE_AUTH.switchAdminTab('vault')">
-                    <i class="fas fa-vault text-emerald"></i> Treasury & Cold Vault
-                </button>
-                <button class="admin-tab-btn" id="tab-btn-admin-plans" onclick="window.SPECTRE_AUTH.switchAdminTab('plans')">
-                    <i class="fas fa-tags text-amber"></i> Pricing & Custom Plans
-                </button>
-                <button class="admin-tab-btn" id="tab-btn-admin-orders" onclick="window.SPECTRE_AUTH.switchAdminTab('orders')">
-                    <i class="fas fa-list-check text-cyan"></i> Incoming Orders <span class="order-badge-counter" id="admin-orders-counter-app" style="display:none;">0</span>
-                </button>
-                <button class="admin-tab-btn" id="tab-btn-admin-users" onclick="window.SPECTRE_AUTH.switchAdminTab('users')">
-                    <i class="fas fa-users text-rose"></i> Operator Registry & Upgrades
-                </button>
-            </div>
-
-            <!-- TAB 1: Payment Wallets & Accounts -->
-            <div class="admin-tab-pane active" id="tab-pane-admin-pay">
-                <div class="admin-pane-desc">
-                    Configure your direct settlement addresses and automated payment verification credentials.
-                </div>
-                <form id="admin-payments-form" class="admin-form-grid" onsubmit="return false;">
-                    <div class="admin-form-group">
-                        <label><i class="fab fa-litecoin text-cyan"></i> Litecoin (LTC) Fallback Address</label>
-                        <input type="text" id="adm-ltc" placeholder="e.g. ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8">
-                        <small>Native SegWit or Legacy LTC wallet address</small>
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fab fa-paypal text-sky"></i> PayPal Account Email</label>
-                        <input type="email" id="adm-paypal-email" placeholder="e.g. payments@yourdomain.com">
-                        <small>Your PayPal Business or Personal receiver email</small>
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fas fa-link text-sky"></i> PayPal.me URL</label>
-                        <input type="url" id="adm-paypal-link" placeholder="e.g. https://paypal.me/YourHandle">
-                        <small>Direct instant 1-click PayPal payment link</small>
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fab fa-bitcoin text-amber"></i> Bitcoin (BTC) Fallback Address</label>
-                        <input type="text" id="adm-btc" placeholder="e.g. bc1q9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8">
-                        <small>Native SegWit (bc1q) or Standard BTC address</small>
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fab fa-ethereum text-purple"></i> Ethereum / USDT Fallback Address</label>
-                        <input type="text" id="adm-eth" placeholder="e.g. 0x71C7656EC7ab88b098defB751B7401B5f6d8976F">
-                        <small>ERC-20, Arbitrum, or Base settlement wallet</small>
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fas fa-dollar-sign text-emerald"></i> CashApp $Cashtag</label>
-                        <input type="text" id="adm-cashapp" placeholder="e.g. $YourCashtag">
-                        <small>Your direct CashApp operator identifier</small>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label><i class="fab fa-paypal text-indigo"></i> PayPal REST Client ID</label>
-                        <input type="text" id="adm-paypal-client-id" placeholder="OAuth2 Client ID">
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fas fa-key text-amber"></i> PayPal REST Secret</label>
-                        <input type="password" id="adm-paypal-client-secret" placeholder="OAuth2 Secret Key">
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fas fa-globe"></i> PayPal Mode</label>
-                        <select id="adm-paypal-mode" style="background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;">
-                            <option value="live">Live Production</option>
-                            <option value="sandbox">Sandbox Test</option>
-                        </select>
-                    </div>
-                    <div class="admin-form-group">
-                        <label><i class="fas fa-money-bill-transfer text-emerald"></i> Cash App Auto-Verify</label>
-                        <select id="adm-cashapp-mode" style="background:var(--bg-input);color:#fff;border:1px solid var(--border-medium);border-radius:6px;padding:8px;">
-                            <option value="auto_note">Auto-Verify Note / Receipt Match</option>
-                            <option value="manual">Manual Approval Only</option>
-                        </select>
-                    </div>
-
-                    <div class="admin-form-actions" style="grid-column: 1 / -1;">
-                        <button type="button" class="btn-admin-submit" id="btn-save-admin-payments">
-                            <i class="fas fa-floppy-disk"></i> Save Payment & API Routing
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- TAB 2: Pricing & Custom Plans -->
-            <div class="admin-tab-pane" id="tab-pane-admin-plans" style="display:none;">
-                <div class="admin-pane-desc">
-                    Modify existing plan prices (Pro / Lifetime) or add new custom access tiers.
-                </div>
-                
-                <div class="admin-plans-table-box">
-                    <table class="admin-users-table" id="admin-plans-table">
-                        <thead>
-                            <tr>
-                                <th>Plan ID</th>
-                                <th>Name</th>
-                                <th>Price (USD)</th>
-                                <th>Billing</th>
-                                <th>Badge</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-plans-tbody">
-                            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading plans...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="admin-subbox-title"><i class="fas fa-plus-circle text-amber"></i> Add New Pricing Plan / Tier</div>
-                <form id="admin-new-plan-form" class="admin-form-grid" onsubmit="return false;">
-                    <div class="admin-form-group">
-                        <label>Plan Identifier</label>
-                        <input type="text" id="adm-plan-id" placeholder="e.g. enterprise" required>
-                    </div>
-                    <div class="admin-form-group">
-                        <label>Display Name</label>
-                        <input type="text" id="adm-plan-name" placeholder="e.g. Enterprise Intelligence Suite" required>
-                    </div>
-                    <div class="admin-form-group">
-                        <label>Price (USD)</label>
-                        <input type="number" step="0.01" id="adm-plan-price" placeholder="e.g. 199.00" required>
-                    </div>
-                    <div class="admin-form-group">
-                        <label>Billing Period</label>
-                        <input type="text" id="adm-plan-period" placeholder="e.g. / month, one-time" value="one-time" required>
-                    </div>
-                    <div class="admin-form-group">
-                        <label>Badge Tag</label>
-                        <input type="text" id="adm-plan-badge" placeholder="e.g. ENTERPRISE">
-                    </div>
-                    <div class="admin-form-group">
-                        <label>Description</label>
-                        <input type="text" id="adm-plan-desc" placeholder="Short value summary">
-                    </div>
-                    <div class="admin-form-actions">
-                        <button type="button" class="btn-admin-submit" id="btn-save-new-plan">
-                            <i class="fas fa-plus"></i> Save Pricing Plan
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- TAB 3: Incoming Orders Queue -->
-            <div class="admin-tab-pane" id="tab-pane-admin-orders" style="display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <div class="admin-pane-desc" style="margin-bottom:0;">Review incoming orders and crypto payments.</div>
-                    <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.loadAdminOrders()" style="padding:6px 14px; font-size:0.75rem;">
-                        <i class="fas fa-rotate"></i> Refresh Queue
-                    </button>
-                </div>
-                <div class="admin-users-table-box" style="max-height:300px; overflow-y:auto;">
-                    <table class="admin-users-table" id="admin-orders-table-app">
-                        <thead>
-                            <tr>
-                                <th>Order Ref</th>
-                                <th>Operator</th>
-                                <th>Plan / Amount</th>
-                                <th>Rail / Crypto</th>
-                                <th>TXID / Proof</th>
-                                <th>Status</th>
-                                <th style="text-align:right;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-orders-tbody-app">
-                            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading settlement queue...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB 4: Operator Registry & Upgrades -->
-            <div class="admin-tab-pane" id="tab-pane-admin-users" style="display:none;">
-                <form id="admin-upgrade-form" class="admin-upgrade-form" onsubmit="return false;">
-                    <input type="email" id="admin-target-email" placeholder="Enter target user email (e.g. user@target.com)" required>
-                    <select id="admin-target-tier">
-                        <option value="lifetime" selected>Lifetime Tier</option>
-                        <option value="premium">Premium Tier</option>
-                        <option value="free">Free Tier</option>
-                        <option value="admin">Master Admin</option>
-                    </select>
-                    <button type="submit" class="btn-admin-submit" id="btn-admin-submit-upgrade">
-                        <i class="fas fa-arrow-up-right-from-square"></i> Upgrade User
-                    </button>
-                </form>
-                <div class="admin-users-table-box">
-                    <table class="admin-users-table" id="admin-users-table">
-                        <thead>
-                            <tr>
-                                <th>User Email</th>
-                                <th>Current Tier</th>
-                                <th>Probes</th>
-                                <th>Registered</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-users-tbody">
-                            <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB 5: Platform Treasury & Cold Vault -->
-            <div class="admin-tab-pane" id="tab-pane-admin-vault" style="display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                    <div class="admin-pane-desc" style="margin-bottom:0;">Custodial crypto reserves and cold sweep records.</div>
-                    <button type="button" class="btn-admin-submit" onclick="window.SPECTRE_AUTH.loadAdminVault()" style="padding:6px 14px; font-size:0.75rem;">
-                        <i class="fas fa-rotate"></i> Refresh Vault
-                    </button>
-                </div>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:16px;">
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
-                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Total Valuation</div>
-                        <div style="font-size:1.25rem; font-weight:800; color:#fff; margin-top:4px;" id="vault-stat-total-fiat-app">$0.00 USD</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    
-    <!-- ==============================================
-         IMAGE OSINT & EXIF ANALYSIS MODAL
-         ============================================== -->
-    <div class="spectre-modal-backdrop" id="modal-image-analysis">
-        <div class="spectre-modal" style="max-width: 540px;">
-            <div class="modal-header-row">
-                <h3><i class="fas fa-image text-rose"></i> Image Intelligence & Reverse OSINT</h3>
-                <button class="btn-close-modal" onclick="closeImageModal()"><i class="fas fa-xmark"></i></button>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label class="form-label" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:6px;display:block;">Image URL or Image Hash</label>
-                    <input type="text" id="image-osint-url" class="form-input" placeholder="https://example.com/target_avatar.jpg" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:6px;padding:10px;color:#fff;">
-                </div>
-
-                <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Launch reverse visual reconnaissance across multi-engine indexers:</div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-                    <button type="button" class="qa-btn" onclick="launchReverseSearch('google')">
-                        <i class="fab fa-google text-blue"></i>
-                        <span>Google Lens Search</span>
-                    </button>
-                    <button type="button" class="qa-btn" onclick="launchReverseSearch('yandex')">
-                        <i class="fab fa-yandex text-rose"></i>
-                        <span>Yandex Visual Match</span>
-                    </button>
-                    <button type="button" class="qa-btn" onclick="launchReverseSearch('bing')">
-                        <i class="fab fa-microsoft text-cyan"></i>
-                        <span>Bing Visual Search</span>
-                    </button>
-                    <button type="button" class="qa-btn" onclick="launchReverseSearch('tineye')">
-                        <i class="fas fa-eye text-emerald"></i>
-                        <span>TinEye Reverse Index</span>
-                    </button>
-                </div>
-
-                <div id="image-exif-results" style="background:rgba(0,0,0,0.3);border:1px solid var(--border-subtle);border-radius:6px;padding:12px;font-size:0.75rem;font-family:var(--font-mono);display:none;max-height:120px;overflow-y:auto;">
-                    <div class="text-cyan">// EXIF Telemetry Standby</div>
-                </div>
-
-                <button type="button" class="btn-submit-action btn-action-primary" style="margin-top:14px;width:100%;padding:10px;border-radius:9999px;background:linear-gradient(135deg,#00f0ff,#2563eb);color:#000;font-weight:700;border:none;cursor:pointer;" onclick="analyzeImageExif()">
-                    <i class="fas fa-magnifying-glass"></i> Extract EXIF & Geotags
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==============================================
-         REPORT GENERATOR MODAL
-         ============================================== -->
-    <div class="spectre-modal-backdrop" id="modal-report-generator">
-        <div class="spectre-modal" style="max-width: 600px;">
-            <div class="modal-header-row">
-                <h3><i class="fas fa-file-contract text-cyan"></i> Intelligence Dossier Generator</h3>
-                <button class="btn-close-modal" onclick="closeReportModal()"><i class="fas fa-xmark"></i></button>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">
-                    Compile comprehensive forensic evidence, 3D entity topology coordinates, and threat risk calculations into structured intelligence exports.
-                </p>
-
-                <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:8px;padding:14px;margin-bottom:16px;">
-                    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Active Target Dossier</div>
-                    <div id="report-target-name" class="font-mono text-cyan" style="font-size:1.05rem;font-weight:700;">185.199.110.153</div>
-                    <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">Classification: CONFIRMED IP ENTITY &bull; Risk Score: 18/100 (LOW)</div>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
-                    <button type="button" class="btn-submit-action" style="padding:10px;border-radius:6px;background:rgba(0,240,255,0.1);border:1px solid var(--border-cyan);color:var(--accent-cyan);cursor:pointer;" onclick="downloadReportFormat('markdown')">
-                        <i class="fab fa-markdown"></i>
-                        <span>Markdown (.md)</span>
-                    </button>
-                    <button type="button" class="btn-submit-action" style="padding:10px;border-radius:6px;background:rgba(59,130,246,0.1);border:1px solid var(--border-blue);color:#60a5fa;cursor:pointer;" onclick="downloadReportFormat('json')">
-                        <i class="fas fa-code"></i>
-                        <span>Raw JSON</span>
-                    </button>
-                    <button type="button" class="btn-submit-action" style="padding:10px;border-radius:6px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;cursor:pointer;" onclick="printDossierReport()">
-                        <i class="fas fa-print"></i>
-                        <span>Print Dossier</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==============================================
-         GOOGLE DORKS GENERATOR MODAL
-         ============================================== -->
-    <div class="spectre-modal-backdrop" id="modal-dorks-generator">
-        <div class="spectre-modal" style="max-width: 620px;">
-            <div class="modal-header-row">
-                <h3><i class="fas fa-search-nodes text-amber"></i> Google Dork Reconnaissance Generator</h3>
-                <button class="btn-close-modal" onclick="closeDorksModal()"><i class="fas fa-xmark"></i></button>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <div class="form-group" style="margin-bottom:14px;">
-                    <label class="form-label" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:6px;display:block;">Target Domain or Organization</label>
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" id="dork-target-input" class="form-input" placeholder="example.com" value="github.com" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;color:#fff;">
-                        <button type="button" class="btn-submit-action btn-action-primary" style="width:auto;padding:8px 16px;border-radius:6px;background:#2563eb;color:#fff;border:none;cursor:pointer;" onclick="regenerateDorkQueries()">Generate</button>
-                    </div>
-                </div>
-
-                <div id="dorks-queries-list" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;">
-                    <!-- Injected via JS -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
-
-    <!-- Scripts -->
-    <script src="/static/js/app.js?v=20260912_auth_v45"></script>
     <script>
-        function focusOmniSearch() {
-            const input = document.getElementById('omni-input');
-            if (input) {
-                input.focus();
-                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-        function quickFillSearch(type, val) {
-            const input = document.getElementById('omni-input');
-            const btn = document.getElementById('btn-omni-exec');
-            if (input) {
-                input.value = val;
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                if (btn) btn.click();
-            }
-        }
-        function switchMainWorkspaceTab(mode, el) {
-            document.querySelectorAll('.sidebar-nav-menu .nav-item').forEach(item => item.classList.remove('active'));
-            if (el) el.classList.add('active');
-
-            const viewOmni = document.getElementById('view-omni');
-            const viewVectors = document.getElementById('view-vectors');
-            const viewGraph = document.getElementById('view-graph');
-            const viewFeed = document.getElementById('view-feed');
-
-            if (mode === 'omni') {
-                if (viewOmni) viewOmni.style.display = 'block';
-                if (viewVectors) viewVectors.style.display = 'none';
-                if (viewGraph) viewGraph.style.display = 'none';
-                if (viewFeed) viewFeed.style.display = 'none';
-            } else if (mode === 'vectors') {
-                if (viewOmni) viewOmni.style.display = 'none';
-                if (viewVectors) viewVectors.style.display = 'block';
-                if (viewGraph) viewGraph.style.display = 'none';
-                if (viewFeed) viewFeed.style.display = 'none';
-            } else if (mode === 'graph') {
-                if (viewOmni) viewOmni.style.display = 'none';
-                if (viewVectors) viewVectors.style.display = 'none';
-                if (viewGraph) viewGraph.style.display = 'block';
-                if (viewFeed) viewFeed.style.display = 'none';
-                const fitBtn = document.getElementById('btn-graph-fit-dedicated');
-                if (fitBtn) fitBtn.click();
-            } else if (mode === 'feed') {
-                if (viewOmni) viewOmni.style.display = 'none';
-                if (viewVectors) viewVectors.style.display = 'none';
-                if (viewGraph) viewGraph.style.display = 'none';
-                if (viewFeed) viewFeed.style.display = 'block';
-            }
-        }
-        function exportActiveDossier(format) {
-            const btn = document.getElementById('btn-omni-exec');
-            if (btn) {
-                focusOmniSearch();
-            }
-        }
-
-        // Initialize Leaflet Map for Global Intelligence
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                const mapEl = document.getElementById('intel-leaflet-map');
-                if (mapEl && typeof L !== 'undefined') {
-                    const map = L.map('intel-leaflet-map', {
-                        center: [38.5, -98.0],
-                        zoom: 2,
-                        zoomControl: false,
-                        attributionControl: false
-                    });
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        maxZoom: 18,
-                    }).addTo(map);
-
-                    // Add subtle pulsating circles for key intelligence nodes
-                    const locations = [
-                        [40.7128, -74.0060, "New York (AS13335)"],
-                        [52.5200, 13.4050, "Berlin (AS3320)"],
-                        [51.5074, -0.1278, "London (AS2856)"],
-                        [45.4215, -75.6972, "Ottawa (AS812)"],
-                        [52.3676, 4.9041, "Amsterdam (AS1103)"],
-                        [37.7749, -122.4194, "San Francisco (AS15169)"]
-                    ];
-
-                    locations.forEach(loc => {
-                        L.circleMarker([loc[0], loc[1]], {
-                            radius: 5,
-                            color: '#00f0ff',
-                            fillColor: '#00f0ff',
-                            fillOpacity: 0.8,
-                            weight: 2
-                        }).addTo(map);
-                    });
-                }
-            } catch(e) {}
-        });
-    </script>
-<script>
         // Universal Sidebar & Workstation Helper Handlers
         window.focusOmniSearch = function() {
             const input = document.getElementById('omni-input');
