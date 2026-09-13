@@ -3499,3 +3499,19 @@ body.spectre-workspace-body {
 .admin-table tr:hover td {
     background: rgba(255, 255, 255, 0.02);
 }
+
+@media (max-width: 1024px) {
+    .admin-deck-container {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+    }
+    #pane-admin-methods > div,
+    #pane-admin-plans > div,
+    #pane-admin-coupons > div,
+    #pane-admin-vault > div {
+        grid-template-columns: 1fr !important;
+    }
+}
