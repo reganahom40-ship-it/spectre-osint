@@ -115,6 +115,15 @@ def before_request_access_guard():
         if not check_rate_limit(ip):
             return jsonify({'success': False, 'error': 'Rate limit exceeded'}), 429
 
+        # Strictly protect master admin endpoints
+        if request.path.startswith('/api/admin/'):
+            user = get_current_user()
+            if not user or user.get('tier') != 'admin':
+                return jsonify({
+                    'success': False,
+                    'error': 'Unauthorized. Master Administrator privileges required.'
+                }), 403
+
         # Gate privileged operations if not public
         if not any(request.path.startswith(prefix) for prefix in PUBLIC_API_PREFIXES):
             user = get_current_user()
@@ -126,25 +135,29 @@ def before_request_access_guard():
                 }), 403
 
 @app.route('/', methods=['GET'])
-@app.route('/app', methods=['GET'])
-def index():
-    user = get_current_user()
-    if not user and not request.args.get('logged_out'):
-        admin_user = get_user_by_email('admin@spectre.io')
-        if not admin_user:
-            try:
-                admin_user = create_user('admin@spectre.io', 'AdminSpectre2026!', tier='admin')
-            except Exception:
-                admin_user = None
-        if admin_user:
-            login_user(admin_user)
-            user = admin_user
-    return render_template('index.html', user=user)
-
-@app.route('/landing', methods=['GET'])
 def landing_page():
     user = get_current_user()
     return render_template('landing.html', user=user)
+
+@app.route('/app', methods=['GET'])
+def index():
+    user = get_current_user()
+    if not user:
+        return redirect('/?auth=login')
+    return render_template('index.html', user=user)
+
+@app.route('/login', methods=['GET'])
+def login_route():
+    return redirect('/?auth=login')
+
+@app.route('/register', methods=['GET'])
+@app.route('/signup', methods=['GET'])
+def register_route():
+    return redirect('/?auth=register')
+
+@app.route('/pricing', methods=['GET'])
+def pricing_route():
+    return redirect('/#pricing')
 
 @app.route('/checkout', methods=['GET'])
 def dedicated_checkout():

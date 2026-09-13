@@ -707,6 +707,17 @@
                 window.location.href = '/app';
             }
         }
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('auth') === 'login') {
+                if (typeof openAuthModal === 'function') openAuthModal('login');
+            } else if (params.get('auth') === 'register' || params.get('signup') === '1') {
+                if (typeof openAuthModal === 'function') openAuthModal('register');
+            }
+            if (params.get('logged_out') === '1') {
+                if (typeof showToast === 'function') showToast('Session terminated successfully. You are logged out.', 'info');
+            }
+        });
     </script>
 </body>
 </html>
