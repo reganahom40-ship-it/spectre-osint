@@ -1307,11 +1307,354 @@
                 <!-- Injected queries -->
             </div>
         </div>
-    </div>
-
     <!-- ==============================================
-         GLOBAL JAVASCRIPT CONTROLLERS
+         4. MASTER ADMIN & OWNER CONTROL DECK MODAL
          ============================================== -->
+    <div class="modal-backdrop-wrap" id="modal-admin-control-deck" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+        <div class="modal-card-box admin-deck-container" style="background: #090d16; border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 16px; width: 100%; max-width: 1050px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(6, 182, 212, 0.2); overflow: hidden;">
+            
+            <!-- Admin Top Navigation Bar -->
+            <div class="admin-deck-header" style="padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(99,102,241,0.2)); border: 1px solid rgba(6,182,212,0.4); display: flex; align-items: center; justify-content: center; color: var(--accent-cyan);">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.1rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            Master Owner &amp; Dev Control Deck
+                            <span style="font-size: 0.65rem; background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); padding: 2px 8px; border-radius: 12px; font-weight: 700;">ROOT ADMIN</span>
+                        </h2>
+                        <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">Full platform customization: Branding, Coupons, Surcharges, Pricing, Vault &amp; Users</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button type="button" class="btn-bubbly-mini" onclick="refreshAdminData()" title="Sync &amp; Refresh Data">
+                        <i class="fas fa-arrows-rotate"></i> Sync
+                    </button>
+                    <button type="button" onclick="closeAdminModal()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Sub-Navigation Tabs -->
+            <div class="admin-tab-bar" style="display: flex; gap: 6px; padding: 10px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.3); overflow-x: auto;">
+                <button type="button" class="admin-tab-btn active" id="tab-btn-admin-overview" onclick="switchAdminDeckTab('overview')"><i class="fas fa-chart-line"></i> Overview</button>
+                <button type="button" class="admin-tab-btn" id="tab-btn-admin-branding" onclick="switchAdminDeckTab('branding')"><i class="fas fa-wand-magic-sparkles"></i> Platform Branding</button>
+                <button type="button" class="admin-tab-btn" id="tab-btn-admin-coupons" onclick="switchAdminDeckTab('coupons')"><i class="fas fa-tags"></i> Discount Codes</button>
+                <button type="button" class="admin-tab-btn" id="tab-btn-admin-methods" onclick="switchAdminDeckTab('methods')"><i class="fas fa-credit-card"></i> Payment Methods &amp; Fees</button>
+                <button type="button" class="admin-tab-btn" id="tab-btn-admin-plans" onclick="switchAdminDeckTab('plans')"><i class="fas fa-layer-group"></i> Pricing Plans</button>
+                <button type="button" class="admin-tab-btn" id="tab-btn-admin-orders" onclick="switchAdminDeckTab('orders')"><i class="fas fa-receipt"></i> Orders Queue <span class="admin-notif-pill" id="admin-orders-count-badge" style="display:none;">0</span></button>
+                <button type="button" class="admin-tab-btn" id="tab-btn-admin-vault" onclick="switchAdminDeckTab('vault')"><i class="fas fa-vault"></i> Cold Treasury</button>
+                <button type="button" class="admin-tab-btn" id="tab-btn-admin-users" onclick="switchAdminDeckTab('users')"><i class="fas fa-users-gear"></i> User Manager</button>
+            </div>
+
+            <!-- Admin Tab Panes Viewport -->
+            <div class="admin-deck-body" style="padding: 24px; overflow-y: auto; flex: 1;">
+                
+                <!-- PANE 1: OVERVIEW & TELEMETRY -->
+                <div class="admin-pane" id="pane-admin-overview">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div class="admin-metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;"><i class="fas fa-users text-cyan"></i> Total Accounts</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-top: 6px;" id="stat-total-users">0</div>
+                            <div style="font-size: 0.7rem; color: #34d399; margin-top: 4px;"><i class="fas fa-shield-check"></i> Auth &amp; Session Store Active</div>
+                        </div>
+
+                        <div class="admin-metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;"><i class="fas fa-crown text-amber"></i> Paid Upgrades</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: #fcd34d; margin-top: 6px;" id="stat-paid-users">0</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Lifetime &amp; Pro Operators</div>
+                        </div>
+
+                        <div class="admin-metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;"><i class="fas fa-clock text-indigo"></i> Pending Orders</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: #818cf8; margin-top: 6px;" id="stat-pending-orders">0</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Awaiting Mempool / Review</div>
+                        </div>
+
+                        <div class="admin-metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;"><i class="fas fa-vault text-emerald"></i> Available Treasury</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: #34d399; margin-top: 6px;" id="stat-vault-ltc">0.00 LTC</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Cold Storage Ready</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(6,182,212,0.05); border: 1px solid rgba(6,182,212,0.2); border-radius: 12px; padding: 18px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="color: #fff; margin: 0 0 4px; font-size: 0.95rem;"><i class="fas fa-bolt text-cyan"></i> Live OSINT &amp; Recon Engines Operational</h4>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary);">112+ social probes, MaxMind GeoIP, WHOIS CT log scrapers, and Shannon Entropy engines running.</p>
+                        </div>
+                        <button type="button" class="btn-bubbly-mini" onclick="switchAdminDeckTab('branding')"><i class="fas fa-pen"></i> Customize Platform</button>
+                    </div>
+                </div>
+
+                <!-- PANE 2: BRANDING & WHITE-LABELING -->
+                <div class="admin-pane" id="pane-admin-branding" style="display:none;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                        <h3 style="color:#fff; font-size:1rem; margin-top:0; display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-wand-magic-sparkles text-cyan"></i> White-Label &amp; Platform Identity
+                        </h3>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:20px;">Change the title, subtitle, version, and announcements displayed across the app in real-time.</p>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Platform Name (e.g. SPECTRE, SHADOW OSINT)</label>
+                                <input type="text" id="admin-brand-name" class="admin-input-field" placeholder="SPECTRE">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Subtitle / Tagline</label>
+                                <input type="text" id="admin-brand-subtitle" class="admin-input-field" placeholder="OSINT • RECON • INTEL">
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Version Identifier</label>
+                                <input type="text" id="admin-brand-version" class="admin-input-field" placeholder="v8.6.4">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Primary Accent Color</label>
+                                <select id="admin-brand-accent" class="admin-input-field">
+                                    <option value="cyan">Cyber Cyan (#00f0ff)</option>
+                                    <option value="indigo">Deep Indigo (#6366f1)</option>
+                                    <option value="emerald">Emerald Matrix (#10b981)</option>
+                                    <option value="rose">Crimson Neon (#f43f5e)</option>
+                                    <option value="amber">Solar Gold (#f59e0b)</option>
+                                    <option value="purple">Violet Void (#a855f7)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:20px;">
+                            <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Announcement Ticker Banner</label>
+                            <input type="text" id="admin-brand-announcement" class="admin-input-field" placeholder="Live Recon Engines Synchronized. Zero Logs Retained.">
+                        </div>
+
+                        <div style="display:flex; justify-content:flex-end;">
+                            <button type="button" class="btn-bubbly-primary" onclick="saveAdminBranding()"><i class="fas fa-floppy-disk"></i> Save Platform Identity</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 3: DISCOUNT COUPONS -->
+                <div class="admin-pane" id="pane-admin-coupons" style="display:none;">
+                    <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px;">
+                        
+                        <!-- Create Coupon Box -->
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px;">
+                            <h4 style="color:#fff; font-size:0.95rem; margin-top:0;"><i class="fas fa-plus-circle text-cyan"></i> Create Promo Code</h4>
+                            
+                            <div style="margin-bottom:12px;">
+                                <label style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Coupon Code</label>
+                                <input type="text" id="coupon-new-code" class="admin-input-field font-mono" placeholder="SUMMER50" style="text-transform:uppercase;">
+                            </div>
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                                <div>
+                                    <label style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Discount %</label>
+                                    <input type="number" id="coupon-new-percent" class="admin-input-field" placeholder="20" min="0" max="100">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Fixed Discount ($)</label>
+                                    <input type="number" id="coupon-new-amount" class="admin-input-field" placeholder="0" min="0">
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom:16px;">
+                                <label style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Max Uses (0 = Unlimited)</label>
+                                <input type="number" id="coupon-new-maxuses" class="admin-input-field" placeholder="100" min="0">
+                            </div>
+
+                            <button type="button" class="btn-bubbly-primary" style="width:100%; justify-content:center;" onclick="saveNewCoupon()"><i class="fas fa-tag"></i> Create Code</button>
+                        </div>
+
+                        <!-- Coupons Table -->
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px;">
+                            <h4 style="color:#fff; font-size:0.95rem; margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                                <span><i class="fas fa-tags text-indigo"></i> Active Discount Codes</span>
+                                <button type="button" class="btn-bubbly-mini" onclick="loadAdminCoupons()"><i class="fas fa-arrows-rotate"></i> Refresh</button>
+                            </h4>
+
+                            <div style="overflow-x:auto;">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>CODE</th>
+                                            <th>DISCOUNT</th>
+                                            <th>USES</th>
+                                            <th>STATUS</th>
+                                            <th style="text-align:right;">ACTION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-coupons-tbody">
+                                        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading coupons...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- PANE 4: PAYMENT METHODS & SURCHARGES -->
+                <div class="admin-pane" id="pane-admin-methods" style="display:none;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom:20px;">
+                        <h4 style="color:#fff; font-size:0.95rem; margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fas fa-credit-card text-emerald"></i> Payment Methods &amp; Custom Surcharge / Discount Rules</span>
+                            <button type="button" class="btn-bubbly-primary" onclick="openAddPaymentMethodModal()"><i class="fas fa-plus"></i> Add Payment Method</button>
+                        </h4>
+                        <p style="font-size:0.8rem; color:var(--text-muted);">Set custom fees (e.g. +3.5% for Card) or discounts (e.g. -5% for Crypto) and configure deposit addresses.</p>
+
+                        <div style="overflow-x:auto;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>METHOD</th>
+                                        <th>FEE / SURCHARGE</th>
+                                        <th>DESTINATION / CASHTAG</th>
+                                        <th>STATUS</th>
+                                        <th style="text-align:right;">ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-methods-tbody">
+                                    <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading payment methods...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 5: PRICING PLANS -->
+                <div class="admin-pane" id="pane-admin-plans" style="display:none;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                        <h4 style="color:#fff; font-size:0.95rem; margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fas fa-layer-group text-amber"></i> Pricing &amp; Tier Packages</span>
+                            <button type="button" class="btn-bubbly-primary" onclick="openAddPlanModal()"><i class="fas fa-plus"></i> Add New Tier</button>
+                        </h4>
+                        
+                        <div id="admin-plans-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:16px;">
+                            <!-- Injected plans -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 6: ORDERS QUEUE -->
+                <div class="admin-pane" id="pane-admin-orders" style="display:none;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                        <h4 style="color:#fff; font-size:0.95rem; margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fas fa-receipt text-indigo"></i> Customer Order Verification Queue</span>
+                            <button type="button" class="btn-bubbly-mini" onclick="loadAdminOrders()"><i class="fas fa-arrows-rotate"></i> Refresh</button>
+                        </h4>
+
+                        <div style="overflow-x:auto;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ORDER ID</th>
+                                        <th>CUSTOMER</th>
+                                        <th>AMOUNT</th>
+                                        <th>METHOD</th>
+                                        <th>TX PROOF</th>
+                                        <th>STATUS</th>
+                                        <th style="text-align:right;">ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-orders-tbody">
+                                    <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading orders...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 7: COLD TREASURY & VAULT -->
+                <div class="admin-pane" id="pane-admin-vault" style="display:none;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                        
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                            <h4 style="color:#fff; font-size:0.95rem; margin-top:0;"><i class="fas fa-vault text-emerald"></i> On-Chain Vault Balances</h4>
+                            
+                            <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                                <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+                                    <div><strong style="color:#fff;">Litecoin (LTC)</strong><br><small style="color:var(--text-muted);" id="vault-count-ltc">0 wallets generated</small></div>
+                                    <div style="font-size:1.1rem; font-weight:800; color:#34d399;" id="vault-bal-ltc">0.00000000 LTC</div>
+                                </div>
+                                <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+                                    <div><strong style="color:#fff;">Bitcoin (BTC)</strong><br><small style="color:var(--text-muted);" id="vault-count-btc">0 wallets generated</small></div>
+                                    <div style="font-size:1.1rem; font-weight:800; color:#fcd34d;" id="vault-bal-btc">0.00000000 BTC</div>
+                                </div>
+                                <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+                                    <div><strong style="color:#fff;">Ethereum (ETH)</strong><br><small style="color:var(--text-muted);" id="vault-count-eth">0 wallets generated</small></div>
+                                    <div style="font-size:1.1rem; font-weight:800; color:#818cf8;" id="vault-bal-eth">0.00000000 ETH</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cold Sweep Withdrawal -->
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                            <h4 style="color:#fff; font-size:0.95rem; margin-top:0;"><i class="fas fa-paper-plane text-cyan"></i> Sweep to Cold Storage</h4>
+                            
+                            <div style="margin-bottom:12px;">
+                                <label style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Currency</label>
+                                <select id="vault-withdraw-currency" class="admin-input-field">
+                                    <option value="LTC">Litecoin (LTC)</option>
+                                    <option value="BTC">Bitcoin (BTC)</option>
+                                    <option value="ETH">Ethereum (ETH)</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom:12px;">
+                                <label style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Destination Cold Address</label>
+                                <input type="text" id="vault-withdraw-address" class="admin-input-field font-mono" placeholder="ltc1q...">
+                            </div>
+
+                            <div style="margin-bottom:16px;">
+                                <label style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Sweep Amount</label>
+                                <input type="number" id="vault-withdraw-amount" class="admin-input-field" placeholder="1.50" step="0.00000001">
+                            </div>
+
+                            <button type="button" class="btn-bubbly-primary" style="width:100%; justify-content:center;" onclick="executeVaultSweep()"><i class="fas fa-lock"></i> Execute Cold Sweep</button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- PANE 8: USER MANAGER -->
+                <div class="admin-pane" id="pane-admin-users" style="display:none;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                        <h4 style="color:#fff; font-size:0.95rem; margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fas fa-users-gear text-cyan"></i> Operator &amp; User Accounts</span>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="admin-user-search" placeholder="Search email..." class="admin-input-field" style="width:200px; padding:6px 10px;" oninput="filterAdminUsersTable()">
+                                <button type="button" class="btn-bubbly-mini" onclick="loadAdminUsers()"><i class="fas fa-arrows-rotate"></i> Refresh</button>
+                            </div>
+                        </h4>
+
+                        <div style="overflow-x:auto;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>EMAIL</th>
+                                        <th>TIER</th>
+                                        <th>SEARCHES</th>
+                                        <th>LAST LOGIN</th>
+                                        <th style="text-align:right;">ELEVATE ROLE</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-tbody">
+                                    <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading users...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
     <script>
         // Universal Sidebar & Workstation Helper Handlers
         window.focusOmniSearch = function() {
@@ -1873,6 +2216,517 @@
                     </button>
                 </div>
             `).join('');
+        };
+
+        // ==============================================
+        // MASTER ADMIN & OWNER CONTROL DECK CONTROLLERS
+        // ==============================================
+        window.openAdminModal = function() {
+            const modal = document.getElementById('modal-admin-control-deck');
+            if (modal) {
+                modal.style.display = 'flex';
+                window.refreshAdminData();
+            }
+        };
+
+        window.closeAdminModal = function() {
+            const modal = document.getElementById('modal-admin-control-deck');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.switchAdminDeckTab = function(tab) {
+            const tabs = ['overview', 'branding', 'coupons', 'methods', 'plans', 'orders', 'vault', 'users'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-admin-${t}`);
+                const pane = document.getElementById(`pane-admin-${t}`);
+                if (btn) btn.classList.toggle('active', t === tab);
+                if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
+            });
+            if (tab === 'overview') window.loadAdminOverview();
+            if (tab === 'branding') window.loadAdminBranding();
+            if (tab === 'coupons') window.loadAdminCoupons();
+            if (tab === 'methods') window.loadAdminMethods();
+            if (tab === 'plans') window.loadAdminPlans();
+            if (tab === 'orders') window.loadAdminOrders();
+            if (tab === 'vault') window.loadAdminVault();
+            if (tab === 'users') window.loadAdminUsers();
+        };
+
+        window.refreshAdminData = function() {
+            window.loadAdminOverview();
+            window.loadAdminBranding();
+            window.loadAdminCoupons();
+            window.loadAdminMethods();
+            window.loadAdminPlans();
+            window.loadAdminOrders();
+            window.loadAdminVault();
+            window.loadAdminUsers();
+        };
+
+        window.loadAdminOverview = async function() {
+            try {
+                const [usersRes, ordersRes, vaultRes] = await Promise.all([
+                    fetch('/api/admin/users').then(r => r.json()),
+                    fetch('/api/admin/orders').then(r => r.json()),
+                    fetch('/api/admin/vault/summary').then(r => r.json())
+                ]);
+
+                if (usersRes.users) {
+                    const total = usersRes.users.length;
+                    const paid = usersRes.users.filter(u => u.tier !== 'free').length;
+                    document.getElementById('stat-total-users').textContent = total;
+                    document.getElementById('stat-paid-users').textContent = paid;
+                }
+                if (ordersRes.orders) {
+                    const pending = ordersRes.orders.filter(o => o.status === 'pending' || o.status === 'verifying').length;
+                    document.getElementById('stat-pending-orders').textContent = pending;
+                    const badge = document.getElementById('admin-orders-count-badge');
+                    if (badge) {
+                        badge.textContent = pending;
+                        badge.style.display = pending > 0 ? 'inline-block' : 'none';
+                    }
+                }
+                if (vaultRes.vault && vaultRes.vault.totals && vaultRes.vault.totals.ltc) {
+                    document.getElementById('stat-vault-ltc').textContent = `${vaultRes.vault.totals.ltc.available.toFixed(4)} LTC`;
+                }
+            } catch (err) {
+                console.error('Admin overview telemetry error', err);
+            }
+        };
+
+        window.loadAdminBranding = async function() {
+            try {
+                const resp = await fetch('/api/admin/branding');
+                const data = await resp.json();
+                if (data.branding) {
+                    const b = data.branding;
+                    if (document.getElementById('admin-brand-name')) document.getElementById('admin-brand-name').value = b.platform_name || 'SPECTRE';
+                    if (document.getElementById('admin-brand-subtitle')) document.getElementById('admin-brand-subtitle').value = b.platform_subtitle || 'OSINT • RECON • INTEL';
+                    if (document.getElementById('admin-brand-version')) document.getElementById('admin-brand-version').value = b.platform_version || 'v8.6.4';
+                    if (document.getElementById('admin-brand-announcement')) document.getElementById('admin-brand-announcement').value = b.announcement_banner || '';
+                    if (document.getElementById('admin-brand-accent')) document.getElementById('admin-brand-accent').value = b.primary_accent || 'cyan';
+                }
+            } catch (err) {
+                console.error('Admin branding load error', err);
+            }
+        };
+
+        window.saveAdminBranding = async function() {
+            const payload = {
+                platform_name: document.getElementById('admin-brand-name')?.value.trim(),
+                platform_subtitle: document.getElementById('admin-brand-subtitle')?.value.trim(),
+                platform_version: document.getElementById('admin-brand-version')?.value.trim(),
+                announcement_banner: document.getElementById('admin-brand-announcement')?.value.trim(),
+                primary_accent: document.getElementById('admin-brand-accent')?.value
+            };
+            try {
+                const resp = await fetch('/api/admin/branding', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    alert('Platform branding & white-label settings updated!');
+                    // Update header title in real-time
+                    const brandTitles = document.querySelectorAll('.brand-title');
+                    brandTitles.forEach(t => t.textContent = payload.platform_name || 'SPECTRE');
+                }
+            } catch (err) {
+                alert('Failed to save branding: ' + err.message);
+            }
+        };
+
+        window.loadAdminCoupons = async function() {
+            const tbody = document.getElementById('admin-coupons-tbody');
+            if (!tbody) return;
+            try {
+                const resp = await fetch('/api/admin/coupons');
+                const data = await resp.json();
+                if (data.coupons && data.coupons.length > 0) {
+                    tbody.innerHTML = data.coupons.map(c => `
+                        <tr>
+                            <td><strong class="font-mono" style="color:var(--accent-cyan);">${c.code}</strong></td>
+                            <td>${c.discount_percent > 0 ? `<span class="dcard-badge">${c.discount_percent}% OFF</span>` : ''} ${c.discount_amount > 0 ? `<span class="dcard-badge">$${c.discount_amount} OFF</span>` : ''}</td>
+                            <td>${c.times_used} / ${c.max_uses > 0 ? c.max_uses : '∞'}</td>
+                            <td><span class="dcard-badge" style="background:${c.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'};color:${c.is_active ? '#34d399' : '#fca5a5'};">${c.is_active ? 'ACTIVE' : 'DISABLED'}</span></td>
+                            <td style="text-align:right;">
+                                <button type="button" class="btn-bubbly-mini" style="background:rgba(239,68,68,0.15);color:#f87171;border-color:rgba(239,68,68,0.3);" onclick="deleteAdminCoupon('${c.code}')"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No coupon codes created yet.</td></tr>`;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#f87171;">Error loading coupons: ${err.message}</td></tr>`;
+            }
+        };
+
+        window.saveNewCoupon = async function() {
+            const code = document.getElementById('coupon-new-code')?.value.trim();
+            const percent = parseFloat(document.getElementById('coupon-new-percent')?.value || 0);
+            const amount = parseFloat(document.getElementById('coupon-new-amount')?.value || 0);
+            const maxuses = parseInt(document.getElementById('coupon-new-maxuses')?.value || 0);
+
+            if (!code) return alert('Please enter a coupon code.');
+
+            try {
+                const resp = await fetch('/api/admin/coupons', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code, discount_percent: percent, discount_amount: amount, max_uses: maxuses, is_active: 1 })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('coupon-new-code').value = '';
+                    document.getElementById('coupon-new-percent').value = '';
+                    document.getElementById('coupon-new-amount').value = '';
+                    document.getElementById('coupon-new-maxuses').value = '';
+                    window.loadAdminCoupons();
+                } else {
+                    alert(data.error || 'Failed to create coupon');
+                }
+            } catch (err) {
+                alert('Error creating coupon: ' + err.message);
+            }
+        };
+
+        window.deleteAdminCoupon = async function(code) {
+            if (!confirm(`Delete coupon code ${code}?`)) return;
+            try {
+                const resp = await fetch(`/api/admin/coupons/${encodeURIComponent(code)}`, { method: 'DELETE' });
+                const data = await resp.json();
+                if (data.success) window.loadAdminCoupons();
+            } catch (err) {
+                alert('Error deleting coupon: ' + err.message);
+            }
+        };
+
+        window.loadAdminMethods = async function() {
+            const tbody = document.getElementById('admin-methods-tbody');
+            if (!tbody) return;
+            try {
+                const resp = await fetch('/api/admin/methods');
+                const data = await resp.json();
+                if (data.methods && data.methods.length > 0) {
+                    tbody.innerHTML = data.methods.map(m => {
+                        const feeStr = m.fee_percent !== 0 ? (m.fee_percent > 0 ? `+${m.fee_percent}% Fee` : `${m.fee_percent}% Discount`) : (m.fee_fixed > 0 ? `+$${m.fee_fixed}` : 'No Fee (0%)');
+                        return `
+                            <tr>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <i class="${m.icon || 'fas fa-wallet'}" style="color:var(--accent-cyan);"></i>
+                                        <div><strong>${m.name}</strong> <small style="color:var(--text-muted);">(${m.id})</small></div>
+                                    </div>
+                                </td>
+                                <td><span class="dcard-badge" style="background:${m.fee_percent < 0 ? 'rgba(16,185,129,0.15)' : (m.fee_percent > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)')};color:${m.fee_percent < 0 ? '#34d399' : (m.fee_percent > 0 ? '#fca5a5' : '#fff')};">${feeStr}</span></td>
+                                <td><code style="font-size:0.75rem;">${m.recipient_address || '—'}</code></td>
+                                <td><span class="dcard-badge" style="background:${m.is_enabled ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'};color:${m.is_enabled ? '#34d399' : '#fca5a5'};">${m.is_enabled ? 'ENABLED' : 'DISABLED'}</span></td>
+                                <td style="text-align:right;">
+                                    <button type="button" class="btn-bubbly-mini" onclick="editPaymentMethodPrompt('${m.id}', '${m.name}', ${m.fee_percent}, '${m.recipient_address || ''}')"><i class="fas fa-pen"></i> Edit</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#f87171;">Error loading payment methods: ${err.message}</td></tr>`;
+            }
+        };
+
+        window.editPaymentMethodPrompt = async function(id, currentName, currentFee, currentAddress) {
+            const newFee = prompt(`Set Surcharge / Discount % for ${currentName} (e.g. 5 for +5% fee, -10 for 10% off):`, currentFee);
+            if (newFee === null) return;
+            const newAddress = prompt(`Set recipient address/tag/email for ${currentName}:`, currentAddress);
+            if (newAddress === null) return;
+
+            try {
+                const resp = await fetch('/api/admin/methods', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, name: currentName, fee_percent: parseFloat(newFee || 0), recipient_address: newAddress, is_enabled: 1 })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    window.loadAdminMethods();
+                }
+            } catch (err) {
+                alert('Error updating payment method: ' + err.message);
+            }
+        };
+
+        window.openAddPaymentMethodModal = function() {
+            const id = prompt('Enter Payment Method Identifier (e.g. venmo, zelle, revtag, wire):');
+            if (!id) return;
+            const name = prompt('Enter Display Name (e.g. Venmo / Apple Cash):');
+            if (!name) return;
+            const fee = prompt('Enter Surcharge % (e.g. 0 for none, 5 for +5%, -10 for 10% discount):', '0');
+            const address = prompt('Enter recipient handle or instructions (e.g. @MyVenmo / pay@bank.com):', '');
+
+            fetch('/api/admin/methods', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id.toLowerCase().trim(), name: name.trim(), fee_percent: parseFloat(fee || 0), recipient_address: (address || '').trim(), is_enabled: 1 })
+            }).then(r => r.json()).then(data => {
+                if (data.success) window.loadAdminMethods();
+                else alert(data.error || 'Failed to add method');
+            });
+        };
+
+        window.loadAdminPlans = async function() {
+            const grid = document.getElementById('admin-plans-grid');
+            if (!grid) return;
+            try {
+                const resp = await fetch('/api/admin/plans');
+                const data = await resp.json();
+                if (data.plans) {
+                    grid.innerHTML = data.plans.map(p => `
+                        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;">
+                            <div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <h4 style="color:#fff;margin:0;font-size:1rem;">${p.name}</h4>
+                                    <span class="dcard-badge">${p.badge || p.id.toUpperCase()}</span>
+                                </div>
+                                <div style="font-size:1.6rem;font-weight:800;color:var(--accent-cyan);margin:10px 0 6px;">$${Number(p.price).toFixed(2)} <small style="font-size:0.75rem;color:var(--text-muted);">${p.billing_period}</small></div>
+                                <p style="font-size:0.75rem;color:var(--text-secondary);">${p.description || ''}</p>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:14px;">
+                                <button type="button" class="btn-bubbly-mini" style="flex:1;justify-content:center;" onclick="editPlanPricePrompt('${p.id}', '${p.name}', ${p.price})"><i class="fas fa-pen"></i> Edit Price</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                grid.innerHTML = `<div style="color:#f87171;">Error loading plans: ${err.message}</div>`;
+            }
+        };
+
+        window.editPlanPricePrompt = async function(planId, planName, currentPrice) {
+            const newPrice = prompt(`Set new price for ${planName} ($ USD):`, currentPrice);
+            if (newPrice === null) return;
+            try {
+                const resp = await fetch('/api/admin/plans', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: planId, name: planName, price: parseFloat(newPrice || 0), is_active: 1 })
+                });
+                const data = await resp.json();
+                if (data.success) window.loadAdminPlans();
+            } catch (err) {
+                alert('Error updating plan: ' + err.message);
+            }
+        };
+
+        window.openAddPlanModal = function() {
+            const id = prompt('Enter Tier ID (e.g. enterprise, vip, daypass):');
+            if (!id) return;
+            const name = prompt('Enter Tier Name (e.g. Enterprise Syndicate):');
+            if (!name) return;
+            const price = prompt('Enter Price ($ USD):', '49.00');
+            const period = prompt('Enter Billing Period (e.g. / month, one-time, / year):', 'one-time');
+
+            fetch('/api/admin/plans', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id.toLowerCase().trim(), name: name.trim(), price: parseFloat(price || 0), billing_period: period, is_active: 1 })
+            }).then(r => r.json()).then(data => {
+                if (data.success) window.loadAdminPlans();
+                else alert(data.error || 'Failed to add tier');
+            });
+        };
+
+        window.loadAdminOrders = async function() {
+            const tbody = document.getElementById('admin-orders-tbody');
+            if (!tbody) return;
+            try {
+                const resp = await fetch('/api/admin/orders');
+                const data = await resp.json();
+                if (data.orders && data.orders.length > 0) {
+                    tbody.innerHTML = data.orders.map(o => `
+                        <tr>
+                            <td><code class="font-mono" style="color:var(--accent-cyan);">${o.id}</code></td>
+                            <td><strong style="color:#fff;">${o.email}</strong><br><small style="color:var(--text-muted);">${o.plan_id.toUpperCase()}</small></td>
+                            <td><strong style="color:#fcd34d;">$${Number(o.amount).toFixed(2)}</strong></td>
+                            <td><span class="dcard-badge">${o.payment_method.toUpperCase()}</span></td>
+                            <td><code style="font-size:0.7rem;">${o.tx_hash ? o.tx_hash.slice(0, 16) + '...' : 'Pending'}</code></td>
+                            <td><span class="dcard-badge" style="background:${o.status === 'approved' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'};color:${o.status === 'approved' ? '#34d399' : '#fbbf24'};">${o.status.toUpperCase()}</span></td>
+                            <td style="text-align:right;">
+                                ${o.status !== 'approved' ? `
+                                    <button type="button" class="btn-bubbly-mini" style="background:rgba(16,185,129,0.15);color:#34d399;border-color:rgba(16,185,129,0.3);" onclick="approveAdminOrder('${o.id}')"><i class="fas fa-check"></i> Approve</button>
+                                    <button type="button" class="btn-bubbly-mini" style="background:rgba(239,68,68,0.15);color:#f87171;border-color:rgba(239,68,68,0.3);" onclick="rejectAdminOrder('${o.id}')"><i class="fas fa-xmark"></i></button>
+                                ` : `<span style="font-size:0.72rem;color:#34d399;font-weight:700;"><i class="fas fa-check-double"></i> Activated</span>`}
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No customer orders recorded yet.</td></tr>`;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#f87171;">Error loading orders: ${err.message}</td></tr>`;
+            }
+        };
+
+        window.approveAdminOrder = async function(orderId) {
+            if (!confirm(`Approve order ${orderId} and instantly elevate customer account?`)) return;
+            try {
+                const resp = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes: 'Manually verified via Root Admin Deck' })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    window.loadAdminOrders();
+                    window.loadAdminOverview();
+                    window.loadAdminUsers();
+                } else {
+                    alert(data.error || 'Approval failed');
+                }
+            } catch (err) {
+                alert('Error approving order: ' + err.message);
+            }
+        };
+
+        window.rejectAdminOrder = async function(orderId) {
+            const reason = prompt('Reason for rejection:', 'Unconfirmed transaction hash');
+            if (reason === null) return;
+            try {
+                const resp = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    window.loadAdminOrders();
+                    window.loadAdminOverview();
+                }
+            } catch (err) {
+                alert('Error rejecting order: ' + err.message);
+            }
+        };
+
+        window.loadAdminVault = async function() {
+            try {
+                const resp = await fetch('/api/admin/vault/summary');
+                const data = await resp.json();
+                if (data.vault && data.vault.totals) {
+                    const t = data.vault.totals;
+                    if (t.ltc) {
+                        document.getElementById('vault-bal-ltc').textContent = `${t.ltc.available.toFixed(8)} LTC`;
+                        document.getElementById('vault-count-ltc').textContent = `${t.ltc.wallet_count} dedicated wallets`;
+                    }
+                    if (t.btc) {
+                        document.getElementById('vault-bal-btc').textContent = `${t.btc.available.toFixed(8)} BTC`;
+                        document.getElementById('vault-count-btc').textContent = `${t.btc.wallet_count} dedicated wallets`;
+                    }
+                    if (t.eth) {
+                        document.getElementById('vault-bal-eth').textContent = `${t.eth.available.toFixed(8)} ETH`;
+                        document.getElementById('vault-count-eth').textContent = `${t.eth.wallet_count} dedicated wallets`;
+                    }
+                }
+            } catch (err) {
+                console.error('Vault load error', err);
+            }
+        };
+
+        window.executeVaultSweep = async function() {
+            const currency = document.getElementById('vault-withdraw-currency')?.value;
+            const address = document.getElementById('vault-withdraw-address')?.value.trim();
+            const amount = parseFloat(document.getElementById('vault-withdraw-amount')?.value || 0);
+
+            if (!address || amount <= 0) {
+                return alert('Please enter a destination address and valid numeric amount.');
+            }
+
+            if (!confirm(`Execute cold sweep of ${amount} ${currency} to ${address}?`)) return;
+
+            try {
+                const resp = await fetch('/api/admin/vault/withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currency: currency, destination_address: address, amount: amount, notes: 'Cold storage sweep' })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    alert(`Sweep successful! TX ID: ${data.tx_hash || data.id}`);
+                    document.getElementById('vault-withdraw-address').value = '';
+                    document.getElementById('vault-withdraw-amount').value = '';
+                    window.loadAdminVault();
+                } else {
+                    alert(data.error || 'Withdrawal failed');
+                }
+            } catch (err) {
+                alert('Error executing sweep: ' + err.message);
+            }
+        };
+
+        window.loadAdminUsers = async function() {
+            const tbody = document.getElementById('admin-users-tbody');
+            if (!tbody) return;
+            try {
+                const resp = await fetch('/api/admin/users');
+                const data = await resp.json();
+                if (data.users && data.users.length > 0) {
+                    window.__cachedAdminUsers = data.users;
+                    renderAdminUsersList(data.users);
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#f87171;">Error loading users: ${err.message}</td></tr>`;
+            }
+        };
+
+        function renderAdminUsersList(users) {
+            const tbody = document.getElementById('admin-users-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td><code>#${u.id}</code></td>
+                    <td><strong style="color:#fff;">${u.email}</strong></td>
+                    <td><span class="dcard-badge" style="background:${u.tier === 'admin' ? 'rgba(239,68,68,0.15)' : (u.tier === 'lifetime' ? 'rgba(245,158,11,0.15)' : 'rgba(59,130,246,0.15)')};color:${u.tier === 'admin' ? '#fca5a5' : (u.tier === 'lifetime' ? '#fcd34d' : '#93c5fd')};">${u.tier.toUpperCase()}</span></td>
+                    <td><span class="font-mono">${u.searches_count || 0}</span></td>
+                    <td><small style="color:var(--text-muted);">${u.last_login || 'Never'}</small></td>
+                    <td style="text-align:right;">
+                        <select class="admin-input-field" style="width:auto;display:inline-block;padding:4px 8px;font-size:0.75rem;" onchange="elevateUserTier('${u.email}', this.value)">
+                            <option value="free" ${u.tier === 'free' ? 'selected' : ''}>Free</option>
+                            <option value="premium" ${u.tier === 'premium' ? 'selected' : ''}>Pro Tier</option>
+                            <option value="lifetime" ${u.tier === 'lifetime' ? 'selected' : ''}>Lifetime</option>
+                            <option value="admin" ${u.tier === 'admin' ? 'selected' : ''}>Master Admin</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.filterAdminUsersTable = function() {
+            const query = document.getElementById('admin-user-search')?.value.toLowerCase().trim();
+            if (!window.__cachedAdminUsers) return;
+            if (!query) {
+                renderAdminUsersList(window.__cachedAdminUsers);
+            } else {
+                const filtered = window.__cachedAdminUsers.filter(u => u.email.toLowerCase().includes(query));
+                renderAdminUsersList(filtered);
+            }
+        };
+
+        window.elevateUserTier = async function(email, tier) {
+            try {
+                const resp = await fetch('/api/admin/upgrade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, tier: tier, notes: 'Changed via Owner Admin Deck' })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    window.loadAdminUsers();
+                    window.loadAdminOverview();
+                } else {
+                    alert(data.error || 'Failed to update user tier');
+                }
+            } catch (err) {
+                alert('Error updating user: ' + err.message);
+            }
         };
 
         // DOM Ready Listeners

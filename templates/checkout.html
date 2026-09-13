@@ -168,9 +168,24 @@
                         </div>
                     </div>
 
-                    <!-- Estimated Amount -->
-                    <div class="chk-calc-row">
-                        <span class="chk-calc-label">Total to Pay:</span>
+                    <!-- Discount Coupon Promo Code Box -->
+                    <div class="chk-input-wrap" style="margin-top: 14px;">
+                        <label class="chk-input-label">Have a Promo / Discount Code?</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="chk-coupon-code" class="chk-text-input font-mono" placeholder="Enter coupon (e.g. ONYX20)" style="text-transform: uppercase;">
+                            <button type="button" class="btn-bubbly-mini" id="btn-apply-coupon" onclick="applyCouponCode()" style="white-space: nowrap; padding: 0 16px;">
+                                Apply
+                            </button>
+                        </div>
+                        <div id="chk-coupon-msg" style="font-size: 0.75rem; margin-top: 5px; display: none;"></div>
+                    </div>
+
+                    <!-- Estimated Amount & Fee Breakdown -->
+                    <div class="chk-calc-row" style="margin-top: 16px;">
+                        <div>
+                            <span class="chk-calc-label">Total to Pay:</span>
+                            <div id="chk-fee-notice" style="font-size: 0.7rem; color: var(--text-muted);">Includes method fee &amp; discounts</div>
+                        </div>
                         <span class="chk-calc-amount font-mono" id="chk-est-amount">1.1647 LTC ($99.00 USD)</span>
                     </div>
 

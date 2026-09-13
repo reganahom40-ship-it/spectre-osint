@@ -112,11 +112,37 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS coupons (
+                code TEXT PRIMARY KEY COLLATE NOCASE,
+                discount_percent REAL DEFAULT 0,
+                discount_amount REAL DEFAULT 0,
+                max_uses INTEGER DEFAULT 0,
+                times_used INTEGER DEFAULT 0,
+                is_active INTEGER DEFAULT 1,
+                expires_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS custom_payment_methods (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                fee_percent REAL DEFAULT 0.0,
+                fee_fixed REAL DEFAULT 0.0,
+                recipient_address TEXT DEFAULT '',
+                instructions TEXT DEFAULT '',
+                icon TEXT DEFAULT 'fas fa-wallet',
+                badge TEXT DEFAULT '',
+                is_enabled INTEGER DEFAULT 1,
+                display_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
             CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
             CREATE INDEX IF NOT EXISTS idx_vault_currency ON vault_wallets(currency);
             CREATE INDEX IF NOT EXISTS idx_vault_address ON vault_wallets(address);
             CREATE INDEX IF NOT EXISTS idx_withdrawals_created ON vault_withdrawals(created_at);
+            CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
         """)
         conn.commit()
 
@@ -420,11 +446,200 @@ def seed_default_plans_and_settings():
                 INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
                 VALUES ('premium', 'Pro Operator', 19.00, '/ month', 'Professional grade intelligence suite for active investigators.', 'POPULAR', ?, 1, 1)
             """, (default_pro_features,))
+        cursor.execute("SELECT COUNT(*) as cnt FROM custom_payment_methods")
+        if cursor.fetchone()['cnt'] == 0:
+            methods = [
+                ('card', 'Credit / Debit Card (Stripe / Bank)', 3.5, 0.30, '', 'Instant activation via secured checkout', 'fas fa-credit-card', 'INSTANT', 1, 1),
+                ('crypto', 'Cryptocurrency (LTC / BTC / ETH / SOL)', -5.0, 0.00, 'ltc1q4m9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8', 'Decentralized anonymous blockchain settlement (5% OFF)', 'fa-brands fa-bitcoin', '5% DISCOUNT', 1, 2),
+                ('cashapp', 'Cash App / Apple Pay', 0.0, 0.00, '$SpectreIntel', 'Send exact USD amount to $SpectreIntel and include your email in the note', 'fas fa-dollar-sign', 'POPULAR', 1, 3),
+                ('paypal', 'PayPal (Friends & Family / Invoice)', 5.0, 0.00, 'payments@spectre.io', 'Send via PayPal Friends & Family to avoid holds', 'fa-brands fa-paypal', '+5% FEE', 1, 4),
+                ('zelle', 'Zelle / Bank Direct', 0.0, 0.00, 'pay@spectre.io', 'Fast bank transfer with zero network fees', 'fas fa-building-columns', 'ZERO FEES', 1, 5),
+                ('solana', 'Solana (SOL / USDC)', -5.0, 0.00, 'SPECTRE9vzp0wx88m3q25974c4q5ek6l859e2y7mrh6u8', 'Lightning-fast 400ms Solana confirmation', 'fas fa-bolt', '5% DISCOUNT', 1, 6),
+                ('monero', 'Monero (XMR)', -10.0, 0.00, '888tNkZrPN6JsEihUmJ46e7f1K49...', '100% Anonymous untraceable private transaction (10% OFF)', 'fas fa-mask', '10% DISCOUNT', 1, 7)
+            ]
+            for m in methods:
+                conn.execute("""
+                    INSERT INTO custom_payment_methods (id, name, fee_percent, fee_fixed, recipient_address, instructions, icon, badge, is_enabled, display_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, m)
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM coupons")
+        if cursor.fetchone()['cnt'] == 0:
+            # Seed default starter coupon codes
             conn.execute("""
-                INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
-                VALUES ('lifetime', 'Lifetime Operator', 99.00, 'one-time', 'Permanent uncapped intelligence command for elite operators.', 'BEST VALUE', ?, 1, 2)
-            """, (default_lifetime_features,))
+                INSERT INTO coupons (code, discount_percent, discount_amount, max_uses, times_used, is_active)
+                VALUES ('ONYX20', 20.0, 0.0, 100, 0, 1)
+            """)
+            conn.execute("""
+                INSERT INTO coupons (code, discount_percent, discount_amount, max_uses, times_used, is_active)
+                VALUES ('LAUNCH50', 50.0, 0.0, 50, 0, 1)
+            """)
         conn.commit()
+
+# =========================================================================
+# COUPONS & PROMO CODES ENGINE
+# =========================================================================
+def list_coupons() -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM coupons ORDER BY created_at DESC")
+        return [dict(r) for r in cursor.fetchall()]
+
+def get_coupon(code: str) -> Optional[Dict[str, Any]]:
+    if not code:
+        return None
+    code_norm = code.strip().upper()
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM coupons WHERE code = ?", (code_norm,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def save_coupon(code: str, discount_percent: float = 0.0, discount_amount: float = 0.0,
+                max_uses: int = 0, is_active: int = 1, expires_at: Optional[str] = None) -> Dict[str, Any]:
+    code_norm = code.strip().upper()
+    if not code_norm:
+        raise ValueError("Coupon code cannot be blank.")
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT INTO coupons (code, discount_percent, discount_amount, max_uses, is_active, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET
+                discount_percent = excluded.discount_percent,
+                discount_amount = excluded.discount_amount,
+                max_uses = excluded.max_uses,
+                is_active = excluded.is_active,
+                expires_at = excluded.expires_at
+        """, (code_norm, float(discount_percent), float(discount_amount), int(max_uses), int(is_active), expires_at))
+        conn.commit()
+    return get_coupon(code_norm)
+
+def delete_coupon(code: str) -> bool:
+    code_norm = code.strip().upper()
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM coupons WHERE code = ?", (code_norm,))
+        conn.commit()
+        return cursor.rowcount > 0
+
+def validate_coupon(code: str, base_price: float) -> Dict[str, Any]:
+    coupon = get_coupon(code)
+    if not coupon:
+        return {'valid': False, 'error': 'Invalid coupon code.'}
+    if not coupon['is_active']:
+        return {'valid': False, 'error': 'This coupon has been disabled.'}
+    if coupon['max_uses'] > 0 and coupon['times_used'] >= coupon['max_uses']:
+        return {'valid': False, 'error': 'This coupon has reached its maximum usage limit.'}
+    if coupon.get('expires_at'):
+        try:
+            exp = datetime.strptime(coupon['expires_at'], '%Y-%m-%d %H:%M:%SZ')
+            if datetime.utcnow() > exp:
+                return {'valid': False, 'error': 'This coupon has expired.'}
+        except Exception:
+            pass
+
+    discount = 0.0
+    if coupon['discount_percent'] > 0:
+        discount += (base_price * (coupon['discount_percent'] / 100.0))
+    if coupon['discount_amount'] > 0:
+        discount += coupon['discount_amount']
+
+    discount = min(base_price, max(0.0, round(discount, 2)))
+    final_price = max(0.0, round(base_price - discount, 2))
+
+    return {
+        'valid': True,
+        'code': coupon['code'],
+        'discount_percent': coupon['discount_percent'],
+        'discount_amount': coupon['discount_amount'],
+        'discount_total': discount,
+        'final_price': final_price
+    }
+
+def increment_coupon_usage(code: str):
+    if not code:
+        return
+    code_norm = code.strip().upper()
+    with get_db_connection() as conn:
+        conn.execute("UPDATE coupons SET times_used = times_used + 1 WHERE code = ?", (code_norm,))
+        conn.commit()
+
+# =========================================================================
+# CUSTOM PAYMENT METHODS & SURCHARGE FEES ENGINE
+# =========================================================================
+def list_payment_methods(include_disabled: bool = False) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if include_disabled:
+            cursor.execute("SELECT * FROM custom_payment_methods ORDER BY display_order ASC, name ASC")
+        else:
+            cursor.execute("SELECT * FROM custom_payment_methods WHERE is_enabled = 1 ORDER BY display_order ASC, name ASC")
+        return [dict(r) for r in cursor.fetchall()]
+
+def get_payment_method(method_id: str) -> Optional[Dict[str, Any]]:
+    if not method_id:
+        return None
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM custom_payment_methods WHERE id = ?", (method_id.strip().lower(),))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def save_payment_method(method_id: str, name: str, fee_percent: float = 0.0, fee_fixed: float = 0.0,
+                        recipient_address: str = '', instructions: str = '', icon: str = 'fas fa-wallet',
+                        badge: str = '', is_enabled: int = 1, display_order: int = 0) -> Dict[str, Any]:
+    mid = method_id.strip().lower()
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT INTO custom_payment_methods (id, name, fee_percent, fee_fixed, recipient_address, instructions, icon, badge, is_enabled, display_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                fee_percent = excluded.fee_percent,
+                fee_fixed = excluded.fee_fixed,
+                recipient_address = excluded.recipient_address,
+                instructions = excluded.instructions,
+                icon = excluded.icon,
+                badge = excluded.badge,
+                is_enabled = excluded.is_enabled,
+                display_order = excluded.display_order
+        """, (mid, name, float(fee_percent), float(fee_fixed), recipient_address.strip(),
+              instructions.strip(), icon.strip(), badge.strip(), int(is_enabled), int(display_order)))
+        conn.commit()
+    return get_payment_method(mid)
+
+def delete_payment_method(method_id: str) -> bool:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM custom_payment_methods WHERE id = ?", (method_id.strip().lower(),))
+        conn.commit()
+        return cursor.rowcount > 0
+
+def calculate_checkout_total(base_price: float, coupon_code: Optional[str] = None, payment_method_id: Optional[str] = None) -> Dict[str, Any]:
+    current_price = base_price
+    coupon_data = None
+    if coupon_code:
+        v_res = validate_coupon(coupon_code, base_price)
+        if v_res.get('valid'):
+            coupon_data = v_res
+            current_price = v_res['final_price']
+
+    method = get_payment_method(payment_method_id) if payment_method_id else None
+    fee_amount = 0.0
+    if method:
+        if method['fee_percent'] != 0.0:
+            fee_amount += (current_price * (method['fee_percent'] / 100.0))
+        if method['fee_fixed'] != 0.0:
+            fee_amount += method['fee_fixed']
+
+    final_total = max(0.0, round(current_price + fee_amount, 2))
+    return {
+        'base_price': base_price,
+        'coupon': coupon_data,
+        'payment_method': method,
+        'fee_amount': round(fee_amount, 2),
+        'final_total': final_total
+    }
 
 # =========================================================================
 # ORDERS & PAYMENT VERIFICATION PIPELINE

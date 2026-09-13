@@ -29,8 +29,10 @@ from modules.payment_verifier import (
 from modules.db import (
     init_db, create_user, authenticate_user, update_user_tier,
     list_all_users, record_payment, increment_user_searches, get_user_by_email,
-    get_all_settings, set_setting, list_plans, get_plan, save_plan, delete_plan,
-    create_order, get_order, update_order_proof, list_orders, approve_order, reject_order
+    get_all_settings, get_setting, set_setting, list_plans, get_plan, save_plan, delete_plan,
+    create_order, get_order, update_order_proof, list_orders, approve_order, reject_order,
+    list_coupons, get_coupon, save_coupon, delete_coupon, validate_coupon, increment_coupon_usage,
+    list_payment_methods, get_payment_method, save_payment_method, delete_payment_method, calculate_checkout_total
 )
 from modules.auth import (
     get_current_user, login_user, logout_user, is_admin,
@@ -252,6 +254,35 @@ def api_payment_config():
         return '', 204
     return jsonify(get_payment_config()), 200
 
+@app.route('/api/public/config', methods=['GET', 'OPTIONS'])
+def api_public_config():
+    if request.method == 'OPTIONS':
+        return '', 204
+    settings = get_all_settings()
+    return jsonify({
+        'success': True,
+        'branding': {
+            'platform_name': settings.get('PLATFORM_NAME', 'SPECTRE'),
+            'platform_subtitle': settings.get('PLATFORM_SUBTITLE', 'OSINT • RECON • INTEL'),
+            'platform_version': settings.get('PLATFORM_VERSION', 'v8.6.4'),
+            'announcement_banner': settings.get('ANNOUNCEMENT_BANNER', 'Live Recon Engines Online. Zero Logs Retained.'),
+            'primary_accent': settings.get('PRIMARY_ACCENT', 'cyan')
+        },
+        'payment_methods': list_payment_methods(include_disabled=False),
+        'plans': list_plans(include_inactive=False)
+    }), 200
+
+@app.route('/api/public/coupon/validate', methods=['POST', 'OPTIONS'])
+def api_public_coupon_validate():
+    if request.method == 'OPTIONS':
+        return '', 204
+    code = (get_param('code') or get_param('coupon') or '').strip()
+    plan_id = (get_param('plan_id') or 'lifetime').strip().lower()
+    plan = get_plan(plan_id)
+    base_price = float(plan['price']) if plan else 99.0
+    res = validate_coupon(code, base_price)
+    return jsonify(res), (200 if res.get('valid') else 400)
+
 @app.route('/api/payment/create-order', methods=['POST', 'OPTIONS'])
 def api_payment_create_order():
     if request.method == 'OPTIONS':
@@ -267,19 +298,32 @@ def api_payment_create_order():
 
     plan_id = (get_param('plan_id') or get_param('tier') or 'lifetime').strip().lower()
     method = (get_param('method') or get_param('payment_method') or 'ltc').strip().lower()
+    coupon_code = (get_param('coupon_code') or get_param('coupon') or '').strip()
 
-    # Determine price from plan or fallback
+    # Determine base price
     plan = get_plan(plan_id)
     if plan:
-        amount = float(plan['price'])
+        base_amount = float(plan['price'])
         plan_name = plan['name']
     else:
-        amount = 99.0 if plan_id == 'lifetime' else 19.0
+        base_amount = 99.0 if plan_id == 'lifetime' else 19.0
         plan_name = 'Lifetime Operator' if plan_id == 'lifetime' else 'Pro Analyst'
+
+    # Calculate dynamic pricing with coupon & payment method fees
+    checkout_calc = calculate_checkout_total(base_amount, coupon_code, method)
+    amount = checkout_calc['final_total']
+
+    if checkout_calc.get('coupon'):
+        increment_coupon_usage(checkout_calc['coupon']['code'])
 
     cfg = get_payment_config()
     crypto_amount = 0.0
     deposit_address = ''
+
+    # Lookup custom payment method if configured
+    custom_method = get_payment_method(method)
+    if custom_method and custom_method.get('recipient_address'):
+        deposit_address = custom_method['recipient_address']
 
     if method in ('ltc', 'btc', 'eth'):
         crypto_amount = calculate_crypto_amount(amount, method)
@@ -287,14 +331,18 @@ def api_payment_create_order():
             # Generate a 100% dedicated, encrypted custodial wallet for this order
             custodial = generate_custodial_wallet(method, f"SPEC-ORD-{int(time.time())}")
             deposit_address = custodial['address']
-        except Exception as e:
-            deposit_address = cfg.get(f'{method.upper()}_ADDRESS', '')
+        except Exception:
+            if not deposit_address:
+                deposit_address = cfg.get(f'{method.upper()}_ADDRESS', '')
     elif method == 'paypal':
-        deposit_address = cfg.get('PAYPAL_EMAIL', '')
+        if not deposit_address:
+            deposit_address = cfg.get('PAYPAL_EMAIL', '')
     elif method == 'cashapp':
-        deposit_address = cfg.get('CASHAPP_TAG', '')
+        if not deposit_address:
+            deposit_address = cfg.get('CASHAPP_TAG', '')
     elif method == 'card':
-        deposit_address = 'Credit/Debit Gateway'
+        if not deposit_address:
+            deposit_address = 'Credit/Debit Gateway'
 
     order = create_order(
         email=email,
@@ -309,15 +357,20 @@ def api_payment_create_order():
     return jsonify({
         'success': True,
         'order': order,
+        'checkout_breakdown': checkout_calc,
         'payment_instructions': {
             'order_id': order['id'],
             'email': email,
             'plan_id': plan_id,
             'plan_name': plan_name,
             'amount_usd': amount,
+            'base_amount': base_amount,
+            'fee_amount': checkout_calc.get('fee_amount', 0.0),
+            'coupon_discount': checkout_calc.get('coupon', {}).get('discount_total', 0.0) if checkout_calc.get('coupon') else 0.0,
             'crypto_amount': crypto_amount,
             'method': method,
             'deposit_address': deposit_address,
+            'instructions': custom_method['instructions'] if custom_method else '',
             'paypal_link': cfg.get('PAYPAL_LINK', ''),
             'paypal_email': cfg.get('PAYPAL_EMAIL', ''),
             'cashapp_tag': cfg.get('CASHAPP_TAG', ''),
@@ -582,6 +635,102 @@ def api_admin_delete_plan(plan_id):
         return jsonify({'success': True, 'message': f'Plan {plan_id} deactivated.'}), 200
     deleted = delete_plan(plan_id)
     return jsonify({'success': deleted, 'message': f'Plan {plan_id} deleted.' if deleted else 'Plan not found.'}), 200
+
+# =========================================================================
+# ADMIN COUPONS & DISCOUNT ENGINE
+# =========================================================================
+@app.route('/api/admin/coupons', methods=['GET', 'POST', 'OPTIONS'])
+@admin_required
+def api_admin_coupons():
+    if request.method == 'OPTIONS':
+        return '', 204
+    if request.method == 'GET':
+        return jsonify({'success': True, 'coupons': list_coupons()}), 200
+
+    code = (get_param('code') or '').strip().upper()
+    if not code:
+        return jsonify({'success': False, 'error': 'Coupon code is required.'}), 400
+
+    pct = float(get_param('discount_percent') or 0.0)
+    amt = float(get_param('discount_amount') or 0.0)
+    max_uses = int(get_param('max_uses') or 0)
+    is_active = int(get_param('is_active') if get_param('is_active') is not None else 1)
+    expires_at = get_param('expires_at') or None
+
+    saved = save_coupon(code, pct, amt, max_uses, is_active, expires_at)
+    return jsonify({'success': True, 'message': f'Coupon {code} saved.', 'coupon': saved}), 200
+
+@app.route('/api/admin/coupons/<code>', methods=['DELETE', 'OPTIONS'])
+@admin_required
+def api_admin_delete_coupon(code):
+    if request.method == 'OPTIONS':
+        return '', 204
+    deleted = delete_coupon(code)
+    return jsonify({'success': deleted, 'message': f'Coupon {code} deleted.' if deleted else 'Coupon not found.'}), 200
+
+# =========================================================================
+# ADMIN PAYMENT METHODS & SURCHARGE/FEE CONFIGURATION
+# =========================================================================
+@app.route('/api/admin/methods', methods=['GET', 'POST', 'OPTIONS'])
+@admin_required
+def api_admin_payment_methods():
+    if request.method == 'OPTIONS':
+        return '', 204
+    if request.method == 'GET':
+        return jsonify({'success': True, 'methods': list_payment_methods(include_disabled=True)}), 200
+
+    mid = (get_param('id') or get_param('method_id') or '').strip().lower()
+    name = get_param('name').strip()
+    if not mid or not name:
+        return jsonify({'success': False, 'error': 'Payment method identifier and name are required.'}), 400
+
+    fee_percent = float(get_param('fee_percent') or 0.0)
+    fee_fixed = float(get_param('fee_fixed') or 0.0)
+    recipient_address = get_param('recipient_address') or ''
+    instructions = get_param('instructions') or ''
+    icon = get_param('icon') or 'fas fa-wallet'
+    badge = get_param('badge') or ''
+    is_enabled = int(get_param('is_enabled') if get_param('is_enabled') is not None else 1)
+    display_order = int(get_param('display_order') or 0)
+
+    saved = save_payment_method(mid, name, fee_percent, fee_fixed, recipient_address, instructions, icon, badge, is_enabled, display_order)
+    return jsonify({'success': True, 'message': f'Payment method {name} saved.', 'method': saved}), 200
+
+@app.route('/api/admin/methods/<method_id>', methods=['DELETE', 'OPTIONS'])
+@admin_required
+def api_admin_delete_payment_method(method_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    deleted = delete_payment_method(method_id)
+    return jsonify({'success': deleted, 'message': f'Payment method {method_id} deleted.' if deleted else 'Method not found.'}), 200
+
+# =========================================================================
+# ADMIN BRANDING & WHITE-LABEL CUSTOMIZATION
+# =========================================================================
+@app.route('/api/admin/branding', methods=['GET', 'POST', 'OPTIONS'])
+@admin_required
+def api_admin_branding():
+    if request.method == 'OPTIONS':
+        return '', 204
+    keys = ['PLATFORM_NAME', 'PLATFORM_SUBTITLE', 'PLATFORM_VERSION', 'ANNOUNCEMENT_BANNER', 'PRIMARY_ACCENT']
+    if request.method == 'GET':
+        settings = get_all_settings()
+        return jsonify({
+            'success': True,
+            'branding': {k.lower(): settings.get(k, '') for k in keys}
+        }), 200
+
+    for k in keys:
+        val = get_param(k.lower()) or get_param(k)
+        if val is not None and val != '':
+            set_setting(k, val)
+
+    settings = get_all_settings()
+    return jsonify({
+        'success': True,
+        'message': 'Platform branding configuration updated.',
+        'branding': {k.lower(): settings.get(k, '') for k in keys}
+    }), 200
 
 # =========================================================================
 # ADMIN ORDERS & PAYMENT VERIFICATION QUEUE

@@ -335,3 +335,105 @@ def test_admin_settings_and_plans_api():
     # 6. Admin delete plan
     del_resp = client.delete('/api/admin/plans/test_enterprise')
     assert del_resp.status_code == 200
+
+def test_admin_coupons_and_discounts():
+    client = app.test_client()
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+
+    # 1. Create a 25% discount coupon
+    c_res = client.post('/api/admin/coupons', json={
+        'code': 'VIP25',
+        'discount_percent': 25.0,
+        'discount_amount': 0.0,
+        'max_uses': 10,
+        'is_active': 1
+    })
+    assert c_res.status_code == 200
+    c_data = json.loads(c_res.data)
+    assert c_data['coupon']['code'] == 'VIP25'
+    assert c_data['coupon']['discount_percent'] == 25.0
+
+    # 2. Validate coupon publicly
+    val_res = client.post('/api/public/coupon/validate', json={
+        'code': 'VIP25',
+        'plan_id': 'lifetime'
+    })
+    assert val_res.status_code == 200
+    val_data = json.loads(val_res.data)
+    assert val_data['valid'] is True
+    assert val_data['discount_total'] == 24.75 # 25% of 99
+    assert val_data['final_price'] == 74.25
+
+    # 3. List coupons
+    list_res = client.get('/api/admin/coupons')
+    assert list_res.status_code == 200
+    list_data = json.loads(list_res.data)
+    codes = [c['code'] for c in list_data['coupons']]
+    assert 'VIP25' in codes
+
+    # 4. Delete coupon
+    del_res = client.delete('/api/admin/coupons/VIP25')
+    assert del_res.status_code == 200
+
+def test_admin_payment_methods_and_fees():
+    client = app.test_client()
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+
+    # 1. Add / configure custom payment method
+    m_res = client.post('/api/admin/methods', json={
+        'id': 'test_wire',
+        'name': 'International Wire Transfer',
+        'fee_percent': 2.5,
+        'fee_fixed': 5.0,
+        'recipient_address': 'SWIFT: SPECTREUS33',
+        'instructions': 'Include reference ID in wire memo',
+        'is_enabled': 1
+    })
+    assert m_res.status_code == 200
+    m_data = json.loads(m_res.data)
+    assert m_data['method']['id'] == 'test_wire'
+    assert m_data['method']['fee_percent'] == 2.5
+
+    # 2. Check public config contains method
+    cfg_res = client.get('/api/public/config')
+    assert cfg_res.status_code == 200
+    cfg_data = json.loads(cfg_res.data)
+    method_ids = [m['id'] for m in cfg_data['payment_methods']]
+    assert 'test_wire' in method_ids
+
+    # 3. Clean up
+    del_res = client.delete('/api/admin/methods/test_wire')
+    assert del_res.status_code == 200
+
+def test_admin_branding_customization():
+    client = app.test_client()
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+
+    # 1. Update branding
+    b_res = client.post('/api/admin/branding', json={
+        'platform_name': 'VOID OSINT',
+        'platform_subtitle': 'DARK RECON & CARTOGRAPHY',
+        'platform_version': 'v9.0.0',
+        'announcement_banner': 'All satellite nodes online.',
+        'primary_accent': 'emerald'
+    })
+    assert b_res.status_code == 200
+    b_data = json.loads(b_res.data)
+    assert b_data['branding']['platform_name'] == 'VOID OSINT'
+    assert b_data['branding']['platform_version'] == 'v9.0.0'
+
+    # 2. Check public config reflecting branding
+    cfg_res = client.get('/api/public/config')
+    assert cfg_res.status_code == 200
+    cfg_data = json.loads(cfg_res.data)
+    assert cfg_data['branding']['platform_name'] == 'VOID OSINT'
+

@@ -22,6 +22,8 @@
         'eth': 2600.0
     };
 
+    let appliedCoupon = null;
+
     async function init() {
         try {
             const resp = await fetch('/api/payment/config');
@@ -30,15 +32,80 @@
         updateEstimatedPrice();
     }
 
+    window.applyCouponCode = async function() {
+        const input = document.getElementById('chk-coupon-code');
+        const msg = document.getElementById('chk-coupon-msg');
+        const code = input ? input.value.trim() : '';
+
+        if (!code) {
+            appliedCoupon = null;
+            if (msg) {
+                msg.textContent = 'Please enter a coupon code.';
+                msg.style.color = '#f87171';
+                msg.style.display = 'block';
+            }
+            updateEstimatedPrice();
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/public/coupon/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code, plan_id: planParam })
+            });
+            const data = await resp.json();
+            if (data.valid) {
+                appliedCoupon = data;
+                if (msg) {
+                    msg.innerHTML = `<span style="color:#34d399;"><i class="fas fa-check-circle"></i> Coupon <strong>${data.code}</strong> applied! ($${data.discount_total.toFixed(2)} discount)</span>`;
+                    msg.style.display = 'block';
+                }
+            } else {
+                appliedCoupon = null;
+                if (msg) {
+                    msg.textContent = data.error || 'Invalid or expired coupon.';
+                    msg.style.color = '#f87171';
+                    msg.style.display = 'block';
+                }
+            }
+        } catch (err) {
+            appliedCoupon = null;
+            if (msg) {
+                msg.textContent = 'Error checking coupon.';
+                msg.style.color = '#f87171';
+                msg.style.display = 'block';
+            }
+        }
+        updateEstimatedPrice();
+    };
+
     function updateEstimatedPrice() {
+        let price = planPrice;
+        if (appliedCoupon && appliedCoupon.final_price !== undefined) {
+            price = appliedCoupon.final_price;
+        }
+
         const rate = cryptoRates[currentCoin] || 85.0;
-        const estCrypto = (planPrice / rate).toFixed(4);
+        const estCrypto = (price / rate).toFixed(4);
         const calcEl = document.getElementById('chk-est-amount');
+        const noticeEl = document.getElementById('chk-fee-notice');
+
+        if (noticeEl) {
+            if (appliedCoupon) {
+                noticeEl.textContent = `Coupon ${appliedCoupon.code} applied (-$${appliedCoupon.discount_total.toFixed(2)})`;
+                noticeEl.style.color = '#34d399';
+            } else {
+                noticeEl.textContent = 'Includes method fee & discounts';
+                noticeEl.style.color = 'var(--text-muted)';
+            }
+        }
+
         if (calcEl) {
             if (currentMethod === 'crypto') {
-                calcEl.textContent = `${estCrypto} ${currentCoin.toUpperCase()} ($${planPrice}.00 USD)`;
+                calcEl.textContent = `${estCrypto} ${currentCoin.toUpperCase()} ($${price.toFixed(2)} USD)`;
             } else {
-                calcEl.textContent = `$${planPrice}.00 USD`;
+                calcEl.textContent = `$${price.toFixed(2)} USD`;
             }
         }
     }
@@ -94,7 +161,8 @@
                 body: JSON.stringify({
                     email: email,
                     tier: planParam,
-                    method: effectiveMethod
+                    method: effectiveMethod,
+                    coupon_code: appliedCoupon ? appliedCoupon.code : ''
                 })
             });
 

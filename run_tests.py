@@ -20,6 +20,9 @@ def run_suite():
         test_auto_check_endpoint,
         test_logout_route_and_session_clearing,
         test_admin_settings_and_plans_api,
+        test_admin_coupons_and_discounts,
+        test_admin_payment_methods_and_fees,
+        test_admin_branding_customization,
         test_order_rejection_flow
     )
 
@@ -57,6 +60,9 @@ def run_suite():
         test_auto_check_endpoint,
         test_logout_route_and_session_clearing,
         test_admin_settings_and_plans_api,
+        test_admin_coupons_and_discounts,
+        test_admin_payment_methods_and_fees,
+        test_admin_branding_customization,
         test_vault_key_generation_and_encryption,
         test_vault_cold_withdrawal,
         test_on_chain_verifier_auto_approval,
