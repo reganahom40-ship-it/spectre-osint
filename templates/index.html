@@ -242,7 +242,7 @@
                             <!-- Universal Spotlight Search Bar -->
                             <div class="spotlight-command-bar" id="spotlight-box-container">
                                 <i class="fas fa-search spotlight-lead-icon" id="spotlight-pulse-icon"></i>
-                                <input type="text" id="omni-input" class="spotlight-text-input" placeholder="Enter email, username, domain, IP, phone, or upload an image..." autocomplete="off" spellcheck="false" onkeydown="if (event.key === 'Enter' && typeof executeOmniRecon === 'function') executeOmniRecon();">
+                                <input type="text" id="omni-input" class="spotlight-text-input" placeholder="Search any target (email, username, domain, IP, phone, hash)..." autocomplete="off" spellcheck="false" onkeydown="if (event.key === 'Enter' && typeof executeOmniRecon === 'function') executeOmniRecon();">
                                 
                                 <div class="spotlight-type-select">
                                     <span id="spotlight-type-label">Auto Detect</span>
@@ -898,14 +898,14 @@
                                     <span class="dcard-badge" id="img-exif-badge">EXIF 2.32</span>
                                 </div>
                                 <table class="kv-table">
-                                    <tr><td class="kv-key">Camera Maker</td><td class="kv-val" id="img-exif-make">Sony</td></tr>
-                                    <tr><td class="kv-key">Model</td><td class="kv-val" id="img-exif-model">ILCE-7M4 (A7 IV)</td></tr>
-                                    <tr><td class="kv-key">Lens Model</td><td class="kv-val" id="img-exif-lens">FE 24-70mm F2.8 GM II</td></tr>
-                                    <tr><td class="kv-key">ISO Speed</td><td class="kv-val" id="img-exif-iso">ISO 400</td></tr>
-                                    <tr><td class="kv-key">Shutter Speed</td><td class="kv-val" id="img-exif-shutter">1/500s</td></tr>
-                                    <tr><td class="kv-key">Aperture</td><td class="kv-val" id="img-exif-aperture">f/2.8</td></tr>
-                                    <tr><td class="kv-key">Date / Time</td><td class="kv-val" id="img-exif-datetime">2026-05-14 14:22:08 UTC</td></tr>
-                                    <tr><td class="kv-key">Software Signature</td><td class="kv-val" id="img-exif-software">Adobe Lightroom 13.1 (Win)</td></tr>
+                                    <tr><td class="kv-key">Camera Maker</td><td class="kv-val" id="img-exif-make">—</td></tr>
+                                    <tr><td class="kv-key">Model</td><td class="kv-val" id="img-exif-model">—</td></tr>
+                                    <tr><td class="kv-key">Lens Model</td><td class="kv-val" id="img-exif-lens">—</td></tr>
+                                    <tr><td class="kv-key">ISO Speed</td><td class="kv-val" id="img-exif-iso">—</td></tr>
+                                    <tr><td class="kv-key">Shutter Speed</td><td class="kv-val" id="img-exif-shutter">—</td></tr>
+                                    <tr><td class="kv-key">Aperture</td><td class="kv-val" id="img-exif-aperture">—</td></tr>
+                                    <tr><td class="kv-key">Date / Time</td><td class="kv-val" id="img-exif-datetime">—</td></tr>
+                                    <tr><td class="kv-key">Software Signature</td><td class="kv-val" id="img-exif-software">—</td></tr>
                                 </table>
                             </div>
 
@@ -913,14 +913,14 @@
                             <div class="dossier-card" id="card-image-gps">
                                 <div class="dcard-header">
                                     <div class="dcard-title-wrap"><i class="fas fa-location-crosshairs text-emerald"></i><h4>GPS Geotag Cartography</h4></div>
-                                    <span class="dcard-badge" id="img-gps-badge" style="background:rgba(16,185,129,0.15);color:#34d399;border-color:rgba(16,185,129,0.3);">GPS VERIFIED</span>
+                                    <span class="dcard-badge" id="img-gps-badge">—</span>
                                 </div>
-                                <div id="image-leaflet-map" style="width:100%; height:200px; border-radius:12px; margin-bottom:12px; background:#070a13;"></div>
-                                <table class="kv-table">
-                                    <tr><td class="kv-key">Coordinates</td><td class="kv-val font-mono" id="img-gps-coords">40.7128° N, 74.0060° W</td></tr>
-                                    <tr><td class="kv-key">Decimal Lat/Lon</td><td class="kv-val font-mono" id="img-gps-decimal">40.712800, -74.006000</td></tr>
+                                <div id="image-leaflet-map" style="width:100%; height:200px; border-radius:12px; margin-bottom:12px; background:#070a13; display:none;"></div>
+                                <table class="kv-table" id="img-gps-table">
+                                    <tr><td class="kv-key">Coordinates</td><td class="kv-val font-mono" id="img-gps-coords">—</td></tr>
+                                    <tr><td class="kv-key">Decimal Lat/Lon</td><td class="kv-val font-mono" id="img-gps-decimal">—</td></tr>
                                 </table>
-                                <div style="display:flex;gap:8px;margin-top:12px;">
+                                <div id="img-gps-actions" style="display:none; gap:8px; margin-top:12px;">
                                     <button type="button" class="btn-bubbly-mini" id="btn-open-gmaps" onclick="openImageCoordsInMaps('google')"><i class="fas fa-map-location-dot"></i> Google Maps</button>
                                     <button type="button" class="btn-bubbly-mini" id="btn-open-osm" onclick="openImageCoordsInMaps('osm')"><i class="fas fa-globe"></i> OpenStreetMap</button>
                                 </div>
@@ -2006,6 +2006,32 @@
                     }
                 });
             }
+
+            // Interactive Bubbly Ripples & Spring Tactility
+            document.addEventListener('click', (e) => {
+                const targetBtn = e.target.closest('button, .nav-item, .qs-chip, .scard-exec-btn, .header-icon-btn, .sample-pill-btn, .btn-bubbly-mini, .btn-spotlight-search');
+                if (targetBtn) {
+                    const rect = targetBtn.getBoundingClientRect();
+                    const circle = document.createElement('span');
+                    const diameter = Math.max(rect.width, rect.height);
+                    const radius = diameter / 2;
+
+                    circle.style.width = circle.style.height = `${diameter}px`;
+                    circle.style.left = `${e.clientX - rect.left - radius}px`;
+                    circle.style.top = `${e.clientY - rect.top - radius}px`;
+                    circle.classList.add('bubbly-ripple');
+
+                    const prevRipple = targetBtn.querySelector('.bubbly-ripple');
+                    if (prevRipple) prevRipple.remove();
+
+                    if (getComputedStyle(targetBtn).position === 'static') {
+                        targetBtn.style.position = 'relative';
+                    }
+                    targetBtn.appendChild(circle);
+
+                    setTimeout(() => circle.remove(), 600);
+                }
+            });
         });
     </script>
 
