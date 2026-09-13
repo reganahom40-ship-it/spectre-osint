@@ -1346,9 +1346,11 @@ def api_export_report():
         for k, v in dossier.items():
             if isinstance(v, dict):
                 for sub_k, sub_v in v.items():
-                    csv_rows.append(f'"{k}.{sub_k}","{str(sub_v).replace('"', '""')}"')
+                    clean_sub = str(sub_v).replace('"', '""')
+                    csv_rows.append(f'"{k}.{sub_k}","{clean_sub}"')
             else:
-                csv_rows.append(f'"{k}","{str(v).replace('"', '""')}"')
+                clean_v = str(v).replace('"', '""')
+                csv_rows.append(f'"{k}","{clean_v}"')
         return jsonify({
             'success': True,
             'format': 'csv',
