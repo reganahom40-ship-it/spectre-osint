@@ -84,6 +84,11 @@
                     <i class="fas fa-sliders"></i>
                     <span>Settings & Themes</span>
                 </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-admin-deck" onclick="openAdminModal()" style="margin-top: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 88, 12, 0.1)); color: #fcd34d; font-weight: 700; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);">
+                    <i class="fas fa-crown" style="color: #f59e0b; filter: drop-shadow(0 0 8px #f59e0b);"></i>
+                    <span>Owner Control Deck</span>
+                    <span style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.3); color: #fcd34d; padding: 2px 7px; border-radius: 6px; margin-left: auto; border: 1px solid rgba(245,158,11,0.5);">ADMIN</span>
+                </a>
             </nav>
 
 
@@ -100,9 +105,15 @@
                     <div class="plan-meta-row">
                         <span class="plan-meta-text">{% if user and user.get('tier') in ('lifetime', 'admin') %}Unlimited Investigations{% else %}12/25 investigations{% endif %}</span>
                     </div>
+                    {% if user and user.get('tier') == 'admin' %}
+                    <button class="btn-sidebar-upgrade" id="btn-sidebar-admin-action" onclick="openAdminModal()" style="background: linear-gradient(135deg, #f59e0b, #ea580c); color: #000; font-weight: 800; border: none; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);">
+                        <i class="fas fa-crown"></i> Open Owner Deck
+                    </button>
+                    {% else %}
                     <button class="btn-sidebar-upgrade" id="btn-sidebar-upgrade-action" onclick="window.open('/checkout?plan=lifetime', '_blank')">
                         Upgrade
                     </button>
+                    {% endif %}
                 </div>
 
                 <div class="sidebar-system-status">
@@ -129,6 +140,11 @@
 
                 <!-- Right Utility Controls -->
                 <div class="header-right-actions">
+                    <button type="button" class="btn-bubbly-primary" id="btn-topbar-admin-deck" onclick="openAdminModal()" style="padding: 7px 16px; font-size: 0.8rem; font-weight: 700; background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(234, 88, 12, 0.35)); border: 1px solid rgba(245, 158, 11, 0.6); color: #fcd34d; box-shadow: 0 0 16px rgba(245, 158, 11, 0.25); display: flex; align-items: center; gap: 8px; cursor: pointer; border-radius: 10px; transition: all 0.2s ease;">
+                        <i class="fas fa-crown" style="color:#f59e0b; filter: drop-shadow(0 0 6px #f59e0b);"></i>
+                        <span>Owner Deck</span>
+                        <span style="font-size:0.6rem; background: rgba(245, 158, 11, 0.4); padding: 1px 5px; border-radius: 4px;">ADMIN</span>
+                    </button>
                     <div class="header-icon-btn" id="btn-open-palette" title="Command Palette (Ctrl+K)" onclick="openCommandPalette()">
                         <i class="fas fa-terminal"></i>
                     </div>
