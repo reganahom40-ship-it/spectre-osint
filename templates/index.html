@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260913_fix_tactile_palette_v10">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260913_fix_owner_deck_v11">
     <script>
     window.__USER_TIER = "{% if user %}{{ user.tier }}{% else %}free{% endif %}";
     window.__page_errors = [];
@@ -78,12 +78,12 @@ button:active, .nav-item:active, .qs-chip:active, .scard-exec-btn:active, .heade
 .sidebar-nav-menu .nav-item {
     display: flex !important;
     align-items: center !important;
-    gap: 12px !important;
-    padding: 10px 14px !important;
+    gap: 10px !important;
+    padding: 8px 12px !important;
     border-radius: 10px !important;
     color: #94a3b8 !important;
     text-decoration: none !important;
-    font-size: 0.88rem !important;
+    font-size: 0.84rem !important;
     font-weight: 600 !important;
     background: transparent !important;
     border: 1px solid transparent !important;
@@ -91,8 +91,17 @@ button:active, .nav-item:active, .qs-chip:active, .scard-exec-btn:active, .heade
     position: relative !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
-    max-height: 44px !important;
+    min-height: 38px !important;
+    height: auto !important;
+    max-height: none !important;
     width: 100% !important;
+    white-space: nowrap !important;
+}
+
+.sidebar-nav-menu .nav-item span {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .sidebar-nav-menu .nav-item:hover {
@@ -609,10 +618,10 @@ button:active, .nav-item:active, .qs-chip:active, .scard-exec-btn:active, .heade
                     <span>Settings & Themes</span>
                 </a>
                 {% if user and user.get('tier') == 'admin' %}
-                <a href="javascript:void(0)" class="nav-item" id="nav-item-admin-deck" onclick="openAdminModal()" style="margin-top: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 88, 12, 0.1)); color: #fcd34d; font-weight: 700; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);">
-                    <i class="fas fa-crown" style="color: #f59e0b; filter: drop-shadow(0 0 8px #f59e0b);"></i>
-                    <span>Owner Control Deck</span>
-                    <span style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.3); color: #fcd34d; padding: 2px 7px; border-radius: 6px; margin-left: auto; border: 1px solid rgba(245,158,11,0.5);">ADMIN</span>
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-admin-deck" onclick="openAdminModal()" title="Master Owner & Dev Control Deck" style="margin-top: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 88, 12, 0.1)); color: #fcd34d; font-weight: 700; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2); white-space: nowrap;">
+                    <i class="fas fa-crown" style="color: #f59e0b; filter: drop-shadow(0 0 8px #f59e0b); flex-shrink: 0;"></i>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; font-size: 0.82rem;">Owner Deck</span>
+                    <span style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.3); color: #fcd34d; padding: 2px 6px; border-radius: 6px; margin-left: auto; border: 1px solid rgba(245,158,11,0.5); flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-weight: 800;">ADMIN</span>
                 </a>
                 {% endif %}
             </nav>
@@ -3671,6 +3680,6 @@ button:active, .nav-item:active, .qs-chip:active, .scard-exec-btn:active, .heade
     </script>
 
     <!-- Main Platform Script Apparatus -->
-    <script src="/static/js/app.js?v=20260913_fix_tactile_palette_v10"></script>
+    <script src="/static/js/app.js?v=20260913_fix_owner_deck_v11"></script>
 </body>
 </html>
