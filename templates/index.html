@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260912_v6_deck_clean">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260913_ui_polish_v7">
     <script>
     window.__USER_TIER = "{% if user %}{{ user.tier }}{% else %}free{% endif %}";
     window.__page_errors = [];
@@ -1886,8 +1886,9 @@
             if (viewImage) viewImage.style.display = (mode === 'image') ? 'block' : 'none';
 
             if (mode === 'graph') {
-                const fitBtn = document.getElementById('btn-graph-fit-dedicated') || document.getElementById('btn-graph-fit');
-                if (fitBtn) setTimeout(() => fitBtn.click(), 150);
+                if (typeof window.initDedicatedTopologyGraph === 'function') {
+                    window.initDedicatedTopologyGraph();
+                }
             }
             if (mode === 'image') {
                 const dropzone = document.getElementById('image-dropzone');
