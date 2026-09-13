@@ -1336,6 +1336,8 @@
                 <!-- Injected queries -->
             </div>
         </div>
+    </div>
+
     <!-- ==============================================
          4. MASTER ADMIN & OWNER CONTROL DECK MODAL
          ============================================== -->
@@ -2251,16 +2253,20 @@
         // MASTER ADMIN & OWNER CONTROL DECK CONTROLLERS
         // ==============================================
         window.openAdminModal = function() {
-            const modal = document.getElementById('modal-admin-control-deck');
+            const modal = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
             if (modal) {
-                modal.style.display = 'flex';
-                window.refreshAdminData();
+                modal.style.setProperty('display', 'flex', 'important');
+                try {
+                    window.refreshAdminData();
+                } catch(err) {
+                    console.error('refreshAdminData error:', err);
+                }
             }
         };
 
         window.closeAdminModal = function() {
-            const modal = document.getElementById('modal-admin-control-deck');
-            if (modal) modal.style.display = 'none';
+            const modal = document.getElementById('modal-admin-control-deck') || document.getElementById('admin-modal-backdrop');
+            if (modal) modal.style.setProperty('display', 'none', 'important');
         };
 
         window.switchAdminDeckTab = function(tab) {
