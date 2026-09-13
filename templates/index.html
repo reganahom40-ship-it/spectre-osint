@@ -206,14 +206,14 @@
                             <!-- Universal Spotlight Search Bar -->
                             <div class="spotlight-command-bar" id="spotlight-box-container">
                                 <i class="fas fa-search spotlight-lead-icon" id="spotlight-pulse-icon"></i>
-                                <input type="text" id="omni-input" class="spotlight-text-input" placeholder="Enter email, username, domain, IP, phone, or upload an image..." autocomplete="off" spellcheck="false">
+                                <input type="text" id="omni-input" class="spotlight-text-input" placeholder="Enter email, username, domain, IP, phone, or upload an image..." autocomplete="off" spellcheck="false" onkeydown="if (event.key === 'Enter' && typeof executeOmniRecon === 'function') executeOmniRecon();">
                                 
                                 <div class="spotlight-type-select">
                                     <span id="spotlight-type-label">Auto Detect</span>
                                     <i class="fas fa-chevron-down"></i>
                                 </div>
 
-                                <button class="btn-spotlight-search" id="btn-omni-exec">
+                                <button type="button" class="btn-spotlight-search" id="btn-omni-exec" onclick="if (typeof executeOmniRecon === 'function') executeOmniRecon();">
                                     <span>Search</span>
                                     <i class="fas fa-arrow-right"></i>
                                 </button>

@@ -1082,6 +1082,7 @@
         }
 
         function renderList(query = '') {
+            if (!list) return;
             list.innerHTML = '';
             const filtered = commands.filter(c => c.title.toLowerCase().includes(query.toLowerCase()));
             if (filtered.length === 0) {
@@ -1108,34 +1109,43 @@
         }
 
         function openPalette() {
+            if (!backdrop) return;
             backdrop.classList.add('active');
-            input.value = '';
-            renderList();
-            setTimeout(() => input.focus(), 50);
+            if (input) {
+                input.value = '';
+                renderList();
+                setTimeout(() => input.focus(), 50);
+            }
             playTone(600, 'sine', 0.06);
         }
 
         function closePalette() {
-            backdrop.classList.remove('active');
+            if (backdrop) backdrop.classList.remove('active');
         }
 
         if (btnOpen) btnOpen.addEventListener('click', openPalette);
-        backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) closePalette();
-        });
+        if (backdrop) {
+            backdrop.addEventListener('click', (e) => {
+                if (e.target === backdrop) closePalette();
+            });
+        }
 
-        input.addEventListener('input', (e) => renderList(e.target.value));
+        if (input) {
+            input.addEventListener('input', (e) => renderList(e.target.value));
+        }
 
         window.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
-                if (backdrop.classList.contains('active')) closePalette();
-                else openPalette();
-            } else if (e.key === 'Escape' && backdrop.classList.contains('active')) {
+                if (backdrop && backdrop.classList.contains('active')) closePalette();
+                else if (backdrop) openPalette();
+            } else if (e.key === 'Escape' && backdrop && backdrop.classList.contains('active')) {
                 closePalette();
-            } else if (e.key === 'Enter' && backdrop.classList.contains('active')) {
-                const sel = list.querySelector('.palette-item.selected') || list.querySelector('.palette-item');
-                if (sel) sel.click();
+            } else if (e.key === 'Enter' && backdrop && backdrop.classList.contains('active')) {
+                if (list) {
+                    const sel = list.querySelector('.palette-item.selected') || list.querySelector('.palette-item');
+                    if (sel) sel.click();
+                }
             }
         });
     }
@@ -2520,6 +2530,19 @@
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') executeOmniRecon();
             });
+
+            // Handle URL Search Params (?q=... / ?target=...)
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryParam = urlParams.get('q') || urlParams.get('target') || urlParams.get('query');
+                if (queryParam) {
+                    input.value = queryParam;
+                    inspectTargetRealtime(queryParam);
+                    setTimeout(() => {
+                        executeOmniRecon(queryParam);
+                    }, 120);
+                }
+            } catch (e) {}
         }
 
         const chips = document.querySelectorAll('.preset-chip');
@@ -3432,21 +3455,33 @@
         auth.fetchCurrentUser();
     }
 
+    // Expose core actions globally for direct inline DOM triggers
+    window.executeOmniRecon = executeOmniRecon;
+    window.inspectTargetRealtime = inspectTargetRealtime;
+
     // --- DOM Ready Boot ---
     document.addEventListener('DOMContentLoaded', () => {
-        applyPreferences();
-        initParticles();
-        initMagneticCards();
-        initCursorGlow();
-        initClock();
-        initNavigation();
-        initCustomizer();
-        initCommandPalette();
-        initPresetsAndInput();
-        initStudio();
-        initGraph();
-        initLiveStream();
-        initAuthAndMembership();
+        const safeRun = (fn, name) => {
+            try { 
+                if (typeof fn === 'function') fn(); 
+            } catch (err) { 
+                console.warn(`[SPECTRE Boot] Error in ${name}:`, err); 
+            }
+        };
+        safeRun(applyPreferences, 'applyPreferences');
+        safeRun(initParticles, 'initParticles');
+        safeRun(initMagneticCards, 'initMagneticCards');
+        safeRun(initCursorGlow, 'initCursorGlow');
+        safeRun(initClock, 'initClock');
+        safeRun(initNavigation, 'initNavigation');
+        safeRun(initCustomizer, 'initCustomizer');
+        safeRun(initCommandPalette, 'initCommandPalette');
+        safeRun(initPresetsAndInput, 'initPresetsAndInput');
+        safeRun(initStudio, 'initStudio');
+        safeRun(initGraph, 'initGraph');
+        safeRun(initLiveStream, 'initLiveStream');
+        safeRun(initAuthAndMembership, 'initAuthAndMembership');
     });
 
 })();
+

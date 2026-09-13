@@ -206,7 +206,7 @@
                         <div class="hero-recon-console">
                             <div class="console-search-bar">
                                 <i class="fas fa-search console-search-icon"></i>
-                                <input type="text" id="hero-interactive-input" class="console-input" placeholder="Search email, phone, domain, username, IP, or anything..." value="defense-cloud.io">
+                                <input type="text" id="hero-interactive-input" class="console-input" placeholder="Search email, phone, domain, username, IP, or anything..." value="defense-cloud.io" onkeydown="if (event.key === 'Enter') runHeroInteractiveSearch();">
                                 <button type="button" class="console-search-submit" onclick="runHeroInteractiveSearch()">
                                     <i class="fas fa-arrow-right"></i>
                                 </button>
@@ -699,7 +699,13 @@
             if (btn) btn.classList.add('active');
         }
         function runHeroInteractiveSearch() {
-            window.open('/checkout?plan=lifetime', '_blank');
+            const input = document.getElementById('hero-interactive-input');
+            const val = input ? input.value.trim() : '';
+            if (val) {
+                window.location.href = '/app?q=' + encodeURIComponent(val);
+            } else {
+                window.location.href = '/app';
+            }
         }
     </script>
 </body>
