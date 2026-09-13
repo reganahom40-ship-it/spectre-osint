@@ -57,46 +57,58 @@
                 </a>
 
                 <div class="chk-plan-header">
-                    <h1 class="chk-plan-title" id="chk-plan-name">{{ plan.name or 'Lifetime Operator' }}</h1>
-                    <p class="chk-plan-tagline">Full access. No limits. Forever.</p>
+                    <h1 class="chk-plan-title" id="chk-plan-name">{{ plan.name or 'Lifetime Master Pass' }}</h1>
+                    <p class="chk-plan-tagline" id="chk-plan-desc">{{ plan.description or 'Full access. No limits. Forever.' }}</p>
                 </div>
 
                 <div class="chk-price-row">
                     <div class="chk-price-val">
-                        <span class="chk-curr">$</span><span id="chk-price-amount">{{ plan.price|int if plan.price else 99 }}</span>
-                        <span class="chk-freq">USD</span>
+                        <span class="chk-curr">$</span><span id="chk-price-amount">{% if plan.price %}{{ plan.price|int if plan.price == plan.price|int else "%.2f"|format(plan.price) }}{% else %}99{% endif %}</span>
+                        <span class="chk-freq" id="chk-price-freq">USD {{ plan.billing_period if plan.billing_period else '' }}</span>
                     </div>
-                    <div class="chk-badge-best-value">Best Value</div>
+                    {% if plan.badge %}
+                    <div class="chk-badge-best-value" id="chk-plan-badge">{{ plan.badge }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Features Checklist -->
-                <div class="chk-checklist">
-                    <div class="chk-check-item">
-                        <i class="fas fa-check text-cyan"></i>
-                        <span>Full access to all 112+ OSINT sources</span>
-                    </div>
-                    <div class="chk-check-item">
-                        <i class="fas fa-check text-cyan"></i>
-                        <span>Unlimited investigations</span>
-                    </div>
-                    <div class="chk-check-item">
-                        <i class="fas fa-check text-cyan"></i>
-                        <span>Advanced data correlation & mapping</span>
-                    </div>
-                    <div class="chk-check-item">
-                        <i class="fas fa-check text-cyan"></i>
-                        <span>Priority support</span>
-                    </div>
-                    <div class="chk-check-item">
-                        <i class="fas fa-check text-cyan"></i>
-                        <span>Lifetime updates</span>
-                    </div>
+                <div class="chk-checklist" id="chk-features-list">
+                    {% if plan.features %}
+                        {% for feat in plan.features %}
+                        <div class="chk-check-item">
+                            <i class="fas fa-check text-cyan"></i>
+                            <span>{{ feat }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="chk-check-item">
+                            <i class="fas fa-check text-cyan"></i>
+                            <span>Full access to all 112+ OSINT sources</span>
+                        </div>
+                        <div class="chk-check-item">
+                            <i class="fas fa-check text-cyan"></i>
+                            <span>Unlimited investigations &amp; pivots</span>
+                        </div>
+                        <div class="chk-check-item">
+                            <i class="fas fa-check text-cyan"></i>
+                            <span>Advanced data correlation &amp; mapping</span>
+                        </div>
+                        <div class="chk-check-item">
+                            <i class="fas fa-check text-cyan"></i>
+                            <span>High-speed priority processing</span>
+                        </div>
+                    {% endif %}
                 </div>
 
                 <!-- Bottom Pill -->
-                <div class="chk-lifetime-pill">
+                <div class="chk-lifetime-pill" id="chk-period-pill">
+                    {% if plan.billing_period and 'month' in plan.billing_period.lower() %}
+                    <i class="fas fa-calendar-check text-cyan"></i>
+                    <span>Flexible monthly pass. Cancel anytime.</span>
+                    {% else %}
                     <i class="fas fa-infinity text-indigo"></i>
                     <span>One payment. Lifetime access.</span>
+                    {% endif %}
                 </div>
 
                 <!-- Dark Hooded Operator Silhouette Background Art -->
@@ -252,9 +264,9 @@
 
     </div>
 
-    <!-- Hidden toast container -->
-    <div id="chk-toast" class="chk-toast"></div>
-
-    <script src="/static/js/checkout.js?v=20260912_chk_redesign_v1"></script>
+    <script>
+        window.__CHECKOUT_PLAN = {{ plan|tojson }};
+    </script>
+    <script src="/static/js/checkout.js?v=20260912_chk_v2_dynamic"></script>
 </body>
 </html>

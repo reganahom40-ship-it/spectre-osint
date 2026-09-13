@@ -354,9 +354,14 @@ def list_plans(include_inactive: bool = False) -> List[Dict[str, Any]]:
         return plans
 
 def get_plan(plan_id: str) -> Optional[Dict[str, Any]]:
+    if not plan_id:
+        return None
+    plan_id = plan_id.strip().lower()
+    if plan_id in ('pro', 'monthly'):
+        plan_id = 'premium'
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM pricing_plans WHERE id = ?", (plan_id,))
+        cursor.execute("SELECT * FROM pricing_plans WHERE LOWER(id) = ?", (plan_id,))
         row = cursor.fetchone()
         if not row:
             return None
@@ -422,30 +427,32 @@ def seed_default_plans_and_settings():
         for k, v in default_settings.items():
             conn.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES (?, ?)", (k, v))
 
-        # Check existing plans
+        # Seed pricing plans if not exists
+        default_pro_features = json.dumps([
+            "All 6 Deep Recon Vectors (IP, Domain, BGP, Phone, Social, Hash)",
+            "Live BGP Routing & Autonomous System Intelligence",
+            "Breach & Compromise Feed Correlation (HIBP)",
+            "Interactive 3D Graph Studio & Clustering",
+            "Full Unredacted Intelligence Dossier Exports",
+            "High-Speed Priority Circuit Breakers"
+        ])
+        default_lifetime_features = json.dumps([
+            "Everything in Pro Tier Forever",
+            "Zero Recurring Subscriptions or Expirations",
+            "Unlimited Concurrent Graph Query Engines",
+            "Direct Raw JSON/Markdown API Token Access",
+            "All Future Recon Modules & Zero-Day Feeds",
+            "VIP Direct Telegram & Operator Channel Access"
+        ])
+        conn.execute("""
+            INSERT OR IGNORE INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
+            VALUES ('premium', 'Pro Operator', 19.00, '/ month', 'Professional grade intelligence suite for active investigators.', 'POPULAR', ?, 1, 1)
+        """, (default_pro_features,))
+        conn.execute("""
+            INSERT OR IGNORE INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
+            VALUES ('lifetime', 'Lifetime Master Pass', 99.00, 'one-time', 'Permanent uncapped access to all OSINT intelligence engines with lifetime updates and zero recurring fees.', 'BEST VALUE', ?, 1, 2)
+        """, (default_lifetime_features,))
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) as cnt FROM pricing_plans")
-        if cursor.fetchone()['cnt'] == 0:
-            default_pro_features = json.dumps([
-                "All 6 Deep Recon Vectors (IP, Domain, BGP, Phone, Social, Hash)",
-                "Live BGP Routing & Autonomous System Intelligence",
-                "Breach & Compromise Feed Correlation (HIBP)",
-                "Interactive 3D Graph Studio & Clustering",
-                "Full Unredacted Intelligence Dossier Exports",
-                "High-Speed Priority Circuit Breakers"
-            ])
-            default_lifetime_features = json.dumps([
-                "Everything in Pro Tier Forever",
-                "Zero Recurring Subscriptions or Expirations",
-                "Unlimited Concurrent Graph Query Engines",
-                "Direct Raw JSON/Markdown API Token Access",
-                "All Future Recon Modules & Zero-Day Feeds",
-                "VIP Direct Telegram & Operator Channel Access"
-            ])
-            conn.execute("""
-                INSERT INTO pricing_plans (id, name, price, billing_period, description, badge, features, is_active, display_order)
-                VALUES ('premium', 'Pro Operator', 19.00, '/ month', 'Professional grade intelligence suite for active investigators.', 'POPULAR', ?, 1, 1)
-            """, (default_pro_features,))
         cursor.execute("SELECT COUNT(*) as cnt FROM custom_payment_methods")
         if cursor.fetchone()['cnt'] == 0:
             methods = [

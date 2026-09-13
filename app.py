@@ -161,16 +161,43 @@ def pricing_route():
 
 @app.route('/checkout', methods=['GET'])
 def dedicated_checkout():
-    plan_id = (request.args.get('plan') or 'lifetime').lower()
-    plan = get_plan(plan_id) or {
-        'id': 'lifetime',
-        'name': 'Lifetime Master Pass',
-        'price': 99.0,
-        'billing_period': 'one-time',
-        'description': 'Permanent uncapped access to all OSINT intelligence engines'
-    }
+    raw_plan = (request.args.get('plan') or 'lifetime').lower().strip()
+    plan_id = 'premium' if raw_plan in ('pro', 'monthly', 'premium') else raw_plan
+    plan = get_plan(plan_id)
+    if not plan and plan_id == 'premium':
+        plan = {
+            'id': 'premium',
+            'name': 'Pro Operator Pass',
+            'price': 19.0,
+            'billing_period': '/ month',
+            'badge': 'POPULAR',
+            'description': 'Flexible operational intelligence access with all recon vectors. Cancel anytime.',
+            'features': [
+                "Unlimited Parallel Recon across all 112+ sources",
+                "All 10 OSINT Intelligence Modules (IP, Domain, BGP, Phone, Social)",
+                "Interactive Spatial Knowledge Graph Studio",
+                "Explainable Threat Risk Engine",
+                "Instant JSON & Markdown Exports"
+            ]
+        }
+    elif not plan:
+        plan = {
+            'id': 'lifetime',
+            'name': 'Lifetime Master Pass',
+            'price': 99.0,
+            'billing_period': 'one-time',
+            'badge': 'BEST VALUE',
+            'description': 'Permanent uncapped access to all OSINT intelligence engines with lifetime updates and zero recurring fees.',
+            'features': [
+                "Full access to all 112+ OSINT sources",
+                "Unlimited investigations & parallel pivots",
+                "Advanced data correlation & entity mapping",
+                "Priority support & early feature access",
+                "Lifetime updates with zero recurring fees"
+            ]
+        }
     user = get_current_user()
-    return render_template('checkout.html', plan=plan, plan_id=plan_id, user=user)
+    return render_template('checkout.html', plan=plan, plan_id=plan.get('id', plan_id), user=user)
 
 @app.route('/logout', methods=['GET', 'POST'])
 def direct_logout():

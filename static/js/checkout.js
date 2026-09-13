@@ -13,8 +13,10 @@
     let paymentConfig = null;
 
     const urlParams = new URLSearchParams(window.location.search);
-    const planParam = urlParams.get('plan') || 'lifetime';
-    const planPrice = planParam === 'premium' ? 19 : 99;
+    const rawPlanParam = (urlParams.get('plan') || 'lifetime').toLowerCase();
+    const activePlan = window.__CHECKOUT_PLAN || null;
+    const planParam = (activePlan && activePlan.id) ? activePlan.id : (rawPlanParam === 'pro' || rawPlanParam === 'monthly' ? 'premium' : rawPlanParam);
+    const planPrice = (activePlan && activePlan.price !== undefined) ? Number(activePlan.price) : (planParam === 'premium' ? 19 : 99);
 
     const cryptoRates = {
         'ltc': 85.0,
