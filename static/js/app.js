@@ -1748,7 +1748,8 @@
                 return;
             }
 
-            const executedCount = (data.provenance && data.provenance.length) ? data.provenance.length : 4;
+            const telemetry = data.telemetry || {};
+            const executedCount = telemetry.providers_completed || ((data.provenance && data.provenance.length) ? data.provenance.length : 1);
             totalProbesCounter += executedCount;
             const counterEl = document.getElementById('counter-probes');
             if (counterEl) counterEl.textContent = totalProbesCounter.toLocaleString();
@@ -1759,6 +1760,18 @@
             if (hudLatency) hudLatency.textContent = `${latencyMs}ms`;
             const engineStatus = document.getElementById('engine-status-val');
             if (engineStatus) engineStatus.textContent = 'SYNCHRONIZED';
+
+            // Publish real telemetry event to stream
+            if (window.publishRealEvent) {
+                window.publishRealEvent({
+                    icon: 'fas fa-shield-halved',
+                    color: '#10b981',
+                    badge: (data.detected_type || 'INTEL').toUpperCase(),
+                    badgeCls: 'badge-green',
+                    title: `Recon Complete: ${target}`,
+                    desc: `Executed ${executedCount} real provider probes in ${latencyMs}ms. Mapped ${telemetry.entities_discovered || (data.graph && data.graph.nodes ? data.graph.nodes.length : 0)} entities.`
+                });
+            }
 
             renderOmniDossier(target, data, latencyMs);
             updateGraphWithTarget(target, data);
@@ -2431,28 +2444,48 @@
         drawer.innerHTML = content;
     }
 
-    // --- Live Stream Generator (Threat Radar & Home Operations Hub) ---
+    // --- Real Runtime Event Stream & Investigation History ---
     function initLiveStream() {
         const streamBox = document.getElementById('live-stream-box');
         const homeFeed = document.getElementById('home-event-feed');
         const btnToggle = document.getElementById('btn-feed-toggle');
 
-        const simulatedEvents = [
-            { icon: 'fas fa-user-astronaut', color: '#06b6d4', badge: 'USER', badgeCls: 'badge-cyan', title: 'Username Sweep', desc: 'Identified public profile on GitHub & GitLab' },
-            { icon: 'fas fa-network-wired', color: '#10b981', badge: 'BGP', badgeCls: 'badge-green', title: 'BGP Route Match', desc: 'Prefix announced by AS15169 (Google LLC)' },
-            { icon: 'fa-brands fa-discord', color: '#a855f7', badge: 'EPOCH', badgeCls: 'badge-purple', title: 'Snowflake Bitshift', desc: 'Epoch decoded: Account created Oct 2017' },
-            { icon: 'fas fa-shield-halved', color: '#f43f5e', badge: 'AUDIT', badgeCls: 'badge-amber', title: 'Security Header Audit', desc: 'Missing Content-Security-Policy header' },
-            { icon: 'fas fa-certificate', color: '#f59e0b', badge: 'SSL/CT', badgeCls: 'badge-amber', title: 'CT Certificate Found', desc: 'Wildcard *.domain.internal logged to crt.sh' },
-            { icon: 'fas fa-key', color: '#ec4899', badge: 'CRYPTO', badgeCls: 'badge-purple', title: 'Cryptographic Hash', desc: 'High entropy MD5 digest classified' },
-            { icon: 'fas fa-phone-nodes', color: '#14b8a6', badge: 'TELCO', badgeCls: 'badge-cyan', title: 'Carrier Routing', desc: 'E.164 ITU-T validation confirmed' }
-        ];
+        // Load real historical investigations
+        fetch('/api/user/history')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.history && data.history.length > 0) {
+                    if (streamBox) streamBox.innerHTML = '';
+                    if (homeFeed) homeFeed.innerHTML = '';
 
-        function addEvent() {
-            if (streamPaused) return;
-            const ev = simulatedEvents[Math.floor(Math.random() * simulatedEvents.length)];
+                    data.history.forEach(item => {
+                        window.publishRealEvent({
+                            icon: 'fas fa-crosshairs',
+                            color: '#06b6d4',
+                            badge: item.target_type || 'TARGET',
+                            badgeCls: 'badge-cyan',
+                            title: `Persisted Investigation: ${item.target}`,
+                            desc: `Score: ${item.risk_score}/100 • Entities: ${item.entities_count} • Confidence: ${item.confidence}`
+                        });
+                    });
+                } else {
+                    if (streamBox) {
+                        streamBox.innerHTML = `
+                            <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                                <i class="fas fa-radar" style="font-size: 1.5rem; margin-bottom: 8px; opacity: 0.5;"></i>
+                                <div>THREAT RADAR: IDLE // READY FOR TARGET QUERY</div>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(() => {});
+
+        window.publishRealEvent = function(ev) {
             const timeStr = new Date().toTimeString().split(' ')[0];
-
             if (streamBox) {
+                // Clear placeholder if present
+                if (streamBox.innerText.includes('IDLE // READY')) streamBox.innerHTML = '';
                 const div = document.createElement('div');
                 div.className = 'stream-event-item';
                 div.innerHTML = `
@@ -2461,8 +2494,8 @@
                             <i class="${ev.icon}"></i>
                         </div>
                         <div class="sevent-meta">
-                            <h5>${ev.title}</h5>
-                            <p>${ev.desc}</p>
+                            <h5>${escapeHtml(ev.title)}</h5>
+                            <p>${escapeHtml(ev.desc)}</p>
                         </div>
                     </div>
                     <span class="sevent-time">${timeStr}</span>
@@ -2474,24 +2507,21 @@
             if (homeFeed) {
                 const item = document.createElement('div');
                 item.className = 'tevent-item';
-                item.innerHTML = `<span class="tevent-time">${timeStr.slice(3, 8)}</span> <span class="tevent-badge ${ev.badgeCls}">${ev.badge}</span> ${ev.title}: ${ev.desc.slice(0, 32)}...`;
+                item.innerHTML = `<span class="tevent-time">${timeStr.slice(3, 8)}</span> <span class="tevent-badge ${ev.badgeCls}">${escapeHtml(ev.badge)}</span> ${escapeHtml(ev.title)}: ${escapeHtml(ev.desc.slice(0, 40))}...`;
                 homeFeed.insertBefore(item, homeFeed.firstChild);
                 if (homeFeed.children.length > 8) homeFeed.removeChild(homeFeed.lastChild);
             }
-        }
-
-        for (let i = 0; i < 4; i++) addEvent();
-        streamInterval = setInterval(addEvent, 2800);
+        };
 
         if (btnToggle) {
             btnToggle.addEventListener('click', () => {
                 streamPaused = !streamPaused;
                 if (streamPaused) {
                     btnToggle.innerHTML = `<i class="fas fa-play"></i> Resume Feed`;
-                    showToast('Threat Radar Stream Paused', 'fas fa-pause');
+                    showToast('Feed Paused', 'fas fa-pause');
                 } else {
                     btnToggle.innerHTML = `<i class="fas fa-pause"></i> Pause Feed`;
-                    showToast('Threat Radar Stream Resumed', 'fas fa-play');
+                    showToast('Feed Resumed', 'fas fa-play');
                 }
             });
         }

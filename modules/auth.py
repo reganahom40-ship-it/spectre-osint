@@ -59,15 +59,18 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+import os
+import hmac
+
 def admin_required(f):
     """Decorator requiring master administrative privileges."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_current_user()
-        # Also support secret admin header for external automation
+        # Optional secure admin API key for headless automated maintenance
         admin_secret = request.headers.get('X-Admin-Key', '')
-        configured_key = "spectre_master_admin_key"
-        if admin_secret and admin_secret == configured_key:
+        configured_key = os.environ.get('ADMIN_API_KEY', '')
+        if configured_key and admin_secret and hmac.compare_digest(admin_secret, configured_key):
             return f(*args, **kwargs)
 
         if not user or not is_admin(user):

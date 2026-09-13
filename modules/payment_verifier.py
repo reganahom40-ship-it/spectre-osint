@@ -17,7 +17,7 @@ from typing import Dict, Any, Optional
 from modules.db import (
     get_order, approve_order, get_setting, list_orders
 )
-from modules.crypto_verifier import verify_order_on_chain
+from modules.crypto_verifier import verify_order_on_chain, is_test_payment_mode_active
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def verify_paypal_order(order_id: str, paypal_reference: str = '') -> Dict[str, 
     mode = get_setting('PAYPAL_MODE', 'live')
 
     # Simulation / test hook
-    if paypal_reference.startswith(('TEST_', 'SIM_', 'PAYPAL_SIM_')):
+    if paypal_reference.startswith(('TEST_', 'SIM_', 'PAYPAL_SIM_')) and is_test_payment_mode_active():
         approved = approve_order(order_id, admin_notes=f"Simulated PayPal Verification ({paypal_reference})")
         return {'success': True, 'verified': True, 'status': 'approved', 'order': approved}
 

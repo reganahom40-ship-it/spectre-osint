@@ -1,3 +1,4 @@
+import hmac
 from flask import Flask, request, jsonify, render_template, session, redirect
 import datetime
 import os
@@ -44,18 +45,40 @@ init_db()
 engine = InvestigationEngine()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-app.secret_key = os.environ.get('SECRET_KEY', 'spectre_master_secret_session_2026')
+
+# Enforce secure secret key in production
+is_production_env = bool(os.environ.get('RENDER') or os.environ.get('ENV') == 'production')
+secret_key_env = os.environ.get('SECRET_KEY')
+
+if is_production_env and not secret_key_env:
+    raise RuntimeError("CRITICAL STARTUP FAILURE: SECRET_KEY environment variable is mandatory in production mode.")
+
+app.secret_key = secret_key_env or os.environ.get('DEV_SECRET_KEY') or 'spectre_dev_local_secret_key_2026'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = is_production_env
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=7)
 
 @app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS'
+def add_cors_and_security_headers(response):
+    allowed_origins = os.environ.get('ALLOWED_ORIGINS', '').split(',')
+    allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
+    request_origin = request.headers.get('Origin', '')
+
+    if allowed_origins:
+        if request_origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = request_origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+    else:
+        # Default: echo back origin for same-origin or local development
+        if request_origin:
+            response.headers['Access-Control-Allow-Origin'] = request_origin
+
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRFToken, X-Admin-Key'
+    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS, PUT, DELETE'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
     return response
 
 import time
@@ -102,10 +125,17 @@ def make_response_json(success, module, query, data=None, error=None):
 from modules.image_analysis import analyze_image_bytes
 
 PUBLIC_API_PREFIXES = (
-    '/api/auth/', '/api/payment/', '/api/public/', '/health', '/api/health',
-    '/api/image/', '/api/omni', '/api/investigate', '/api/username', '/api/ip',
-    '/api/domain', '/api/phone', '/api/email', '/api/headers', '/api/discord',
-    '/api/hash', '/api/dorks', '/api/bgp', '/api/number', '/api/breaches'
+    '/api/auth/',
+    '/api/payment/config',
+    '/api/payment/plans',
+    '/api/payment/calculate-total',
+    '/api/payment/create-order',
+    '/api/payment/order-status',
+    '/api/payment/auto-check',
+    '/api/payment/submit-proof',
+    '/api/public/',
+    '/health',
+    '/api/health'
 )
 
 @app.before_request
@@ -113,18 +143,25 @@ def before_request_access_guard():
     if request.path.startswith('/api/'):
         ip = request.remote_addr
         if not check_rate_limit(ip):
-            return jsonify({'success': False, 'error': 'Rate limit exceeded'}), 429
+            return jsonify({'success': False, 'error': 'Rate limit exceeded. Please throttle requests.'}), 429
 
         # Strictly protect master admin endpoints
-        if request.path.startswith('/api/admin/'):
+        if request.path.startswith('/api/admin/') or request.path.startswith('/api/vault/'):
             user = get_current_user()
+            # Support secure automation header if configured
+            admin_api_key = os.environ.get('ADMIN_API_KEY', '')
+            req_admin_key = request.headers.get('X-Admin-Key', '')
+            if admin_api_key and req_admin_key and hmac.compare_digest(req_admin_key, admin_api_key):
+                return None
+
             if not user or user.get('tier') != 'admin':
                 return jsonify({
                     'success': False,
-                    'error': 'Unauthorized. Master Administrator privileges required.'
+                    'error': 'Unauthorized. Master Administrator privileges required.',
+                    'admin_required': True
                 }), 403
 
-        # Gate privileged operations if not public
+        # Strictly gate premium OSINT operations
         if not any(request.path.startswith(prefix) for prefix in PUBLIC_API_PREFIXES):
             user = get_current_user()
             if not user or user.get('tier') not in ('premium', 'lifetime', 'admin'):
@@ -135,6 +172,7 @@ def before_request_access_guard():
                 }), 403
 
 @app.route('/', methods=['GET'])
+@app.route('/landing', methods=['GET'])
 def landing_page():
     user = get_current_user()
     return render_template('landing.html', user=user)
@@ -1192,3 +1230,148 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_DEBUG', 'true').lower() == 'true'
     app.run(debug=debug, host='0.0.0.0', port=port)
+
+
+# =========================================================================
+# MULTI-INPUT PARSER & CASE MANAGEMENT ROUTES
+# =========================================================================
+from modules.multi_parser import MultiInputParser
+from modules.db import (
+    create_case, get_case, list_cases, add_target_to_case,
+    list_user_investigations, add_monitored_target, list_monitored_targets
+)
+
+@app.route('/api/multi/parse', methods=['POST'])
+def api_multi_parse():
+    text = get_param('text')
+    if not text:
+        return jsonify({'success': False, 'error': 'No input text provided'}), 400
+    parsed = MultiInputParser.parse_text(text)
+    return jsonify({'success': True, 'data': parsed}), 200
+
+@app.route('/api/user/history', methods=['GET'])
+def api_user_history():
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Authentication required'}), 401
+    history = list_user_investigations(user['id'], limit=30)
+    return jsonify({'success': True, 'history': history}), 200
+
+@app.route('/api/cases', methods=['GET', 'POST'])
+def api_cases_collection():
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Authentication required'}), 401
+    
+    if request.method == 'POST':
+        title = get_param('title')
+        description = get_param('description')
+        tags = request.get_json(silent=True).get('tags', []) if request.is_json else []
+        if not title:
+            return jsonify({'success': False, 'error': 'Case title is required'}), 400
+        new_case = create_case(user['id'], title, description, tags)
+        return jsonify({'success': True, 'case': new_case}), 201
+
+    user_cases = list_cases(user['id'])
+    return jsonify({'success': True, 'cases': user_cases}), 200
+
+@app.route('/api/cases/<case_id>', methods=['GET'])
+def api_case_detail(case_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Authentication required'}), 401
+    c = get_case(case_id)
+    if not c or c['user_id'] != user['id']:
+        return jsonify({'success': False, 'error': 'Case not found'}), 404
+    return jsonify({'success': True, 'case': c}), 200
+
+@app.route('/api/cases/<case_id>/targets', methods=['POST'])
+def api_case_add_target(case_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Authentication required'}), 401
+    c = get_case(case_id)
+    if not c or c['user_id'] != user['id']:
+        return jsonify({'success': False, 'error': 'Case not found'}), 404
+
+    target = get_param('target')
+    target_type = get_param('target_type')
+    inv_id = get_param('investigation_id')
+    if not target or not target_type:
+        return jsonify({'success': False, 'error': 'Target and target_type are required'}), 400
+
+    entry = add_target_to_case(case_id, target, target_type, inv_id)
+    return jsonify({'success': True, 'target_entry': entry}), 201
+
+@app.route('/api/monitor/targets', methods=['GET', 'POST'])
+def api_monitor_targets():
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Authentication required'}), 401
+
+    if request.method == 'POST':
+        target = get_param('target')
+        target_type = get_param('target_type')
+        freq = int(get_param('frequency_hours') or 24)
+        if not target or not target_type:
+            return jsonify({'success': False, 'error': 'Target and target_type required'}), 400
+        mon = add_monitored_target(user['id'], target, target_type, freq)
+        return jsonify({'success': True, 'monitored_target': mon}), 201
+
+    targets = list_monitored_targets(user['id'])
+    return jsonify({'success': True, 'monitored_targets': targets}), 200
+
+@app.route('/api/reports/export', methods=['POST'])
+def api_export_report():
+    target = get_param('target') or 'target_entity'
+    fmt = (get_param('format') or 'markdown').lower()
+    raw_data = request.get_json(silent=True) or {}
+    dossier = raw_data.get('dossier') or {}
+
+    if fmt == 'json':
+        return jsonify({
+            'success': True,
+            'format': 'json',
+            'filename': f"SPECTRE-INTEL-{target}.json",
+            'payload': raw_data
+        }), 200
+    elif fmt == 'csv':
+        csv_rows = ["Key,Value"]
+        for k, v in dossier.items():
+            if isinstance(v, dict):
+                for sub_k, sub_v in v.items():
+                    csv_rows.append(f'"{k}.{sub_k}","{str(sub_v).replace('"', '""')}"')
+            else:
+                csv_rows.append(f'"{k}","{str(v).replace('"', '""')}"')
+        return jsonify({
+            'success': True,
+            'format': 'csv',
+            'filename': f"SPECTRE-INTEL-{target}.csv",
+            'content': "\n".join(csv_rows)
+        }), 200
+    else:
+        # Default: Markdown format
+        md_lines = [
+            f"# SPECTRE OSINT RECONNAISSANCE DOSSIER",
+            f"**Target Identifier:** `{target}`",
+            f"**Generated UTC:** {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%SZ')}",
+            f"**Classification:** {raw_data.get('schema_info', 'Verified Entity')}",
+            "",
+            "## Executive Summary",
+            f"Investigation synthesized with verified provenance across multiple threat vectors.",
+            f"Confidence Score: `{raw_data.get('confidence', 'HIGH')}`",
+            "",
+            "## Telemetry & Evidence",
+            f"- Entities Discovered: {len(raw_data.get('graph', {}).get('nodes', []))}",
+            f"- Relationships Created: {len(raw_data.get('graph', {}).get('edges', []))}",
+            f"- Execution Duration: {raw_data.get('duration_ms', 0)}ms",
+            "",
+            "---",
+            "*Confidential Intelligence Product &bull; Generated via SPECTRE Intelligence Platform*"
+        ]
+        return jsonify({
+            'success': True,
+            'format': 'markdown',
+            'filename': f"SPECTRE-INTEL-{target}.md",
+            'content': "\n".join(md_lines)
+        }), 200

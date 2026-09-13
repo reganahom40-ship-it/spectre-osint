@@ -143,6 +143,65 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_vault_address ON vault_wallets(address);
             CREATE INDEX IF NOT EXISTS idx_withdrawals_created ON vault_withdrawals(created_at);
             CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+            CREATE TABLE IF NOT EXISTS cases (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER,
+                title TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                status TEXT DEFAULT 'open', -- 'open', 'closed', 'archived'
+                tags TEXT DEFAULT '[]',
+                target_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            );
+
+            CREATE TABLE IF NOT EXISTS case_targets (
+                id TEXT PRIMARY KEY,
+                case_id TEXT NOT NULL,
+                target TEXT NOT NULL,
+                target_type TEXT NOT NULL,
+                investigation_id TEXT DEFAULT '',
+                summary_json TEXT DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (case_id) REFERENCES cases (id)
+            );
+
+            CREATE TABLE IF NOT EXISTS investigations (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER,
+                case_id TEXT DEFAULT '',
+                target TEXT NOT NULL,
+                target_type TEXT NOT NULL,
+                confidence TEXT DEFAULT 'HIGH',
+                risk_score INTEGER DEFAULT 0,
+                duration_ms REAL DEFAULT 0,
+                providers_count INTEGER DEFAULT 0,
+                entities_count INTEGER DEFAULT 0,
+                results_json TEXT DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            );
+
+            CREATE TABLE IF NOT EXISTS monitored_targets (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                target TEXT NOT NULL,
+                target_type TEXT NOT NULL,
+                frequency_hours INTEGER DEFAULT 24,
+                last_checked_at TIMESTAMP,
+                last_status TEXT DEFAULT 'ACTIVE',
+                last_result_hash TEXT DEFAULT '',
+                alerts_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_cases_user ON cases(user_id);
+            CREATE INDEX IF NOT EXISTS idx_case_targets_case ON case_targets(case_id);
+            CREATE INDEX IF NOT EXISTS idx_investigations_user ON investigations(user_id);
+            CREATE INDEX IF NOT EXISTS idx_monitored_user ON monitored_targets(user_id);
+
         """)
         conn.commit()
 
@@ -151,24 +210,26 @@ def init_db():
     seed_default_plans_and_settings()
 
 def bootstrap_admin():
-    """Ensures at least one administrator account exists."""
+    """Ensures at least one administrator account exists without overwriting existing passwords."""
     admin_email = os.environ.get('ADMIN_EMAIL', 'admin@spectre.io').strip().lower()
     admin_pass = os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
 
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, tier FROM users WHERE email = ?", (admin_email,))
-        user = cursor.fetchone()
-        pw_hash = generate_password_hash(admin_pass)
-        if not user:
+        cursor.execute("SELECT id, tier, password_hash FROM users WHERE email = ? OR tier = 'admin'", (admin_email,))
+        existing_admin = cursor.fetchone()
+        
+        if not existing_admin:
+            pw_hash = generate_password_hash(admin_pass)
             cursor.execute(
-                "INSERT INTO users (email, password_hash, tier, notes) VALUES (?, ?, 'admin', 'Default Master Administrator')",
+                "INSERT INTO users (email, password_hash, tier, notes) VALUES (?, ?, 'admin', 'Master Administrator')",
                 (admin_email, pw_hash)
             )
             conn.commit()
-            logger.info(f"Bootstrapped master admin user: {admin_email}")
+            logger.info(f"Initialized master administrator account: {admin_email}")
         else:
-            cursor.execute("UPDATE users SET tier = 'admin', password_hash = ? WHERE id = ?", (pw_hash, user['id']))
+            # Ensure tier remains admin, but preserve their established password
+            cursor.execute("UPDATE users SET tier = 'admin' WHERE id = ?", (existing_admin['id'],))
             conn.commit()
 
 def create_user(email: str, password: str, tier: str = 'free') -> Dict[str, Any]:
@@ -872,3 +933,101 @@ def get_vault_totals() -> Dict[str, Any]:
             }
     return totals
 
+
+
+# =========================================================================
+# CASE MANAGEMENT & INVESTIGATION STORAGE
+# =========================================================================
+def create_case(user_id: int, title: str, description: str = '', tags: list = None) -> Dict[str, Any]:
+    """Creates a new investigation case container."""
+    import uuid
+    case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
+    tags_json = json.dumps(tags or [])
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO cases (id, user_id, title, description, tags) VALUES (?, ?, ?, ?, ?)",
+            (case_id, user_id, title.strip(), description.strip(), tags_json)
+        )
+        conn.commit()
+    return get_case(case_id)
+
+def get_case(case_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a case by its ID."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM cases WHERE id = ?", (case_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def list_cases(user_id: int) -> list[Dict[str, Any]]:
+    """Lists all active cases for a user."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM cases WHERE user_id = ? ORDER BY updated_at DESC", (user_id,))
+        return [dict(r) for r in cursor.fetchall()]
+
+def add_target_to_case(case_id: str, target: str, target_type: str, investigation_id: str = '', summary: dict = None) -> Dict[str, Any]:
+    """Attaches a target investigation to a case."""
+    import uuid
+    target_entry_id = f"TGT-{uuid.uuid4().hex[:8].upper()}"
+    summary_json = json.dumps(summary or {})
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO case_targets (id, case_id, target, target_type, investigation_id, summary_json) VALUES (?, ?, ?, ?, ?, ?)",
+            (target_entry_id, case_id, target.strip(), target_type, investigation_id, summary_json)
+        )
+        cursor.execute("UPDATE cases SET target_count = target_count + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (case_id,))
+        conn.commit()
+    return {'id': target_entry_id, 'case_id': case_id, 'target': target, 'target_type': target_type}
+
+def record_investigation(user_id: Optional[int], target: str, target_type: str, results: dict, duration_ms: float = 0, confidence: str = 'HIGH', risk_score: int = 0, case_id: str = '') -> str:
+    """Persists investigation results with full provenance data."""
+    import uuid
+    inv_id = results.get('investigation_id') or f"INV-{uuid.uuid4().hex[:8].upper()}"
+    entities_count = len(results.get('graph_nodes') or results.get('graph', {}).get('nodes', []))
+    providers_count = len(results.get('provenance') or results.get('provider_results', []))
+    results_json = json.dumps(results)
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT OR REPLACE INTO investigations 
+               (id, user_id, case_id, target, target_type, confidence, risk_score, duration_ms, providers_count, entities_count, results_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (inv_id, user_id, case_id, target, target_type, confidence, risk_score, duration_ms, providers_count, entities_count, results_json)
+        )
+        conn.commit()
+    return inv_id
+
+def list_user_investigations(user_id: int, limit: int = 20) -> list[Dict[str, Any]]:
+    """Retrieves recent real investigations for a user."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, target, target_type, confidence, risk_score, duration_ms, entities_count, created_at FROM investigations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit)
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
+def add_monitored_target(user_id: int, target: str, target_type: str, frequency_hours: int = 24) -> Dict[str, Any]:
+    """Registers a live target for periodic OSINT change detection."""
+    import uuid
+    mon_id = f"MON-{uuid.uuid4().hex[:8].upper()}"
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO monitored_targets (id, user_id, target, target_type, frequency_hours) VALUES (?, ?, ?, ?, ?)",
+            (mon_id, user_id, target.strip(), target_type, frequency_hours)
+        )
+        conn.commit()
+    return {'id': mon_id, 'target': target, 'target_type': target_type, 'frequency_hours': frequency_hours, 'status': 'ACTIVE'}
+
+def list_monitored_targets(user_id: int) -> list[Dict[str, Any]]:
+    """Lists all monitored targets for a user."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM monitored_targets WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+        return [dict(r) for r in cursor.fetchall()]

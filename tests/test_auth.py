@@ -437,3 +437,35 @@ def test_admin_branding_customization():
     cfg_data = json.loads(cfg_res.data)
     assert cfg_data['branding']['platform_name'] == 'VOID OSINT'
 
+def test_case_management_and_history_api():
+    client = app.test_client()
+    client.post('/api/auth/login', json={
+        'email': os.environ.get('ADMIN_EMAIL', 'admin@spectre.io'),
+        'password': os.environ.get('ADMIN_PASSWORD', 'spectre_admin_2026')
+    })
+
+    # 1. Create a new case
+    case_res = client.post('/api/cases', json={
+        'title': 'Operation Dark Horizon',
+        'description': 'Tracking malicious C2 infrastructure',
+        'tags': ['apt', 'c2', 'threat_intel']
+    })
+    assert case_res.status_code in (200, 201)
+    case_data = json.loads(case_res.data)
+    assert case_data['success'] is True
+    case_id = case_data['case']['id']
+
+    # 2. Add target to case
+    target_res = client.post(f'/api/cases/{case_id}/targets', json={
+        'target': '198.51.100.23',
+        'target_type': 'ip',
+        'notes': 'Suspected staging server'
+    })
+    assert target_res.status_code in (200, 201)
+
+    # 3. Retrieve user history
+    hist_res = client.get('/api/user/history')
+    assert hist_res.status_code == 200
+    hist_data = json.loads(hist_res.data)
+    assert hist_data['success'] is True
+

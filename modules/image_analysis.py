@@ -1,196 +1,195 @@
-import hashlib
-import struct
-import datetime
-import os
+"""
+Advanced Image Forensics & Visual Intelligence Engine for SPECTRE.
+Extracts cryptographic file hashes, EXIF/GPS telemetry, camera forensics,
+and scans extracted metadata/text for actionable OSINT indicator pivots (URLs, emails, domains).
+"""
+import io
 import re
+import hashlib
+import logging
+from typing import Dict, Any, Optional
+from PIL import Image, ExifTags
 
-def parse_exif_binary(data: bytes) -> dict:
-    """
-    Pure Python EXIF parser for JPEG files without heavy third-party dependencies.
-    Extracts Make, Model, DateTime, Software, GPS Coordinates, Dimensions, and Hashes.
-    """
-    res = {
-        'make': None,
-        'model': None,
-        'software': None,
-        'datetime': None,
-        'exposure_time': None,
-        'f_number': None,
-        'iso': None,
-        'focal_length': None,
-        'gps_latitude': None,
-        'gps_longitude': None,
-        'gps_altitude': None,
-        'gps_coords_formatted': None,
-        'has_gps': False,
-        'raw_tags': {}
-    }
+logger = logging.getLogger(__name__)
 
-    if not data or len(data) < 4:
-        return res
+# Prevent decompression bomb attacks
+Image.MAX_IMAGE_PIXELS = 25_000_000
+MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 
-    # JPEG EXIF search
-    if data.startswith(b'\xff\xd8'):
-        idx = 2
-        length = len(data)
-        while idx < length - 4:
-            marker, seg_len = struct.unpack('>HH', data[idx:idx+4])
-            if marker == 0xffe1: # APP1 (EXIF)
-                exif_payload = data[idx+4:idx+2+seg_len]
-                if exif_payload.startswith(b'Exif\x00\x00'):
-                    tiff_header = exif_payload[6:]
-                    _parse_tiff_header(tiff_header, res)
-                break
-            elif (marker & 0xff00) == 0xff00 and marker not in (0xffd8, 0xffd9, 0xffda):
-                idx += 2 + seg_len
-            else:
-                break
+# Magic bytes signatures for common image formats
+MAGIC_SIGNATURES = {
+    b'\xFF\xD8\xFF': 'image/jpeg',
+    b'\x89PNG\r\n\x1a\n': 'image/png',
+    b'GIF87a': 'image/gif',
+    b'GIF89a': 'image/gif',
+    b'RIFF': 'image/webp'  # Verified with WEBP chunk
+}
 
-    return res
+INDICATOR_PATTERNS = {
+    'email': re.compile(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'),
+    'domain': re.compile(r'\b(?:[a-zA-Z0-9-]+\.)+(?:com|org|net|io|ai|co|dev|app|uk|de|xyz)\b', re.IGNORECASE),
+    'ipv4': re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'),
+    'url': re.compile(r'https?://[^\s<>"]+')
+}
 
-def _parse_tiff_header(tiff_bytes: bytes, res: dict):
-    if len(tiff_bytes) < 8:
-        return
-    endian = tiff_bytes[:2]
-    is_little = (endian == b'II')
-    fmt_h = '<H' if is_little else '>H'
-    fmt_i = '<I' if is_little else '>I'
 
-    magic = struct.unpack(fmt_h, tiff_bytes[2:4])[0]
-    if magic != 42:
-        return
+def validate_image_security(data: bytes) -> str:
+    """Verifies file size and magic bytes against decompression and payload attacks."""
+    if len(data) > MAX_IMAGE_SIZE_BYTES:
+        raise ValueError(f"Image exceeds maximum allowable file size ({len(data)} > {MAX_IMAGE_SIZE_BYTES} bytes)")
+    if len(data) < 16:
+        raise ValueError("Image data is corrupted or too small.")
 
-    ifd0_offset = struct.unpack(fmt_i, tiff_bytes[4:8])[0]
-    exif_sub_offset = None
-    gps_sub_offset = None
+    matched_mime = None
+    for sig, mime in MAGIC_SIGNATURES.items():
+        if data.startswith(sig):
+            if sig == b'RIFF' and len(data) >= 12 and data[8:12] != b'WEBP':
+                continue
+            matched_mime = mime
+            break
 
-    def read_ifd(offset):
-        nonlocal exif_sub_offset, gps_sub_offset
-        if offset + 2 > len(tiff_bytes):
-            return
-        num_entries = struct.unpack(fmt_h, tiff_bytes[offset:offset+2])[0]
-        curr = offset + 2
-        for _ in range(min(num_entries, 120)):
-            if curr + 12 > len(tiff_bytes):
-                break
-            tag, dtype, count, val_or_off = struct.unpack(f"{fmt_h[1]}HHI", tiff_bytes[curr:curr+12])
-            
-            # String tags
-            if dtype == 2: # ASCII
-                if count <= 4:
-                    s_bytes = tiff_bytes[curr+8:curr+8+count]
-                else:
-                    if val_or_off + count <= len(tiff_bytes):
-                        s_bytes = tiff_bytes[val_or_off:val_or_off+count]
-                    else:
-                        s_bytes = b''
-                s_val = s_bytes.decode('utf-8', errors='ignore').strip('\x00').strip()
-                if tag == 0x010f: res['make'] = s_val
-                elif tag == 0x0110: res['model'] = s_val
-                elif tag == 0x0131: res['software'] = s_val
-                elif tag == 0x0132 or tag == 0x9003: res['datetime'] = s_val
-            
-            # Sub-IFD pointers
-            if tag == 0x8769: # Exif IFD
-                exif_sub_offset = val_or_off
-            elif tag == 0x8825: # GPS IFD
-                gps_sub_offset = val_or_off
+    if not matched_mime:
+        raise ValueError("Invalid image file format. Supported formats: JPEG, PNG, GIF, WEBP.")
 
-            curr += 12
+    return matched_mime
+
+
+def _convert_dms_to_dd(dms_values, ref: str) -> Optional[float]:
+    """Converts degrees, minutes, seconds EXIF tuple to decimal degrees."""
+    try:
+        def to_float(val):
+            if isinstance(val, (int, float)):
+                return float(val)
+            if hasattr(val, 'numerator') and hasattr(val, 'denominator') and val.denominator != 0:
+                return float(val.numerator) / float(val.denominator)
+            if isinstance(val, tuple) and len(val) == 2 and val[1] != 0:
+                return float(val[0]) / float(val[1])
+            return float(val)
+
+        d = to_float(dms_values[0])
+        m = to_float(dms_values[1])
+        s = to_float(dms_values[2])
+        dd = d + (m / 60.0) + (s / 3600.0)
+        if ref in ('S', 'W'):
+            dd = -dd
+        return round(dd, 6)
+    except Exception:
+        return None
+
+
+def analyze_image_bytes(image_bytes: bytes, filename: str = 'target_image') -> Dict[str, Any]:
+    """Performs deep forensic audit, EXIF parsing, GPS resolution, and indicator discovery."""
+    mime_type = validate_image_security(image_bytes)
+
+    # 1. Cryptographic File Hashes
+    md5_hash = hashlib.md5(image_bytes).hexdigest()
+    sha1_hash = hashlib.sha1(image_bytes).hexdigest()
+    sha256_hash = hashlib.sha256(image_bytes).hexdigest()
 
     try:
-        read_ifd(ifd0_offset)
-        if exif_sub_offset:
-            read_ifd(exif_sub_offset)
-        if gps_sub_offset:
-            _parse_gps_ifd(tiff_bytes, gps_sub_offset, is_little, res)
-    except Exception:
-        pass
+        img = Image.open(io.BytesIO(image_bytes))
+        img.verify()  # Verify integrity
+        # Re-open for data extraction
+        img = Image.open(io.BytesIO(image_bytes))
+    except Exception as e:
+        raise ValueError(f"Corrupted or invalid image structure: {str(e)}")
 
-def _parse_gps_ifd(tiff_bytes: bytes, offset: int, is_little: bool, res: dict):
-    fmt_h = '<H' if is_little else '>H'
-    fmt_i = '<I' if is_little else '>I'
+    width, height = img.size
+    img_format = img.format or mime_type.split('/')[-1].upper()
+    color_mode = img.mode
 
-    if offset + 2 > len(tiff_bytes):
-        return
-    num_entries = struct.unpack(fmt_h, tiff_bytes[offset:offset+2])[0]
-    curr = offset + 2
+    # 2. EXIF Metadata Extraction
+    exif_data = {}
+    gps_info = {}
+    camera_metadata = {}
+    extracted_text_blocks = []
 
-    lat_ref = 'N'
-    lon_ref = 'E'
-    lat_deg = None
-    lon_deg = None
+    raw_exif = img._getexif() if hasattr(img, '_getexif') and callable(img._getexif) else None
+    if raw_exif:
+        for tag_id, value in raw_exif.items():
+            tag_name = ExifTags.TAGS.get(tag_id, str(tag_id))
+            # Filter non-serializable objects
+            if isinstance(value, (bytes, bytearray)):
+                try:
+                    str_val = value.decode('utf-8', errors='ignore').strip()
+                    if str_val:
+                        exif_data[tag_name] = str_val
+                        extracted_text_blocks.append(str_val)
+                except Exception:
+                    pass
+            elif isinstance(value, (int, float, str)):
+                exif_data[tag_name] = value
+                if isinstance(value, str):
+                    extracted_text_blocks.append(value)
+            elif tag_name == 'GPSInfo' and isinstance(value, dict):
+                gps_dict = {}
+                for g_tag_id, g_val in value.items():
+                    g_tag_name = ExifTags.GPSTAGS.get(g_tag_id, str(g_tag_id))
+                    gps_dict[g_tag_name] = g_val
+                gps_info = gps_dict
 
-    for _ in range(min(num_entries, 40)):
-        if curr + 12 > len(tiff_bytes):
-            break
-        tag, dtype, count, val_or_off = struct.unpack(f"{fmt_h[1]}HHI", tiff_bytes[curr:curr+12])
+    # Extract Camera particulars
+    camera_metadata = {
+        'make': exif_data.get('Make', '—'),
+        'model': exif_data.get('Model', '—'),
+        'software': exif_data.get('Software', '—'),
+        'timestamp': exif_data.get('DateTimeOriginal') or exif_data.get('DateTime', '—'),
+        'lens': exif_data.get('LensModel', '—'),
+        'exposure_time': str(exif_data.get('ExposureTime', '—')),
+        'f_number': str(exif_data.get('FNumber', '—')),
+        'iso': str(exif_data.get('ISOSpeedRatings', '—'))
+    }
 
-        if tag == 1: # Lat ref
-            lat_ref = chr(tiff_bytes[curr+8])
-        elif tag == 2: # Lat rational
-            lat_deg = _read_rational_triplet(tiff_bytes, val_or_off, fmt_i)
-        elif tag == 3: # Lon ref
-            lon_ref = chr(tiff_bytes[curr+8])
-        elif tag == 4: # Lon rational
-            lon_deg = _read_rational_triplet(tiff_bytes, val_or_off, fmt_i)
+    # 3. GPS Geotag Resolution
+    geo_location = None
+    if gps_info:
+        lat_ref = gps_info.get('GPSLatitudeRef', 'N')
+        lat_dms = gps_info.get('GPSLatitude')
+        lon_ref = gps_info.get('GPSLongitudeRef', 'E')
+        lon_dms = gps_info.get('GPSLongitude')
 
-        curr += 12
+        if lat_dms and lon_dms:
+            lat = _convert_dms_to_dd(lat_dms, lat_ref)
+            lon = _convert_dms_to_dd(lon_dms, lon_ref)
+            if lat is not None and lon is not None:
+                geo_location = {
+                    'latitude': lat,
+                    'longitude': lon,
+                    'maps_url': f"https://www.google.com/maps?q={lat},{lon}",
+                    'coordinates': f"{abs(lat):.4f}° {'N' if lat >= 0 else 'S'}, {abs(lon):.4f}° {'E' if lon >= 0 else 'W'}"
+                }
 
-    if lat_deg is not None and lon_deg is not None:
-        lat = lat_deg[0] + lat_deg[1] / 60.0 + lat_deg[2] / 3600.0
-        if lat_ref.upper() == 'S': lat = -lat
+    # 4. Extract OSINT Pivots from Image Metadata & Comment Strings
+    full_text_corpus = " ".join(extracted_text_blocks)
+    pivots_found = []
 
-        lon = lon_deg[0] + lon_deg[1] / 60.0 + lon_deg[2] / 3600.0
-        if lon_ref.upper() == 'W': lon = -lon
-
-        res['gps_latitude'] = round(lat, 6)
-        res['gps_longitude'] = round(lon, 6)
-        res['has_gps'] = True
-        res['gps_coords_formatted'] = f"{abs(lat):.4f}° {'N' if lat >= 0 else 'S'}, {abs(lon):.4f}° {'E' if lon >= 0 else 'W'}"
-
-def _read_rational_triplet(tiff_bytes, offset, fmt_i):
-    if offset + 24 > len(tiff_bytes):
-        return (0.0, 0.0, 0.0)
-    vals = []
-    for i in range(3):
-        num, den = struct.unpack(f"{fmt_i[1]}II", tiff_bytes[offset + i*8: offset + (i+1)*8])
-        vals.append(num / den if den != 0 else 0.0)
-    return tuple(vals)
-
-def analyze_image_bytes(data: bytes, filename: str = "uploaded_image.jpg") -> dict:
-    """
-    Comprehensive Image OSINT analysis: Hashes, Size, EXIF Metadata, GPS Geotags,
-    and formatted reverse search links.
-    """
-    file_size = len(data)
-    md5_hash = hashlib.md5(data).hexdigest()
-    sha1_hash = hashlib.sha1(data).hexdigest()
-    sha256_hash = hashlib.sha256(data).hexdigest()
-
-    mime = 'image/jpeg'
-    if data.startswith(b'\x89PNG\r\n\x1a\n'):
-        mime = 'image/png'
-    elif data.startswith(b'GIF87a') or data.startswith(b'GIF89a'):
-        mime = 'image/gif'
-    elif data.startswith(b'RIFF') and b'WEBP' in data[:14]:
-        mime = 'image/webp'
-    elif data.startswith(b'BM'):
-        mime = 'image/bmp'
-
-    # Extract EXIF
-    exif = parse_exif_binary(data)
+    for ptype, pat in INDICATOR_PATTERNS.items():
+        matches = pat.findall(full_text_corpus)
+        for m in matches:
+            if m not in [p['value'] for p in pivots_found]:
+                pivots_found.append({
+                    'type': ptype.upper(),
+                    'value': m,
+                    'source': 'EXIF_METADATA_EXTRACT'
+                })
 
     return {
         'filename': filename,
-        'mime_type': mime,
-        'size_bytes': file_size,
-        'size_formatted': f"{file_size / 1024:.1f} KB" if file_size < 1024*1024 else f"{file_size / (1024*1024):.2f} MB",
+        'mime_type': mime_type,
+        'format': img_format,
+        'dimensions': f"{width}x{height}",
+        'width': width,
+        'height': height,
+        'color_mode': color_mode,
+        'size_bytes': len(image_bytes),
         'hashes': {
             'md5': md5_hash,
             'sha1': sha1_hash,
             'sha256': sha256_hash
         },
-        'exif': exif,
-        'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
+        'camera': camera_metadata,
+        'geolocation': geo_location,
+        'exif_raw': {k: str(v) for k, v in list(exif_data.items())[:30]},
+        'pivots': pivots_found,
+        'provenance': 'LOCAL_DERIVATION'
     }

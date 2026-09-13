@@ -1,20 +1,22 @@
 """
-Core investigation engine for the SPECTRE OSINT platform.
-Orchestrates multi-source reconnaissance, breach intelligence,
-correlation, timeline synthesis, and 3D graph construction.
+Core Autonomous Investigation & Correlation Engine for SPECTRE.
+Orchestrates multi-source reconnaissance, recursive auto-pivots, breach intelligence,
+multi-input parsing, evidence provenance tracking, and 3D spatial graph synthesis.
 """
 import re
 import time
 import uuid
 import logging
+from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+from typing import Optional, Dict, Any, List, Tuple
 
 from modules.models import (
     TargetClassification, TargetType, Confidence, ErrorType,
     ProviderResult, InvestigationResult, TimelineEvent, GraphNode, GraphEdge, RiskScore
 )
 from modules.cache import investigation_cache, TTL_BREACH, TTLCache
+from modules.multi_parser import MultiInputParser
 
 # Real module imports
 from modules.email_lookup import lookup_email
@@ -36,6 +38,7 @@ from modules.risk_engine import RiskEngine
 from modules.timeline import TimelineBuilder
 from modules.graph_builder import GraphBuilder
 from modules.correlator import IntelligenceCorrelator
+from modules.db import record_investigation
 
 logger = logging.getLogger(__name__)
 
@@ -49,22 +52,32 @@ class InputClassifier:
         is_pure_digits = target.isdigit()
         digit_len = len(target)
 
-        # 1. ASN Check (e.g. AS15169 or AS13335)
-        if re.match(r'^AS\d+$', target, re.IGNORECASE):
-            return TargetClassification(target, TargetType.ASN, Confidence.CONFIRMED, "Autonomous System Number (BGP)")
+        # 0. Multi-Entity / Block of Text Check
+        if '\n' in target or len(target.split()) >= 3:
+            parsed_multi = MultiInputParser.parse_text(target)
+            if parsed_multi['total_entities'] >= 2:
+                return TargetClassification(target, TargetType.MULTI_INPUT, Confidence.CONFIRMED, f"Multi-Indicator Matrix ({parsed_multi['total_entities']} Detected Targets)")
 
-        # 2. IPv4 Address Check
+        # 1. URL Check (http:// or https://)
+        if target.startswith(('http://', 'https://')):
+            return TargetClassification(target, TargetType.URL, Confidence.CONFIRMED, "Uniform Resource Locator (Web Endpoint)")
+
+        # 2. ASN Check (e.g. AS15169 or AS13335)
+        elif re.match(r'^AS\d+$', target, re.IGNORECASE):
+            return TargetClassification(target, TargetType.ASN, Confidence.CONFIRMED, "Autonomous System Number (BGP Routing)")
+
+        # 3. IPv4 Address Check
         elif re.match(r'^(\d{1,3}\.){3}\d{1,3}$', target):
             return TargetClassification(target, TargetType.IP, Confidence.CONFIRMED, "IPv4 Global Unicast Address")
 
-        # 3. Formatted Phone Number (+, -, (), spaces)
+        # 4. Formatted Phone Number (+, -, (), spaces)
         elif target.startswith('+') or (re.match(r'^\+?[\d\s\-\(\)\.]{7,25}$', target) and len(digits_only) >= 7 and not '.' in target):
             return TargetClassification(target, TargetType.PHONE, Confidence.HIGH, "Global Telephone (E.164)")
 
-        # 4. Pure Digits: Phone, Discord Snowflake, Port, or Generic Number
+        # 5. Pure Digits: Phone, Discord Snowflake, Port, or Generic Number
         elif is_pure_digits:
             num_val = int(target)
-            if 15 <= digit_len <= 20:
+            if 17 <= digit_len <= 20:
                 return TargetClassification(target, TargetType.DISCORD, Confidence.HIGH, "64-Bit Discord/Twitter Snowflake Timestamp")
             elif 1 <= num_val <= 65535 and digit_len <= 5:
                 return TargetClassification(target, TargetType.PORT, Confidence.HIGH, f"IANA Port {num_val}")
@@ -73,19 +86,19 @@ class InputClassifier:
             else:
                 return TargetClassification(target, TargetType.NUMBER, Confidence.HIGH, f"Numeric Identifier ({digit_len} Digits)")
 
-        # 5. Email Address Check
+        # 6. Email Address Check
         elif '@' in target and '.' in target:
             return TargetClassification(target, TargetType.EMAIL, Confidence.CONFIRMED, "RFC 5322 Standard Email Address")
 
-        # 6. Cryptographic Hash Check
+        # 7. Cryptographic Hash Check
         elif re.match(r'^[a-fA-F0-9]{32}$|^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{64}$', target):
             return TargetClassification(target, TargetType.HASH, Confidence.CONFIRMED, "Hexadecimal Digest / Cryptographic Checksum")
 
-        # 7. Domain / FQDN / URL Check
+        # 8. Domain / FQDN Check
         elif '.' in target and not target.startswith('+') and ' ' not in target:
             return TargetClassification(target, TargetType.DOMAIN, Confidence.HIGH, "Fully Qualified Domain Name (FQDN)")
 
-        # 8. Username Discovery Default
+        # 9. Username Discovery Default
         else:
             clean_user = target.lstrip('@')
             return TargetClassification(target, TargetType.USERNAME, Confidence.HIGH, f"Social / Web Handle (@{clean_user})")
@@ -93,7 +106,7 @@ class InputClassifier:
 
 class InvestigationEngine:
     """Core orchestrator for multi-vector OSINT queries and intelligence synthesis."""
-    def __init__(self, max_workers: int = 12, default_timeout: int = 15):
+    def __init__(self, max_workers: int = 16, default_timeout: int = 15):
         self.max_workers = max_workers
         self.default_timeout = default_timeout
         self.hibp_breach_provider = HIBPBreachProvider()
@@ -103,8 +116,8 @@ class InvestigationEngine:
         self.graph_builder = GraphBuilder()
         self.correlator = IntelligenceCorrelator()
 
-    def investigate(self, target: str) -> dict:
-        """Executes full investigation pipeline and returns structured API payload."""
+    def investigate(self, target: str, user_id: Optional[int] = None) -> dict:
+        """Executes full autonomous investigation pipeline and returns structured API payload."""
         start_time = time.time()
         target = target.strip()
         classification = InputClassifier.classify(target)
@@ -114,21 +127,37 @@ class InvestigationEngine:
         dossier: dict = {}
         summary_intel: dict = {}
         errors: list[dict] = []
+        pivots: list[dict] = []
+        cache_hits = 0
 
-        # Build dynamic tasks list based on classified target type
-        tasks = self._plan_investigation_tasks(target, classification.target_type)
+        # Special Handling for Multi-Entity Input
+        if classification.target_type == TargetType.MULTI_INPUT:
+            multi_data = MultiInputParser.parse_text(target)
+            dossier['multi_input'] = multi_data
+            # Plan initial top 4 entities for deep concurrent scan
+            tasks = []
+            for ent in multi_data['entities'][:4]:
+                sub_class = InputClassifier.classify(ent['value'])
+                tasks.extend(self._plan_investigation_tasks(ent['value'], sub_class.target_type))
+        else:
+            tasks = self._plan_investigation_tasks(target, classification.target_type)
+
+        providers_planned = len(tasks)
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_key = {
-                executor.submit(self._run_task, task_key, task_func, task_arg): task_key
+                executor.submit(self._run_task, task_key, task_func, task_arg): (task_key, task_arg)
                 for task_key, task_func, task_arg in tasks
             }
 
             for future in as_completed(future_to_key):
-                task_key = future_to_key[future]
+                task_key, task_arg = future_to_key[future]
                 try:
                     res: ProviderResult = future.result()
                     provider_results.append(res)
+                    if res.source_url.startswith('cache://'):
+                        cache_hits += 1
+
                     if res.error_type == ErrorType.NONE or res.data:
                         dossier[task_key] = res.data
                     if res.error_type not in (ErrorType.NONE, ErrorType.NO_RESULTS) and res.error_message:
@@ -141,10 +170,10 @@ class InvestigationEngine:
                     logger.error(f"Task {task_key} failed: {e}")
                     errors.append({'provider': task_key, 'error': str(e), 'type': 'INTERNAL_ERROR'})
 
-        # Secondary correlation / cascading steps
-        self._execute_cascade_recon(target, classification.target_type, dossier, provider_results, errors)
+        # Secondary recursive auto-pivoting
+        self._execute_cascade_recon(target, classification.target_type, dossier, provider_results, errors, pivots)
 
-        # Risk scoring
+        # Risk scoring calculation
         risk_score = None
         breach_summary_data = dossier.get('breaches') or dossier.get('check_breaches')
         if breach_summary_data and isinstance(breach_summary_data, dict):
@@ -179,13 +208,28 @@ class InvestigationEngine:
         graph_nodes, graph_edges = self.graph_builder.build(target, classification.target_type, dossier, investigation_id)
         vis_graph = self.graph_builder.to_vis_json(graph_nodes, graph_edges)
 
-        # Cross-module correlations
+        # Cross-module correlations & pivots
         correlations = self.correlator.correlate(target, classification.target_type, dossier)
 
         # Build summary telemetry
         summary_intel = self._build_summary_intel(target, classification.target_type, dossier, risk_score)
 
         duration_ms = round((time.time() - start_time) * 1000, 2)
+        providers_completed = len([p for p in provider_results if p.error_type in (ErrorType.NONE, ErrorType.NO_RESULTS)])
+        providers_failed = len([p for p in provider_results if p.error_type not in (ErrorType.NONE, ErrorType.NO_RESULTS)])
+        providers_rate_limited = len([p for p in provider_results if p.error_type == ErrorType.RATE_LIMITED])
+
+        telemetry = {
+            'investigation_id': investigation_id,
+            'providers_planned': providers_planned,
+            'providers_completed': providers_completed,
+            'providers_failed': providers_failed,
+            'providers_rate_limited': providers_rate_limited,
+            'entities_discovered': len(graph_nodes),
+            'relationships_created': len(graph_edges),
+            'duration_ms': duration_ms,
+            'cache_hits': cache_hits
+        }
 
         resp_data = {
             'detected_type': classification.target_type.name.lower(),
@@ -195,6 +239,8 @@ class InvestigationEngine:
             'dossier': dossier,
             'results': dossier,
             'investigation_id': investigation_id,
+            'telemetry': telemetry,
+            'pivots': pivots,
             'risk': risk_score.to_dict() if risk_score else None,
             'timeline': [e.to_dict() for e in timeline_events],
             'graph': vis_graph,
@@ -204,6 +250,14 @@ class InvestigationEngine:
             'duration_ms': duration_ms,
             'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
         }
+
+        # Persist real investigation in SQLite DB if user is provided
+        try:
+            score_val = risk_score.score if risk_score else 0
+            conf_str = classification.confidence.name
+            record_investigation(user_id, target, classification.target_type.name, resp_data, duration_ms, conf_str, score_val)
+        except Exception as e:
+            logger.debug(f"Failed to record investigation history: {e}")
 
         return resp_data
 
@@ -216,6 +270,13 @@ class InvestigationEngine:
 
         elif target_type == TargetType.IP:
             tasks.append(('ip', lookup_ip, target))
+
+        elif target_type == TargetType.URL:
+            tasks.append(('headers', analyze_headers, target))
+            parsed = urlparse(target)
+            if parsed.hostname:
+                tasks.append(('domain', lookup_domain, parsed.hostname))
+                tasks.append(('dorks', generate_dorks, parsed.hostname))
 
         elif target_type == TargetType.PHONE:
             tasks.append(('phone', lookup_phone, target))
@@ -282,7 +343,6 @@ class InvestigationEngine:
 
         try:
             raw = func(query_arg)
-            # If the function returned a ProviderResult directly (like HIBP search)
             if isinstance(raw, ProviderResult):
                 return raw
 
@@ -326,91 +386,96 @@ class InvestigationEngine:
                 data={}
             )
 
-    def _execute_cascade_recon(self, target: str, target_type: TargetType, dossier: dict, provider_results: list, errors: list):
-        """Cascades cross-module recon (e.g. IP -> BGP ASN, Domain -> Headers/BGP)."""
-        # 1. If IP lookup returned ASN, query BGP
+    def _execute_cascade_recon(self, target: str, target_type: TargetType, dossier: dict, provider_results: list, errors: list, pivots: list):
+        """Cascades cross-module auto-pivots (e.g. Email -> Domain -> MX -> IP -> ASN)."""
+        # 1. IP -> ASN -> BGP
         if target_type == TargetType.IP and 'ip' in dossier and 'bgp' not in dossier:
             ip_data = dossier['ip']
             asn = ip_data.get('asn') or ip_data.get('as') or ''
             asn_match = re.search(r'AS\d+', asn, re.IGNORECASE)
             if asn_match:
                 try:
-                    bgp_res = lookup_bgp(asn_match.group(0))
+                    asn_str = asn_match.group(0).upper()
+                    bgp_res = lookup_bgp(asn_str)
                     dossier['bgp'] = bgp_res
+                    pivots.append({'from': target, 'to': asn_str, 'pivot_type': 'ASN_ROUTING', 'confidence': 'CONFIRMED'})
                 except Exception as e:
                     logger.debug(f"Cascade BGP lookup failed: {e}")
 
-        # 2. If Domain lookup returned DNS A records and BGP is missing
-        if target_type == TargetType.DOMAIN and 'domain' in dossier and 'bgp' not in dossier:
+        # 2. Domain -> DNS A Records -> IP -> ASN
+        if target_type in (TargetType.DOMAIN, TargetType.URL) and 'domain' in dossier and 'bgp' not in dossier:
             dns_a = dossier['domain'].get('dns', {}).get('A', [])
             if dns_a:
                 try:
                     first_ip = dns_a[0]
                     ip_res = lookup_ip(first_ip)
+                    dossier['resolved_ip'] = ip_res
+                    pivots.append({'from': target, 'to': first_ip, 'pivot_type': 'DNS_A_RECORD', 'confidence': 'CONFIRMED'})
                     asn = ip_res.get('asn') or ip_res.get('as') or ''
                     asn_match = re.search(r'AS\d+', asn, re.IGNORECASE)
                     if asn_match:
-                        bgp_res = lookup_bgp(asn_match.group(0))
+                        bgp_res = lookup_bgp(asn_match.group(0).upper())
                         dossier['bgp'] = bgp_res
                 except Exception as e:
-                    logger.debug(f"Cascade domain IP/BGP failed: {e}")
+                    logger.debug(f"Cascade domain to IP/BGP failed: {e}")
+
+        # 3. Email -> Domain -> MX
+        if target_type == TargetType.EMAIL and 'email' in dossier:
+            em = dossier['email']
+            domain = em.get('domain')
+            if domain:
+                pivots.append({'from': target, 'to': domain, 'pivot_type': 'EMAIL_DOMAIN', 'confidence': 'CONFIRMED'})
 
     def _build_summary_intel(self, target: str, target_type: TargetType, dossier: dict, risk_score: Optional[RiskScore]) -> dict:
-        """Constructs human-friendly summary cards for the UI."""
-        summary = {}
+        """Constructs standardized summary intelligence payload."""
+        summary = {
+            'target': target,
+            'type': target_type.name,
+            'threat_level': risk_score.severity if risk_score else 'MINIMAL',
+            'risk_score': risk_score.score if risk_score else 0,
+            'summary_tags': [],
+            'key_metrics': {}
+        }
 
-        if risk_score:
-            summary['risk_score'] = risk_score.score
-            summary['risk_severity'] = risk_score.severity
+        if target_type == TargetType.IP and 'ip' in dossier:
+            ipd = dossier['ip']
+            summary['key_metrics'] = {
+                'country': ipd.get('country', '—'),
+                'city': ipd.get('city', '—'),
+                'isp': ipd.get('isp', '—'),
+                'asn': ipd.get('as', '—')
+            }
+            summary['summary_tags'].extend([ipd.get('country', ''), ipd.get('isp', '')])
 
-        if target_type == TargetType.ASN:
-            bgp_res = dossier.get('bgp', {})
-            summary['asn_name'] = bgp_res.get('holder', 'Unknown Carrier')
-            summary['prefixes_count'] = len(bgp_res.get('prefixes', []))
+        elif target_type == TargetType.DOMAIN and 'domain' in dossier:
+            dom = dossier['domain']
+            whois = dom.get('whois', {})
+            summary['key_metrics'] = {
+                'registrar': whois.get('registrar', '—'),
+                'created': whois.get('creation_date', '—'),
+                'subdomains_count': len(dom.get('subdomains_ct', []))
+            }
+            if whois.get('registrar'):
+                summary['summary_tags'].append(f"Registrar: {whois.get('registrar')}")
 
-        elif target_type == TargetType.IP:
-            ip_res = dossier.get('ip', {})
-            summary['location'] = f"{ip_res.get('city', 'Unknown')}, {ip_res.get('country', 'Unknown')}".strip(', ')
-            summary['isp'] = ip_res.get('isp', ip_res.get('org', 'Unknown ISP'))
+        elif target_type == TargetType.EMAIL and 'email' in dossier:
+            em = dossier['email']
+            breach_count = 0
+            if 'breaches' in dossier and isinstance(dossier['breaches'], dict):
+                breach_count = dossier['breaches'].get('total_breaches', 0)
+            summary['key_metrics'] = {
+                'domain': em.get('domain', '—'),
+                'mx_provider': em.get('mail_provider', '—'),
+                'breaches_detected': breach_count
+            }
 
-        elif target_type == TargetType.EMAIL:
-            email_res = dossier.get('email', {})
-            summary['mx_servers'] = email_res.get('mx_records', [])
-            summary['has_gravatar'] = email_res.get('gravatar', {}).get('exists', False)
-            breaches_data = dossier.get('breaches', {})
-            summary['breaches_count'] = breaches_data.get('total_breaches', 0)
-            summary['pastes_count'] = dossier.get('pastes', {}).get('total_pastes', 0)
+        elif target_type == TargetType.USERNAME and 'username' in dossier:
+            ud = dossier['username']
+            summary['key_metrics'] = {
+                'found_platforms': ud.get('found_count', 0),
+                'total_scanned': ud.get('total_checked', 0),
+                'scan_mode': ud.get('scan_mode', 'FAST')
+            }
 
-        elif target_type == TargetType.DOMAIN:
-            dom_res = dossier.get('domain', {})
-            summary['registrar'] = dom_res.get('registrar', 'Unknown')
-            summary['subdomains_count'] = len(dom_res.get('subdomains_ct', []))
-
-        elif target_type == TargetType.USERNAME:
-            user_res = dossier.get('username', {})
-            summary['found_count'] = len(user_res.get('found', []))
-            summary['total_checked'] = user_res.get('total_checked', 45)
-
-        elif target_type == TargetType.PHONE:
-            p_res = dossier.get('phone', {})
-            summary['country'] = p_res.get('country', 'Unknown')
-            summary['carrier'] = p_res.get('carrier', 'Unknown')
-            summary['e164'] = p_res.get('formatted', {}).get('e164', target)
-
-        elif target_type == TargetType.DISCORD:
-            disc_res = dossier.get('discord', {})
-            summary['account_age_days'] = disc_res.get('account_age_days', 0)
-            summary['created_utc'] = disc_res.get('created_at', 'Unknown')
-
-        elif target_type == TargetType.PORT:
-            port_data = dossier.get('number', {}).get('port_analysis', {})
-            summary['service'] = port_data.get('service', 'Standard Port')
-            summary['protocol'] = port_data.get('protocol', 'TCP/UDP')
-            summary['risk'] = port_data.get('risk_profile', 'Standard')
-
-        elif target_type == TargetType.HASH:
-            hash_res = dossier.get('hash', {})
-            summary['possible_algos'] = hash_res.get('possible_algorithms', [])
-            summary['entropy'] = hash_res.get('entropy', 0)
-
+        summary['summary_tags'] = [t for t in summary['summary_tags'] if t]
         return summary

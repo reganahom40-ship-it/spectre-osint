@@ -146,11 +146,14 @@ def test_admin_vault_api_endpoints():
     assert 'totals' in data['vault']
     assert 'total_fiat_usd' in data['vault']
 
-    sync_res = client.post('/api/admin/payments/sync')
-    assert sync_res.status_code == 200
-    sync_data = sync_res.get_json()
-    assert sync_data['success'] is True
-    assert 'sync' in sync_data
+    with patch('modules.payment_verifier.requests.post') as mock_p, patch('modules.crypto_verifier.requests.get') as mock_g:
+        mock_p.return_value.status_code = 401
+        mock_g.return_value.status_code = 404
+        sync_res = client.post('/api/admin/payments/sync')
+        assert sync_res.status_code == 200
+        sync_data = sync_res.get_json()
+        assert sync_data['success'] is True
+        assert 'sync' in sync_data
 
     bad_withdraw = client.post('/api/admin/vault/withdraw', json={
         'currency': 'LTC',

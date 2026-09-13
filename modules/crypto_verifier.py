@@ -16,6 +16,16 @@ from modules.db import (
 
 logger = logging.getLogger(__name__)
 
+def is_test_payment_mode_active() -> bool:
+    """Determines if simulated/test payment verification is permitted in current runtime."""
+    import os
+    if os.environ.get('ENV') == 'production' or os.environ.get('RENDER'):
+        # Never allow test verification in production unless explicitly opted in
+        return os.environ.get('ALLOW_TEST_PAYMENTS', '').lower() == 'true'
+    # Allowed in local development and automated pytest test suites
+    return True
+
+
 # User-Agent for blockchain explorers
 HEADERS = {
     'User-Agent': 'SPECTRE-Autonomous-Settlement-Engine/2.0'
@@ -29,7 +39,7 @@ def verify_ltc_on_chain(address: str, expected_amount: float, tx_hash: str = '')
     # 1. If explicit tx_hash is provided, verify transaction details
     if tx_hash and len(tx_hash) >= 16:
         # Check for test / simulated verification hooks
-        if tx_hash.startswith(('TEST_', 'TX_VERIFY_', 'SIM_')):
+        if tx_hash.startswith(('TEST_', 'TX_VERIFY_', 'SIM_')) and is_test_payment_mode_active():
             return True, tx_hash, expected_amount
 
         try:
@@ -95,7 +105,7 @@ def verify_btc_on_chain(address: str, expected_amount: float, tx_hash: str = '')
     Returns (is_verified, confirmed_txid, received_amount).
     """
     if tx_hash and len(tx_hash) >= 16:
-        if tx_hash.startswith(('TEST_', 'TX_VERIFY_', 'SIM_')):
+        if tx_hash.startswith(('TEST_', 'TX_VERIFY_', 'SIM_')) and is_test_payment_mode_active():
             return True, tx_hash, expected_amount
 
         try:
@@ -137,7 +147,7 @@ def verify_eth_on_chain(address: str, expected_amount: float, tx_hash: str = '')
     Returns (is_verified, confirmed_txid, received_amount).
     """
     if tx_hash and len(tx_hash) >= 16:
-        if tx_hash.startswith(('TEST_', 'TX_VERIFY_', 'SIM_')):
+        if tx_hash.startswith(('TEST_', 'TX_VERIFY_', 'SIM_')) and is_test_payment_mode_active():
             return True, tx_hash, expected_amount
 
         try:

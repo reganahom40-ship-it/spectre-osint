@@ -33,6 +33,8 @@ class TargetType(Enum):
     ASN = "ASN"
     PORT = "PORT"
     NUMBER = "NUMBER"
+    URL = "URL"
+    MULTI_INPUT = "MULTI_INPUT"
     UNKNOWN = "UNKNOWN"
 
 @dataclass

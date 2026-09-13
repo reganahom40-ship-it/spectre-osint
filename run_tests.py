@@ -9,7 +9,7 @@ def run_suite():
     total_passed = 0
     total_failed = 0
 
-    from tests.test_engine import test_input_classifier_types, test_cache_ttl_and_hashing, test_engine_investigate_structure
+    from tests.test_engine import test_input_classifier_types, test_cache_ttl_and_hashing, test_engine_investigate_structure, test_multi_input_parser
     from tests.test_ssrf import test_ssrf_blocked_urls, test_headers_raises_on_ssrf, test_ip_lookup_blocks_private
     from tests.test_risk_engine import test_risk_score_zero_on_clean, test_risk_score_high_on_sensitive_recent_breach
     from tests.test_auth import (
@@ -23,7 +23,8 @@ def run_suite():
         test_admin_coupons_and_discounts,
         test_admin_payment_methods_and_fees,
         test_admin_branding_customization,
-        test_order_rejection_flow
+        test_order_rejection_flow,
+        test_case_management_and_history_api
     )
 
     from tests.test_vault import (
@@ -43,6 +44,7 @@ def run_suite():
         test_input_classifier_types,
         test_cache_ttl_and_hashing,
         test_engine_investigate_structure,
+        test_multi_input_parser,
         test_ssrf_blocked_urls,
         test_headers_raises_on_ssrf,
         test_ip_lookup_blocks_private,
@@ -63,6 +65,7 @@ def run_suite():
         test_admin_coupons_and_discounts,
         test_admin_payment_methods_and_fees,
         test_admin_branding_customization,
+        test_case_management_and_history_api,
         test_vault_key_generation_and_encryption,
         test_vault_cold_withdrawal,
         test_on_chain_verifier_auto_approval,
